@@ -1,27 +1,69 @@
 import React from "react";
-import { View, Text, Pressable } from "react-native";
-import Animated, { FadeInDown } from "react-native-reanimated";
-import { GlassCard } from "./GlassCard";
+import { ActivityIndicator, View, Text, Pressable } from "react-native";
+import { NeumorphicSurface } from "./NeumorphicSurface";
 import { ProgressBar } from "./ProgressBar";
+import { LocationIcon, TimerIcon } from "./TabIcons";
 import { useAppStore } from "../store";
 import { hapticLight } from "../lib/haptics";
-import { ACCENT_COLORS, type Goal } from "../types";
+import { getWeekEnd, getWeekStart } from "../lib/time";
+import type { Goal } from "../types";
+import { NEU, NEU_FONTS } from "../theme/neumorphism";
 
 interface GoalCardProps {
   goal: Goal;
-  index: number;
   onStartSession: (goal: Goal) => void;
+  /** Long-press on the Start pill opens the session setup popup (one-tap starts directly). */
+  onLongPressSession?: (goal: Goal) => void;
+  isPhysicalSessionActive?: boolean;
+  physicalSessionBusy?: boolean;
+  onStartPhysicalSession?: (goal: Goal) => void;
+  onEndPhysicalSession?: (goal: Goal) => void;
 }
 
-export function GoalCard({ goal, index, onStartSession }: GoalCardProps) {
+export function GoalCard({
+  goal,
+  onStartSession,
+  onLongPressSession,
+  isPhysicalSessionActive = false,
+  physicalSessionBusy = false,
+  onStartPhysicalSession,
+  onEndPhysicalSession,
+}: GoalCardProps) {
   const weeklyProgress = useAppStore((s) => s.weeklyProgress[goal.id]);
   const activeSession = useAppStore((s) => s.activeSession);
-  const isActive = activeSession?.goal_id === goal.id;
+  const defaultFocusStyle = useAppStore((s) => s.focusStyle);
+  const isPhysical = goal.type === "physical";
+  const isActive = isPhysical
+    ? isPhysicalSessionActive
+    : activeSession?.goal_id === goal.id;
 
   const sessionsCompleted = weeklyProgress?.sessions_completed ?? 0;
-  const totalHours = weeklyProgress?.total_hours ?? 0;
+  const activeStartTime = activeSession
+    ? new Date(activeSession.start_time).getTime()
+    : 0;
+  const activeStartedThisWeek =
+    activeStartTime >= getWeekStart().getTime() &&
+    activeStartTime <= getWeekEnd().getTime();
+  // The persisted weekly aggregate excludes the open database row. Add only
+  // the focus seconds earned in the currently running local session so the
+  // card progresses live without prematurely counting it as "completed".
+  const liveHours =
+    isActive && activeStartedThisWeek && activeSession?.pomodoro
+      ? activeSession.pomodoro.focused_seconds / 3600
+      : 0;
+  const totalHours = (weeklyProgress?.total_hours ?? 0) + liveHours;
 
-  const isPhysical = goal.type === "physical";
+  const focusStyle = isActive
+    ? activeSession?.pomodoro?.mode ?? defaultFocusStyle
+    : defaultFocusStyle;
+  const typeLabel = isPhysical
+    ? isActive
+      ? "Checked in"
+      : "Auto Check-In"
+    : focusStyle === "flowtime"
+      ? "Flowtime"
+      : "Intervals";
+
   const progressValue = isPhysical
     ? goal.target_sessions_per_week > 0
       ? sessionsCompleted / goal.target_sessions_per_week
@@ -35,45 +77,256 @@ export function GoalCard({ goal, index, onStartSession }: GoalCardProps) {
     : `${totalHours.toFixed(1)} / ${goal.target_hours_per_week}h`;
 
   const handlePress = () => {
-    if (!isPhysical && !isActive) {
-      hapticLight();
+    hapticLight();
+    if (isPhysical) {
+      if (isActive) {
+        onEndPhysicalSession?.(goal);
+      } else {
+        onStartPhysicalSession?.(goal);
+      }
+    } else {
       onStartSession(goal);
     }
   };
 
+  const handleLongPress = () => {
+    if (!isPhysical && !isActive && onLongPressSession) {
+      hapticLight();
+      onLongPressSession(goal);
+    }
+  };
+
   return (
-    <Animated.View entering={FadeInDown.delay(index * 80).duration(400).springify()}>
-      <Pressable onPress={handlePress} disabled={isPhysical || isActive}>
-        <GlassCard className="mx-screen-x mb-3">
-          <View className="flex-row items-center justify-between mb-3">
-            <View className="flex-row items-center gap-3">
-              <View
-                className="w-3 h-3 rounded-full"
-                style={{ backgroundColor: ACCENT_COLORS[goal.color] }}
-              />
-              <Text className="text-text-primary text-subheading">{goal.name}</Text>
-            </View>
+    <View>
+      <NeumorphicSurface
+        radius={20}
+        contentPadding={0}
+        style={{ marginHorizontal: 24, marginBottom: 16, padding: 16 }}
+      >
+        {/* Header row: name + type badge */}
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
+            marginBottom: 12,
+          }}
+        >
+          <Text
+            style={{
+              color: NEU.textPrimary,
+              fontSize: 16,
+              fontFamily: NEU_FONTS.label,
+              letterSpacing: -0.2,
+              flex: 1,
+            }}
+            numberOfLines={1}
+          >
+            {goal.name}
+          </Text>
+
+          {/* Type indicator */}
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              marginLeft: 10,
+            }}
+          >
             {isPhysical ? (
-              <View className="flex-row items-center gap-1.5 bg-white/[0.06] px-2.5 py-1 rounded-full">
-                <Text className="text-tiny text-text-tertiary">📍 Auto-tracking</Text>
-              </View>
-            ) : isActive ? (
-              <View className="flex-row items-center gap-1.5 bg-white/10 px-2.5 py-1 rounded-full">
-                <View className="w-1.5 h-1.5 rounded-full bg-green-400" />
-                <Text className="text-tiny text-green-400">Active</Text>
-              </View>
+              <LocationIcon size={13} color={NEU.textSecondary} />
             ) : (
-              <View className="bg-white/10 px-3 py-1.5 rounded-button">
-                <Text className="text-tiny text-text-primary font-medium">Start</Text>
-              </View>
+              <TimerIcon size={13} color={NEU.textSecondary} />
             )}
+            <Text
+              style={{
+                color: NEU.textSecondary,
+                fontSize: 12,
+                fontFamily: NEU_FONTS.body,
+                marginLeft: 4,
+              }}
+            >
+              {typeLabel}
+            </Text>
           </View>
+        </View>
 
-          <ProgressBar progress={progressValue} color={goal.color} />
+        {/* Progress bar */}
+        <ProgressBar
+          progress={progressValue}
+          color={NEU.accent}
+          height={5}
+          trackColor="#C5CDD8"
+        />
 
-          <Text className="text-text-tertiary text-caption mt-2">{progressText}</Text>
-        </GlassCard>
-      </Pressable>
-    </Animated.View>
+        {/* Progress text + action row */}
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
+            marginTop: 12,
+          }}
+        >
+          <Text
+            style={{
+              color: NEU.textSecondary,
+              fontSize: 13,
+              fontFamily: NEU_FONTS.body,
+            }}
+          >
+            {progressText}
+          </Text>
+
+          {/* Active / action button */}
+          {isActive ? (
+            <Pressable
+              onPress={handlePress}
+              disabled={physicalSessionBusy}
+              accessibilityRole="button"
+              accessibilityLabel={
+                isPhysical
+                  ? `End ${goal.name} check-in`
+                  : `Resume ${goal.name} focus session`
+              }
+              style={{
+                width: isPhysical ? 94 : 78,
+                height: NEU.hitTarget,
+                marginRight: -6,
+                alignItems: "center",
+                justifyContent: "center",
+                transform: [{ translateY: 10 }],
+                opacity: physicalSessionBusy ? 0.55 : 1,
+              }}
+            >
+              <View
+                pointerEvents="none"
+                style={{
+                  width: isPhysical ? 94 : 78,
+                  height: 34,
+                  borderRadius: 999,
+                  backgroundColor: NEU.accent,
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                {physicalSessionBusy ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <Text
+                    style={{
+                      color: "#FFFFFF",
+                      fontSize: 14,
+                      fontFamily: NEU_FONTS.label,
+                    }}
+                  >
+                    {isPhysical ? "End session" : "Resume"}
+                  </Text>
+                )}
+              </View>
+            </Pressable>
+          ) : isPhysical ? (
+            <Pressable
+              onPress={handlePress}
+              disabled={physicalSessionBusy}
+              accessibilityRole="button"
+              accessibilityLabel={`Start ${goal.name} check-in manually`}
+              style={({ pressed }) => ({
+                minWidth: 104,
+                minHeight: NEU.hitTarget,
+                alignItems: "flex-end",
+                justifyContent: "center",
+                opacity: physicalSessionBusy ? 0.4 : pressed ? 0.5 : 1,
+              })}
+            >
+              {physicalSessionBusy ? (
+                <ActivityIndicator size="small" color={NEU.accent} />
+              ) : (
+                <Text
+                  style={{
+                    color: NEU.accent,
+                    fontSize: 13,
+                    fontFamily: NEU_FONTS.label,
+                  }}
+                >
+                  Start manually
+                </Text>
+              )}
+            </Pressable>
+          ) : (
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                marginRight: -6,
+                transform: [{ translateY: 10 }],
+              }}
+            >
+              {onLongPressSession ? (
+                <Pressable
+                  onPress={handleLongPress}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Adjust ${goal.name} focus session`}
+                  style={({ pressed }) => ({
+                    minWidth: 62,
+                    minHeight: NEU.hitTarget,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    opacity: pressed ? 0.5 : 1,
+                  })}
+                >
+                  <Text
+                    style={{
+                      color: NEU.accent,
+                      fontSize: 13,
+                      fontFamily: NEU_FONTS.label,
+                    }}
+                  >
+                    Adjust
+                  </Text>
+                </Pressable>
+              ) : null}
+              <Pressable
+                onPress={handlePress}
+                onLongPress={handleLongPress}
+                accessibilityRole="button"
+                accessibilityLabel={`Start ${goal.name} focus session`}
+                accessibilityHint={`Starts a ${focusStyle === "flowtime" ? "Flowtime count-up" : "countdown interval"} with the current focus settings`}
+                style={{
+                  width: 68,
+                  height: NEU.hitTarget,
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <View
+                  pointerEvents="none"
+                  style={{
+                    width: 68,
+                    height: 34,
+                    borderRadius: 999,
+                    backgroundColor: NEU.accent,
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Text
+                    style={{
+                      color: "#FFFFFF",
+                      fontSize: 14,
+                      fontFamily: NEU_FONTS.label,
+                      textAlign: "center",
+                      includeFontPadding: false,
+                    }}
+                  >
+                    Start
+                  </Text>
+                </View>
+              </Pressable>
+            </View>
+          )}
+        </View>
+      </NeumorphicSurface>
+    </View>
   );
 }

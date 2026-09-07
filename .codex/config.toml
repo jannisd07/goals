@@ -1,0 +1,3 @@
+[mcp_servers.ornith]
+command = "python3"
+args = ["/Users/jannisdietrich/ornith_mcp.py"]

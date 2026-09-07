@@ -36,7 +36,25 @@ yarn-error.*
 
 # typescript
 *.tsbuildinfo
+.domain-test-dist/
 
 # generated native folders
 /ios
 /android
+ornith-tests/
+
+# Supabase local state and signing secrets
+/supabase/.temp/
+/supabase/apple-client-secret.jwt
+
+# Blender-Renders (Rohdaten)
+island/blender/out/
+
+# Python bytecode (island/blender pipeline)
+__pycache__/
+*.pyc
+
+# Local scratch and tool state, never part of the app
+/tmp/
+/.superpowers/
+/.claude/worktrees/

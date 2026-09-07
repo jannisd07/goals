@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <mask id="check-cutout">
+      <rect width="1024" height="1024" fill="#FFFFFF"/>
+      <path
+        d="M330 520 L458 648 L704 376"
+        fill="none"
+        stroke="#000000"
+        stroke-width="82"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      />
+    </mask>
+  </defs>
+  <circle cx="512" cy="512" r="304" fill="#000000" mask="url(#check-cutout)"/>
+</svg>

@@ -1,62 +1,72 @@
 {
   "expo": {
-    "name": "VibeTime",
-    "slug": "vibetime",
+    "name": "Goals",
+    "slug": "goals",
+    "scheme": "com.goals.app",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "dark",
+    "userInterfaceStyle": "light",
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#0A0A0F"
+      "backgroundColor": "#E0E5EC"
     },
     "ios": {
+      "icon": "./assets/icon.png",
+      "buildNumber": "41",
       "supportsTablet": false,
       "bundleIdentifier": "com.vibetime.app",
+      "usesAppleSignIn": true,
       "infoPlist": {
-        "NSLocationAlwaysAndWhenInUseUsageDescription": "VibeTime uses your location to automatically track sessions at your physical goal locations.",
-        "NSLocationWhenInUseUsageDescription": "VibeTime uses your location to set up geofences for your physical goals.",
-        "NSLocationAlwaysUsageDescription": "VibeTime needs background location access to automatically detect when you arrive at your goal locations.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Goals uses your location to automatically track sessions at your physical goal locations.",
+        "NSLocationWhenInUseUsageDescription": "Goals uses your location to set up geofences for your physical goals.",
+        "NSLocationAlwaysUsageDescription": "Goals needs background location access to automatically detect when you arrive at your goal locations.",
         "UIBackgroundModes": [
           "location",
-          "audio",
-          "fetch"
+          "audio"
         ],
         "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
-      "package": "com.vibetime.app",
+      "package": "com.goals.app",
       "adaptiveIcon": {
-        "backgroundColor": "#0A0A0F",
+        "backgroundColor": "#E0E5EC",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
-      },
-      "permissions": [
-        "ACCESS_FINE_LOCATION",
-        "ACCESS_COARSE_LOCATION",
-        "ACCESS_BACKGROUND_LOCATION",
-        "FOREGROUND_SERVICE",
-        "RECEIVE_BOOT_COMPLETED",
-        "VIBRATE",
-        "android.permission.ACCESS_COARSE_LOCATION",
-        "android.permission.ACCESS_FINE_LOCATION",
-        "android.permission.ACCESS_BACKGROUND_LOCATION",
-        "android.permission.FOREGROUND_SERVICE",
-        "android.permission.FOREGROUND_SERVICE_LOCATION"
-      ]
+      }
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
+      [
+        "expo-widgets",
+        {
+          "bundleIdentifier": "com.vibetime.app.ExpoWidgetsTarget",
+          "groupIdentifier": "group.com.vibetime.app",
+          "enablePushNotifications": false,
+          "frequentUpdates": false,
+          "widgets": []
+        }
+      ],
+      "./plugins/withGoalsNativeConfig",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#E0E5EC",
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 180,
+          "resizeMode": "contain"
+        }
+      ],
       "expo-font",
       [
         "expo-location",
         {
-          "locationAlwaysAndWhenInUsePermission": "VibeTime uses your location to automatically track sessions at your goal locations.",
+          "locationAlwaysAndWhenInUsePermission": "Goals uses your location to automatically track sessions at your goal locations.",
           "isIosBackgroundLocationEnabled": true,
           "isAndroidBackgroundLocationEnabled": true
         }
@@ -68,7 +78,19 @@
         }
       ],
       "expo-task-manager",
-      "expo-audio"
+      [
+        "expo-audio",
+        {
+          "microphonePermission": false,
+          "recordAudioAndroid": false,
+          "enableBackgroundPlayback": true,
+          "enableBackgroundRecording": false
+        }
+      ],
+      "expo-web-browser",
+      "expo-apple-authentication",
+      "expo-asset",
+      "expo-localization"
     ],
     "extra": {
       "eas": {

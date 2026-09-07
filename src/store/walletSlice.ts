@@ -6,15 +6,12 @@ export interface WalletSlice {
   fixedCommitments: FixedCommitments;
   disposableTimeHours: number;
   usedTimeThisWeekSeconds: number;
-  liveDecrementActive: boolean;
   setFixedCommitments: (commitments: FixedCommitments) => void;
   setUsedTimeThisWeek: (seconds: number) => void;
   incrementUsedTime: (seconds: number) => void;
-  setLiveDecrement: (active: boolean) => void;
-  getRemainingHours: () => number;
 }
 
-export const createWalletSlice: StateCreator<WalletSlice, [], [], WalletSlice> = (set, get) => ({
+export const createWalletSlice: StateCreator<WalletSlice, [], [], WalletSlice> = (set) => ({
   fixedCommitments: {
     sleep_hours_per_night: 8,
     work_hours_per_day: 8,
@@ -23,7 +20,6 @@ export const createWalletSlice: StateCreator<WalletSlice, [], [], WalletSlice> =
   },
   disposableTimeHours: 0,
   usedTimeThisWeekSeconds: 0,
-  liveDecrementActive: false,
 
   setFixedCommitments: (commitments) =>
     set({
@@ -38,13 +34,4 @@ export const createWalletSlice: StateCreator<WalletSlice, [], [], WalletSlice> =
     set((state) => ({
       usedTimeThisWeekSeconds: state.usedTimeThisWeekSeconds + seconds,
     })),
-
-  setLiveDecrement: (active) =>
-    set({ liveDecrementActive: active }),
-
-  getRemainingHours: () => {
-    const state = get();
-    const usedHours = state.usedTimeThisWeekSeconds / 3600;
-    return Math.max(0, state.disposableTimeHours - usedHours);
-  },
 });

@@ -1,139 +1,122 @@
-# VibeTime
+# Goals
 
-**Your time, your currency.** A minimalist mobile time-tracking app built on the metaphor that time is a financial resource.
+Goals is an Expo/React Native app for planning a weekly time budget, tracking
+focus sessions, logging location-based habits automatically, and turning
+completed sessions into a personal Grove constellation.
 
-## Overview
+## Product
 
-VibeTime gives you 168 hours per week. After subtracting fixed commitments (sleep, work, overhead), what remains is your **Disposable Time** — a personal weekly budget you allocate to goals.
+- **Focus Time:** interval or open-ended Flowtime sessions, adaptive breaks,
+  optional background music, restart-safe wall-clock accounting and ratings.
+- **Auto Check-In:** one physical goal with a pinned place, iOS/Android
+  background geofence, visible active-visit state and a manual fallback.
+- **Weekly budget:** 168 hours minus sleep, work and daily overhead.
+- **Stats:** monthly calendar heatmap, weekly drill-down, cached personal
+  server insight and an offline heuristic fallback.
+- **Grove:** deterministic, interactive 3D constellation; every completed session
+  becomes a star.
+- **Friends:** opt-in six-character codes and week-only aggregates—never raw
+  friend sessions.
 
-### Two Goal Types
+The visible bottom navigation has intentionally been removed. Stats, Friends and
+Settings open from Home; the Grove opens from its Home preview. Every secondary
+screen has its own Back/Close action.
 
-- **Physical Goals** (e.g., Gym) — tracked automatically via geofencing. Zero manual input.
-- **Focus Goals** (e.g., Study, Read) — tracked via an in-app Pomodoro timer with ambient sounds and a visual growth mechanic.
+## Stack
 
-## Tech Stack
+- Expo 55, React Native 0.83 and strict TypeScript
+- React Navigation (native stack plus a hidden Home/Grove route container)
+- Zustand with AsyncStorage persistence
+- TanStack React Query
+- Supabase Auth, PostgreSQL/RLS and Edge Functions
+- Reanimated, react-native-svg and react-native-maps
+- expo-location/task-manager, expo-notifications, expo-audio, Apple Auth and WebBrowser
 
-- **React Native** + **Expo** (managed workflow, TypeScript)
-- **NativeWind** (Tailwind CSS for React Native)
-- **Zustand** (state management with slices pattern)
-- **React Native Reanimated v3** (all animations)
-- **Supabase** (Auth, PostgreSQL with RLS, Edge Functions)
-- **TanStack Query v5** (server state, caching, background refetch)
-- **expo-location** + **expo-task-manager** (geofencing)
-- **expo-av** (ambient background audio)
-- **expo-haptics** (tactile feedback)
-- **react-native-svg** (garden orb rendering)
-
-## Setup
-
-### 1. Install Dependencies
+## Local setup
 
 ```bash
 npm install
-```
-
-### 2. Environment Variables
-
-Copy `.env.example` to `.env` and fill in your Supabase credentials:
-
-```bash
 cp .env.example .env
+npx expo start --dev-client
 ```
 
-Required variables:
-- `EXPO_PUBLIC_SUPABASE_URL` — Your Supabase project URL
-- `EXPO_PUBLIC_SUPABASE_ANON_KEY` — Your Supabase anon/public key
+Required environment variables:
 
-### 3. Database Setup
+- `EXPO_PUBLIC_SUPABASE_URL`
+- `EXPO_PUBLIC_SUPABASE_ANON_KEY`
 
-Run the SQL schema in your Supabase SQL Editor:
+Useful checks:
 
 ```bash
-# File: supabase/schema.sql
+npm run check
+npx expo export --platform ios
+npx expo run:ios --no-bundler
 ```
 
-This creates all tables (`users`, `goals`, `sessions`) with Row-Level Security policies.
+There is no separate linter or device-E2E runner. `npm run check` includes strict
+TypeScript, 74 deterministic domain assertions and Expo Doctor.
 
-### 4. Deploy Edge Function
+## Supabase
 
-Deploy the AI analysis Edge Function to Supabase:
+The ordered files in [`supabase/migrations`](supabase/migrations) are the
+authoritative schema for both fresh and existing projects. `schema.sql` is a
+readable baseline reference. Apply migrations and deploy the authenticated Edge
+Functions through the CLI:
 
 ```bash
-supabase functions deploy analyze-sessions
+npx supabase link --project-ref <project-ref>
+npx supabase db push
+npx supabase functions deploy analyze-sessions
+npx supabase functions deploy delete-account
+npx supabase functions deploy place-search
 ```
 
-### 5. Ambient Sound Assets
+The production schema creates `public.users` profiles automatically from
+`auth.users`, keeps email exclusively in Supabase Auth, synchronizes app
+preferences across devices, enforces ownership with RLS and composite foreign
+keys, and exposes Friends only through authenticated aggregate RPCs.
 
-Replace the placeholder audio files in `assets/sounds/` with real ambient audio:
-- `rain.mp3`
-- `cafe.mp3`
-- `white_noise.mp3`
-- `forest.mp3`
-- `lofi.mp3`
+OAuth/recovery redirects required in Supabase:
 
-### 6. Run the App
+- `com.goals.app://google-auth`
+- `com.goals.app://reset-password`
 
-```bash
-npx expo start
-```
+Apple Sign-In additionally requires the matching Apple Developer/Supabase
+configuration for the native iOS bundle ID `com.vibetime.app` and the web
+Services ID `com.dominik.vibetimeauth`. App deep links continue to use the
+independent `com.goals.app` URL scheme.
 
-## Project Structure
-
-```
-src/
-├── components/      # Shared UI components
-│   ├── BalanceCard.tsx
-│   ├── GlassCard.tsx
-│   ├── GoalCard.tsx
-│   ├── ProgressBar.tsx
-│   └── RatingSheet.tsx
-├── hooks/           # Custom hooks (TanStack Query, Pomodoro, Auth, Audio)
-│   ├── useAmbientSound.ts
-│   ├── useAuth.ts
-│   ├── useGoals.ts
-│   ├── usePomodoro.ts
-│   └── useSessions.ts
-├── lib/             # Utilities (Supabase client, haptics, time helpers)
-│   ├── haptics.ts
-│   ├── supabase.ts
-│   └── time.ts
-├── navigation/      # Navigation setup
-│   ├── MainTabs.tsx
-│   ├── RootNavigator.tsx
-│   └── types.ts
-├── screens/         # All screens
-│   ├── AnalyticsScreen.tsx
-│   ├── AuthScreen.tsx
-│   ├── CreateGoalScreen.tsx
-│   ├── FocusSessionScreen.tsx
-│   ├── GardenScreen.tsx
-│   ├── HomeScreen.tsx
-│   ├── OnboardingScreen.tsx
-│   └── SettingsScreen.tsx
-├── services/        # Background services
-│   └── geofencing.ts
-├── store/           # Zustand store with slices
-│   ├── configSlice.ts
-│   ├── goalsSlice.ts
-│   ├── index.ts
-│   ├── sessionSlice.ts
-│   └── walletSlice.ts
-└── types/           # Centralized TypeScript types
-    └── index.ts
-```
-
-## Navigation
-
-- **Home** — The Wallet (balance card + goal cards)
-- **Garden** — Abstract orb visualization of focus session consistency
-- **Analytics** — 24×7 heat map + AI insight card
-- **Settings** — Gear icon on Home → modal (fixed commitments, goal CRUD, account)
+Supabase Auth's leaked-password protection should be enabled after upgrading to
+a plan that supports it; the current plan rejects that setting with HTTP 402.
+The server-side minimum password length is already 8. Provider credentials and
+this Auth setting are dashboard-level configuration and are intentionally not
+stored in SQL.
 
 ## Design
 
-- Dark mode only (`#0A0A0F` background)
-- Glassmorphism cards with blur backdrop
-- Goal-specific accent colors
-- Generous spacing, large tap targets
-- Reanimated animations throughout
-- Haptic feedback on all major interactions
+The app is light-only and uses a controlled monochrome neumorphic system:
+
+- page `#E0E5EC`, slightly lighter surfaces `#E9EDF2`
+- one accessible indigo accent `#415DCB`
+- top-left light source with paired light/dark shadows
+- flat accent pills for actions; no neumorphism on primary content buttons
+- flat minimal text fields with a visible accent focus ring
+- Outfit typography and minimum 44pt interaction targets
+
+[`CLAUDE.md`](CLAUDE.md) is the complete, reproducible design contract.
+[`PROGRESS.md`](PROGRESS.md) is the authoritative feature/release status and
+[`STRUCTURE.md`](STRUCTURE.md) maps the codebase.
+
+## Assets and licensing
+
+Focus audio comes from
+[Open Lofi](https://github.com/btahir/open-lofi) and is CC0/public domain.
+Place search data is attributed to OpenStreetMap in every search UI. The
+authenticated `place-search` Edge Function provides shared caching, per-user
+quotas and a cross-instance upstream queue so installed clients do not call
+public Nominatim independently. After its migration and function are deployed,
+set `EXPO_PUBLIC_PLACE_SEARCH_ENDPOINT=supabase`; the app derives the trusted
+Function URL from `EXPO_PUBLIC_SUPABASE_URL` and only sends the session JWT to
+that origin. A different HTTPS endpoint may be supplied if it accepts the same
+Nominatim parameters and returns a compatible JSON array. Blank keeps the
+throttled direct fallback for development and partially deployed environments.

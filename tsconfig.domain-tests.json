@@ -1,0 +1,35 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "module": "Node16",
+    "moduleResolution": "Node16",
+    "target": "ES2022",
+    "outDir": ".domain-test-dist",
+    "rootDir": ".",
+    "noEmit": false,
+    "declaration": false,
+    "sourceMap": false
+  },
+  "include": [
+    "tests/domain-smoke.ts",
+    "src/lib/pomodoro.ts",
+    "src/lib/streaks.ts",
+    "src/lib/studySpots.ts",
+    "src/lib/constellation.ts",
+    "src/lib/geofenceSessions.ts",
+    "src/lib/placeSearchProvider.ts",
+    "src/lib/onboardingPlan.ts",
+    "src/lib/sliders.ts",
+    "src/lib/serverInsights.ts",
+    "src/lib/time.ts",
+    "supabase/functions/_shared/placeSearch.ts",
+    "supabase/functions/_shared/coachPatterns.ts",
+    "supabase/functions/_shared/coachWriter.ts",
+    "src/lib/coachSchedule.ts",
+    "src/types/index.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "supabase/functions/**/index.ts"
+  ]
+}

@@ -1,17 +1,13 @@
-import React, { useState, useEffect } from "react";
-import { View, Text, Pressable, TextInput } from "react-native";
+import React, { useState } from "react";
+import { View, Text, Pressable, StyleSheet } from "react-native";
 import Animated, {
   FadeIn,
-  SlideInDown,
-  useSharedValue,
-  useAnimatedStyle,
-  withTiming,
-  withSequence,
-  Easing,
 } from "react-native-reanimated";
-import Svg, { Circle, Defs, RadialGradient, Stop } from "react-native-svg";
-import { hapticSelection, hapticMedium, hapticSuccess } from "../lib/haptics";
-import { ACCENT_COLORS, type AccentColor } from "../types";
+import { hapticSelection, hapticMedium } from "../lib/haptics";
+import { PopupCard } from "./ui/PopupCard";
+import { PrimaryButton } from "./ui/PrimaryButton";
+import { MinimalTextInput } from "./ui/MinimalTextInput";
+import { NEU, NEU_FONTS } from "../theme/neumorphism";
 
 interface RatingSheetProps {
   onSubmit: (rating: number, notes: string | null) => void;
@@ -19,53 +15,21 @@ interface RatingSheetProps {
   goalName: string;
   duration: string;
   cycles?: number;
-  goalColor?: AccentColor;
+  submitting?: boolean;
 }
 
-const RATING_EMOJIS = ["😔", "😐", "🙂", "😊", "🤩"];
-const ORB_SIZE = 80;
+const RATING_COUNT = 5;
 
-function BloomOrb({ color }: { color: string }) {
-  const scale = useSharedValue(0);
-  const opacity = useSharedValue(0);
-
-  useEffect(() => {
-    scale.value = withSequence(
-      withTiming(1.3, { duration: 500, easing: Easing.bezier(0.34, 1.56, 0.64, 1) }),
-      withTiming(1, { duration: 300, easing: Easing.out(Easing.ease) })
-    );
-    opacity.value = withTiming(1, { duration: 400 });
-    hapticSuccess();
-  }, [scale, opacity]);
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-    opacity: opacity.value,
-  }));
-
-  return (
-    <Animated.View style={animatedStyle} className="items-center justify-center mb-4">
-      <Svg width={ORB_SIZE * 2} height={ORB_SIZE * 2}>
-        <Defs>
-          <RadialGradient id="bloom-grad" cx="50%" cy="50%" r="50%">
-            <Stop offset="0%" stopColor={color} stopOpacity="0.95" />
-            <Stop offset="40%" stopColor={color} stopOpacity="0.5" />
-            <Stop offset="70%" stopColor={color} stopOpacity="0.15" />
-            <Stop offset="100%" stopColor={color} stopOpacity="0" />
-          </RadialGradient>
-        </Defs>
-        <Circle cx={ORB_SIZE} cy={ORB_SIZE} r={ORB_SIZE} fill="url(#bloom-grad)" />
-        <Circle cx={ORB_SIZE} cy={ORB_SIZE} r={ORB_SIZE * 0.35} fill={color} opacity={0.7} />
-        <Circle cx={ORB_SIZE} cy={ORB_SIZE} r={ORB_SIZE * 0.15} fill="white" opacity={0.4} />
-      </Svg>
-    </Animated.View>
-  );
-}
-
-export function RatingSheet({ onSubmit, onDismiss, goalName, duration, cycles, goalColor }: RatingSheetProps) {
+export function RatingSheet({
+  onSubmit,
+  onDismiss,
+  goalName,
+  duration,
+  cycles,
+  submitting = false,
+}: RatingSheetProps) {
   const [rating, setRating] = useState<number | null>(null);
   const [notes, setNotes] = useState("");
-  const accentHex = goalColor ? ACCENT_COLORS[goalColor] : "#4A9EFF";
 
   const handleRating = (value: number) => {
     setRating(value);
@@ -73,88 +37,232 @@ export function RatingSheet({ onSubmit, onDismiss, goalName, duration, cycles, g
   };
 
   const handleSubmit = () => {
-    if (rating === null) return;
+    if (rating === null || submitting) return;
     hapticMedium();
     onSubmit(rating, notes.trim() || null);
   };
 
+  const cycleText =
+    cycles !== undefined && cycles > 0
+      ? `${cycles} ${cycles === 1 ? "cycle" : "cycles"}`
+      : null;
+
+  const subtitle = cycleText
+    ? `${duration} \u00B7 ${cycleText}`
+    : duration;
+
   return (
-    <Animated.View
-      entering={FadeIn.duration(300)}
-      className="absolute inset-0 bg-black/60 justify-end"
-    >
+    <Animated.View entering={FadeIn.duration(300)} style={styles.overlay}>
+      <Pressable
+        style={StyleSheet.absoluteFill}
+        onPress={onDismiss}
+        accessibilityRole="button"
+        accessibilityLabel="Close rating"
+      />
+
       <Animated.View
-        entering={SlideInDown.duration(400).springify()}
-        className="bg-[#1A1A24] rounded-t-3xl px-6 pt-6 pb-10"
+        accessibilityViewIsModal
+        entering={FadeIn.duration(220)}
+        style={styles.sheetWrap}
       >
-        <View className="w-10 h-1 bg-white/20 rounded-full self-center mb-4" />
+        <PopupCard>
+          {/* Header */}
+          <Text style={styles.headerTitle}>{goalName}</Text>
+          <Text style={styles.headerSubtitle}>{subtitle}</Text>
 
-        <BloomOrb color={accentHex} />
+          {/* Divider */}
+          <View style={styles.divider} />
 
-        <Text className="text-text-primary text-heading text-center mb-1">
-          Session Complete
-        </Text>
-        <Text className="text-text-secondary text-body text-center mb-1">
-          {goalName} — {duration}
-        </Text>
-        {cycles !== undefined && cycles > 0 && (
-          <Text className="text-text-tertiary text-caption text-center mb-6">
-            {cycles} {cycles === 1 ? "cycle" : "cycles"} completed
-          </Text>
-        )}
+          {/* Rating */}
+          <Text style={styles.ratingPrompt}>How was it?</Text>
+          <View style={styles.ratingRow}>
+            {Array.from({ length: RATING_COUNT }, (_, i) => {
+              const value = i + 1;
+              const isSelected = rating === value;
+              return (
+                <Pressable
+                  key={value}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Rate ${value} out of ${RATING_COUNT}`}
+                  accessibilityState={{ selected: isSelected }}
+                  onPress={() => handleRating(value)}
+                  style={({ pressed }) => [
+                    styles.ratingCircle,
+                    isSelected && styles.ratingCircleSelected,
+                    pressed && { opacity: 0.7 },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.ratingNumber,
+                      isSelected && styles.ratingNumberSelected,
+                    ]}
+                  >
+                    {value}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
 
-        <Text className="text-text-secondary text-body text-center mb-4">
-          How was this session?
-        </Text>
-
-        <View className="flex-row justify-center gap-4 mb-6">
-          {RATING_EMOJIS.map((emoji, index) => {
-            const value = index + 1;
-            const isSelected = rating === value;
-            return (
-              <Pressable
-                key={value}
-                onPress={() => handleRating(value)}
-                className={`w-14 h-14 items-center justify-center rounded-2xl ${isSelected ? "bg-white/20 scale-110" : "bg-white/[0.06]"
-                  }`}
-              >
-                <Text className="text-2xl">{emoji}</Text>
-              </Pressable>
-            );
-          })}
-        </View>
-
-        <TextInput
-          placeholder="Quick note (optional)"
-          placeholderTextColor="rgba(255,255,255,0.3)"
-          value={notes}
-          onChangeText={setNotes}
-          className="bg-white/[0.06] text-text-primary text-body px-4 py-3 rounded-button mb-6 border border-surface-border"
-          maxLength={140}
-        />
-
-        <View className="flex-row gap-3">
-          <Pressable
-            onPress={onDismiss}
-            className="flex-1 items-center py-3.5 rounded-button bg-white/[0.06]"
-          >
-            <Text className="text-text-secondary text-body font-medium">Skip</Text>
-          </Pressable>
-          <Pressable
-            onPress={handleSubmit}
-            disabled={rating === null}
-            className={`flex-1 items-center py-3.5 rounded-button ${rating !== null ? "bg-white" : "bg-white/20"
-              }`}
-          >
-            <Text
-              className={`text-body font-semibold ${rating !== null ? "text-background" : "text-text-tertiary"
-                }`}
+          {/* Rating label */}
+          {rating !== null && (
+            <Animated.Text
+              entering={FadeIn.duration(200)}
+              style={styles.ratingLabel}
             >
-              Done
-            </Text>
+              {rating === 1
+                ? "Poor"
+                : rating === 2
+                  ? "Okay"
+                  : rating === 3
+                    ? "Good"
+                    : rating === 4
+                      ? "Great"
+                      : "Amazing"}
+            </Animated.Text>
+          )}
+
+          {/* Notes input */}
+          <MinimalTextInput
+            placeholder="Quick note (optional)"
+            placeholderTextColor={NEU.textSecondary}
+            value={notes}
+            onChangeText={setNotes}
+            style={styles.notesInput}
+            containerStyle={{ marginTop: 16, marginBottom: 20 }}
+            maxLength={140}
+            multiline={false}
+          />
+
+          {/* Save button */}
+          <PrimaryButton
+            label={submitting ? "Saving…" : "Save"}
+            onPress={handleSubmit}
+            disabled={rating === null || submitting}
+          />
+
+          {/* Skip text link */}
+          <Pressable
+            onPress={() => {
+              if (!submitting) onDismiss();
+            }}
+            accessibilityRole="button"
+            accessibilityLabel="Skip rating"
+            accessibilityState={{ disabled: submitting }}
+            disabled={submitting}
+            style={({ pressed }) => [
+              styles.skipButton,
+              pressed && { opacity: 0.5 },
+            ]}
+          >
+            <Text style={styles.skipButtonText}>Skip</Text>
           </Pressable>
-        </View>
+        </PopupCard>
       </Animated.View>
     </Animated.View>
   );
 }
+
+const styles = StyleSheet.create({
+  overlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0,0,0,0.3)",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 20,
+  },
+
+  sheetWrap: {
+    width: "100%",
+    maxWidth: 420,
+  },
+
+  // Header
+  headerTitle: {
+    color: NEU.textPrimary,
+    fontSize: 22,
+    fontFamily: "Outfit_700Bold",
+    textAlign: "center",
+    marginBottom: 4,
+  },
+  headerSubtitle: {
+    color: NEU.textSecondary,
+    fontSize: 16,
+    fontFamily: "Outfit_500Medium",
+    textAlign: "center",
+  },
+
+  // Divider
+  divider: {
+    height: 1,
+    backgroundColor: NEU.track,
+    opacity: 0.6,
+    marginVertical: 20,
+  },
+
+  // Rating
+  ratingPrompt: {
+    color: NEU.textSecondary,
+    fontSize: 16,
+    fontFamily: "Outfit_500Medium",
+    textAlign: "center",
+    marginBottom: 16,
+  },
+  ratingRow: {
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 12,
+    marginBottom: 8,
+  },
+  ratingCircle: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: NEU.track,
+    backgroundColor: NEU.card,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  ratingCircleSelected: {
+    borderColor: NEU.accent,
+    backgroundColor: NEU.accent,
+  },
+  ratingNumber: {
+    color: NEU.textPrimary,
+    fontSize: 18,
+    fontFamily: NEU_FONTS.label,
+  },
+  ratingNumberSelected: {
+    color: "#FFFFFF",
+  },
+  ratingLabel: {
+    color: NEU.textSecondary,
+    fontSize: 13,
+    fontFamily: "Outfit_500Medium",
+    textAlign: "center",
+    marginBottom: 4,
+  },
+
+  // Notes
+  notesInput: {
+    minHeight: 48,
+  },
+
+  // Skip
+  skipButton: {
+    alignItems: "center",
+    paddingVertical: 14,
+    marginTop: 4,
+  },
+  skipButtonText: {
+    color: NEU.textSecondary,
+    fontSize: 14,
+    fontFamily: "Outfit_500Medium",
+  },
+});

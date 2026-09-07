@@ -1,0 +1,10 @@
+{
+  "name": "expo-place-search",
+  "version": "1.0.0",
+  "description": "Local iOS MapKit place search for Goals",
+  "main": "index.ts",
+  "license": "MIT",
+  "author": "Goals",
+  "homepage": "https://example.invalid/goals",
+  "private": true
+}

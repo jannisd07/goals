@@ -1,0 +1,18 @@
+diff --git a/node_modules/expo-widgets/ios/Widgets/Utils.swift b/node_modules/expo-widgets/ios/Widgets/Utils.swift
+index 1cd5ca9..3938973 100644
+--- a/node_modules/expo-widgets/ios/Widgets/Utils.swift
++++ b/node_modules/expo-widgets/ios/Widgets/Utils.swift
+@@ -53,11 +53,8 @@ func getLiveActivityNodes(forName name: String, props: String = "{}", environmen
+ }
+ 
+ func getLiveActivityUrl(forName name: String) -> URL? {
+-  let data = WidgetsStorage.getData(forKey: "__expo_widgets_live_activity_\(name)_url")
+-  if let data, let url = String(data: data, encoding: .utf8) {
+-    return URL(string: url)
+-  }
+-  return nil
++  let url = WidgetsStorage.getString(forKey: "__expo_widgets_live_activity_\(name)_url")
++  return url.flatMap(URL.init(string:))
+ }
+ 
+ func getWidgetEnvironment(environment: EnvironmentValues) -> [String: Any] {

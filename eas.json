@@ -1,7 +1,7 @@
 {
   "cli": {
     "version": ">= 15.0.0",
-    "appVersionSource": "remote"
+    "appVersionSource": "local"
   },
   "build": {
     "development": {
@@ -19,10 +19,28 @@
       "distribution": "internal",
       "ios": {
         "simulator": false
+      },
+      "env": {
+        "GOALS_PRODUCTION_BUILD": "true",
+        "EXPO_PUBLIC_SUPABASE_URL": "https://uxpburqocxlcivcdtotb.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV4cGJ1cnFvY3hsY2l2Y2R0b3RiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ0NjM0NzUsImV4cCI6MjA5MDAzOTQ3NX0.qeolSG6eEGd_H8txMl4Qe7WiCwZlniOIR4C_YTyjDsA",
+        "EXPO_PUBLIC_PLACE_SEARCH_ENDPOINT": "supabase"
       }
     },
     "production": {
-      "autoIncrement": true
+      "developmentClient": false,
+      "distribution": "store",
+      "autoIncrement": false,
+      "ios": {
+        "buildConfiguration": "Release",
+        "image": "macos-sequoia-15.6-xcode-26.2"
+      },
+      "env": {
+        "GOALS_PRODUCTION_BUILD": "true",
+        "EXPO_PUBLIC_SUPABASE_URL": "https://uxpburqocxlcivcdtotb.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV4cGJ1cnFvY3hsY2l2Y2R0b3RiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ0NjM0NzUsImV4cCI6MjA5MDAzOTQ3NX0.qeolSG6eEGd_H8txMl4Qe7WiCwZlniOIR4C_YTyjDsA",
+        "EXPO_PUBLIC_PLACE_SEARCH_ENDPOINT": "supabase"
+      }
     }
   },
   "submit": {
