@@ -4,11 +4,13 @@
  *
  * How API calls are kept low, in order of effect:
  *  1. Patterns are computed deterministically. No pattern, no model call.
- *  2. A fingerprint of the patterns is cached. Unchanged advice is reused for
- *     `CACHE_TTL_DAYS` without touching the model.
- *  3. One request writes every nudge for the user at once.
- *  4. A hard per-user daily budget caps the worst case.
- *  5. Any failure falls back to deterministic wording instead of retrying.
+ *  2. Counters that change daily (weekly progress, days since the last session)
+ *     are never sent to the model; they always use deterministic wording.
+ *  3. Copy for the remaining patterns is cached against a fingerprint of their
+ *     numbers and reused for `CACHE_TTL_DAYS` while those stay the same.
+ *  4. One request writes every nudge for the user at once.
+ *  5. A hard per-user daily budget caps the worst case.
+ *  6. Any failure falls back to deterministic wording instead of retrying.
  *
  * The client schedules the returned nudges as local notifications, so no push
  * infrastructure and no server-side cron are involved.
@@ -19,12 +21,16 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.0";
 import {
   detectCoachPatterns,
   patternFingerprint,
+  selectNotificationPatterns,
+  timeZoneClock,
   type CoachGoal,
   type CoachSession,
 } from "../_shared/coachPatterns.ts";
 import {
   DEFAULT_GROQ_MODEL,
   fallbackNudges,
+  hasWritablePatterns,
+  reuseCachedNudges,
   writeNudges,
   type CoachNudge,
 } from "../_shared/coachWriter.ts";
@@ -55,6 +61,12 @@ function parseOffset(value: unknown): number {
   return Math.max(-720, Math.min(840, Math.round(n)));
 }
 
+function parseTimeZone(value: unknown): string | null {
+  return typeof value === "string" && value.length <= 64 && /^[A-Za-z0-9_+\-/]+$/.test(value)
+    ? value
+    : null;
+}
+
 serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -65,13 +77,15 @@ serve(async (req: Request) => {
 
   try {
     let utcOffsetMinutes = 0;
+    let timeZone: string | null = null;
     try {
       const body = await req.json();
       if (body !== null && (typeof body !== "object" || Array.isArray(body))) {
         return jsonResponse({ error: "Invalid request body." }, 400);
       }
-      utcOffsetMinutes = parseOffset((body as { utc_offset_minutes?: unknown } | null)
-        ?.utc_offset_minutes);
+      const input = (body ?? {}) as { utc_offset_minutes?: unknown; time_zone?: unknown };
+      utcOffsetMinutes = parseOffset(input.utc_offset_minutes);
+      timeZone = parseTimeZone(input.time_zone);
     } catch {
       return jsonResponse({ error: "A JSON request body is required." }, 400);
     }
@@ -110,7 +124,7 @@ serve(async (req: Request) => {
       await Promise.all([
         admin
           .from("goals")
-          .select("id, name, type")
+          .select("id, name, type, is_active, target_sessions_per_week, target_hours_per_week")
           .eq("user_id", user.id),
         admin
           .from("sessions")
@@ -130,7 +144,9 @@ serve(async (req: Request) => {
     const sessions = (sessionRows ?? []) as CoachSession[];
 
     // --- 2. Detect patterns. This is the gate for every model call ------------
-    const patterns = detectCoachPatterns(sessions, goals, utcOffsetMinutes);
+    const patterns = selectNotificationPatterns(
+      detectCoachPatterns(sessions, goals, { clock: timeZoneClock(timeZone, utcOffsetMinutes) }),
+    );
     if (patterns.length === 0) {
       return jsonResponse({
         status: "insufficient_data",
@@ -141,32 +157,36 @@ serve(async (req: Request) => {
     }
 
     const fingerprint = patternFingerprint(patterns);
+    const writable = hasWritablePatterns(patterns);
 
-    // --- 3. Reuse cached wording while the advice itself is unchanged ---------
-    const { data: cached } = await admin
-      .from("coach_nudge_cache")
-      .select("fingerprint, nudges, model_written, generated_at")
-      .eq("user_id", user.id)
-      .maybeSingle();
+    // --- 3. Reuse cached wording while the stable advice is unchanged ---------
+    if (writable) {
+      const { data: cached } = await admin
+        .from("coach_nudge_cache")
+        .select("fingerprint, nudges, model_written, generated_at")
+        .eq("user_id", user.id)
+        .maybeSingle();
 
-    if (cached) {
-      const row = cached as {
-        fingerprint: string;
-        nudges: CoachNudge[];
-        model_written: boolean;
-        generated_at: string;
-      };
-      const ageMs = Date.now() - Date.parse(row.generated_at);
-      const fresh = Number.isFinite(ageMs) && ageMs < CACHE_TTL_DAYS * 86_400_000;
-      // Fallback copy is worth upgrading later; model-written copy is not.
-      if (row.fingerprint === fingerprint && fresh && row.model_written) {
-        return jsonResponse({
-          status: "ready",
-          nudges: row.nudges,
-          source: "cache",
-          generated_at: row.generated_at,
-          sessions_analyzed: sessions.length,
-        });
+      if (cached) {
+        const row = cached as {
+          fingerprint: string;
+          nudges: CoachNudge[];
+          model_written: boolean;
+          generated_at: string;
+        };
+        const ageMs = Date.now() - Date.parse(row.generated_at);
+        const fresh = Number.isFinite(ageMs) && ageMs < CACHE_TTL_DAYS * 86_400_000;
+        // Fallback copy is worth upgrading later; model-written copy is not.
+        if (row.fingerprint === fingerprint && fresh && row.model_written && Array.isArray(row.nudges)) {
+          return jsonResponse({
+            status: "ready",
+            // Volatile nudges are rebuilt from today's numbers on every call.
+            nudges: reuseCachedNudges(patterns, row.nudges),
+            source: "cache",
+            generated_at: row.generated_at,
+            sessions_analyzed: sessions.length,
+          });
+        }
       }
     }
 
@@ -178,7 +198,7 @@ serve(async (req: Request) => {
     let usedModel = false;
     let source = "fallback";
 
-    if (!apiKey) {
+    if (!apiKey || !writable) {
       nudges = fallbackNudges(patterns);
     } else {
       const { data: quota, error: quotaError } = await admin.rpc(
@@ -201,20 +221,22 @@ serve(async (req: Request) => {
     }
 
     const generatedAt = new Date().toISOString();
-    const { error: cacheError } = await admin.from("coach_nudge_cache").upsert(
-      {
-        user_id: user.id,
-        fingerprint,
-        nudges,
-        model_written: usedModel,
-        generated_at: generatedAt,
-        updated_at: generatedAt,
-      },
-      { onConflict: "user_id" },
-    );
-    if (cacheError) {
-      // A failed cache write only costs a future call; the answer is still good.
-      console.warn("coach-nudges cache write failed:", cacheError);
+    if (writable) {
+      const { error: cacheError } = await admin.from("coach_nudge_cache").upsert(
+        {
+          user_id: user.id,
+          fingerprint,
+          nudges,
+          model_written: usedModel,
+          generated_at: generatedAt,
+          updated_at: generatedAt,
+        },
+        { onConflict: "user_id" },
+      );
+      if (cacheError) {
+        // A failed cache write only costs a future call; the answer is still good.
+        console.warn("coach-nudges cache write failed:", cacheError);
+      }
     }
 
     return jsonResponse({

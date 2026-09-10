@@ -982,11 +982,9 @@ rating — you rated 5/5 on 23 sessions at 4pm on Mondays."
 
 **Architektur (das Sparen von API-Calls ist das Designprinzip):**
 
-1. `supabase/functions/_shared/coachPatterns.ts` findet Muster **ohne Modell**:
-   bester Wochentag+Uhrzeit-Slot, bester Wochentag, überfälliger Rhythmus,
-   eingeschlafenes Goal, positive Dauer-/Bewertungstrends. Jedes Muster braucht
-   Mindest-Stichproben (8 Sessions gesamt, 3 pro Slot, 12 + 6 Wochen für Trends).
-   **Kein Muster, kein Call.**
+1. `supabase/functions/_shared/coachPatterns.ts` findet Muster **ohne Modell**
+   (Regeln am 2026-09-10 neu gefasst, siehe „Coach-Tipps und Stats-Insight:
+   Mustererkennung neu" am Ende). **Kein Muster, kein Call.**
 2. Ein Fingerprint der Muster wird gecacht. Solange er gleich bleibt, gilt der
    Text **14 Tage** ohne neuen Call.
 3. **Ein** Groq-Request formuliert alle Nudges eines Nutzers gemeinsam
@@ -1104,3 +1102,46 @@ die fünf Props der Master-Szene.
   Retry 1, fremde Zeile 0 (RLS), keine Reste. Typecheck, Domain-Suite und
   `sim.sh bundle` grün, App startet eingeloggt. Apple-Login selbst ist nicht
   Ende-zu-Ende getestet (im Simulator nicht möglich).
+
+## 2026-09-10 — Coach-Tipps und Stats-Insight: Mustererkennung neu
+
+- Befund mit echten Daten (beide Konten): Die Stats-Karte zeigte fast immer
+  „Complete a few more rated sessions…" (5 bewertete Sessions in 28 Tagen nötig,
+  Stunden in UTC, Goal-Auswahl ignoriert, lokaler Hinweis verdeckt). Der Coach
+  fand kaum Muster (8 Sessions pro Goal, 3 im exakt gleichen Wochentag+Stunde).
+  Der einzige Tipp („Tuesdays are your best for Deep Work") beruhte auf Sessions
+  unter 1 Minute, und die KI machte aus „35 vs. 21 min" ein „up from 21 minutes".
+  Überfällig- und Trend-Tipps wiederholten sich täglich mit festem Tageszähler;
+  Ratings und Minuten wurden vermischt, inaktive Goals und Wochenziele ignoriert.
+- Eine Engine für beides: `_shared/coachPatterns.ts` liefert die Notifications
+  (`coach-nudges`) und den Stats-Text (`analyze-sessions`, jetzt pro gewähltem
+  Goal, ohne Rating-Pflicht und immer frisch berechnet; `insight_cache` und das
+  Refresh-Limit werden nicht mehr benutzt).
+- Regeln: Sessions unter 5 min bilden keine Muster, zählen aber als Aktivität und
+  fürs Wochenziel wie auf Home. Wochentag und Uhrzeit pro Session in der
+  Geräte-Zeitzone (sommerzeitfest). Gewohnheit = gleicher Wochentag an ≥ 3
+  Tagen, Start ±75 min, an ≥ 30 % dieser Wochentage, zuletzt vor ≤ 6 Wochen.
+  Vergleiche nach Wochentag oder Tageszeit erst ab 21 Tagen Verlauf und ≥ 3
+  Tagen je Gruppe, zum Rest hin geschrumpft (3 Pseudo-Sessions), Ratings nur
+  gegen Ratings, Längen per Median. Trends: letzte 4 gegen vorige 8 Wochen, nur
+  aufwärts.
+- Tipp-Arten: Wochenziel (nur wenn es knapp, aber erreichbar ist), übliche Zeit
+  („Gym around 5pm today?"), beste Zeit, Pause ab 14 Tagen, überfälliger
+  Rhythmus (nur ohne Wochenziel), Trend.
+- Notifications: Nur Gewohnheiten wiederholen sich wöchentlich; alles andere
+  feuert einmal und hat eine Sperrfrist (Wochenziel 1 Tag, Rhythmus 3, Pause 7,
+  beste Zeit 14, Trend 21). Pro Goal höchstens ein aktueller und ein
+  Gewohnheits-Tipp, insgesamt max. 3. Die App lädt neu, sobald sich der
+  Wochenfortschritt ändert.
+- KI: Groq formuliert nur stabile Muster; Zähler (Wochenziel, Tage seit) sind
+  immer feste Texte. Modelltext mit fremden Zahlen oder „up from/recently" bei
+  Nicht-Trends wird verworfen. Die Tagesquote wird nur verbraucht, wenn es
+  etwas zu formulieren gibt.
+- Ergebnis mit den echten 30 Sessions, z. B.: „10h left for Deep Work — No Deep
+  Work time logged yet this week, 4 days left: about 2h 30m a day." bzw. am
+  Samstag „1 more visit for Gym — 3 of 4 this week, 2 days left." Für Gym steht
+  ehrlich „No clear day or time for Gym yet: 4 visits so far."
+- Geprüft: Typecheck, Domain-Suite (153 Assertions), Engine-Probelauf gegen die
+  echten Daten. `coach-nudges` und `analyze-sessions` sind deployed.
+- Später aufräumen: `insight_cache`, `insight_refresh_limits` und
+  `consume_insight_refresh_quota` sind ungenutzt.

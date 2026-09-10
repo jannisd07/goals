@@ -15,6 +15,23 @@ export const UNTIMED_NUDGE_HOUR = 10;
 /** Weak patterns are not worth a notification. */
 export const MIN_NUDGE_CONFIDENCE = 0.12;
 export const MAX_SCHEDULED_NUDGES = 3;
+/** A one-time nudge planned for today needs at least this much notice. */
+export const MIN_ONCE_LEAD_MINUTES = 10;
+/**
+ * Calendar days before the same one-time advice may fire again. Without this a
+ * one-time nudge rescheduled on every app start would behave like a daily one.
+ */
+export const ONCE_COOLDOWN_DAYS: Record<string, number> = {
+  weekly_target: 1,
+  overdue: 3,
+  dormant: 7,
+  best_time: 14,
+  trend: 21,
+};
+const DEFAULT_ONCE_COOLDOWN_DAYS = 7;
+const DELIVERY_LOG_RETENTION_MS = 60 * 86_400_000;
+
+export type NudgeTiming = "weekly" | "once";
 
 export interface CoachNudge {
   kind: string;
@@ -22,6 +39,10 @@ export interface CoachNudge {
   /** 0 = Sunday … 6 = Saturday, or null when the nudge is not day-specific. */
   weekday: number | null;
   hour: number | null;
+  /** "weekly" repeats on `weekday`; "once" fires a single time. */
+  timing: NudgeTiming;
+  /** After this instant the advice is outdated and must not fire. */
+  expiresAt: string | null;
   title: string;
   body: string;
   confidence: number;
@@ -37,10 +58,23 @@ export interface CoachNudgeResponse {
 }
 
 export interface NudgeSchedule {
-  /** 0 = Sunday … 6 = Saturday. Null means "repeat daily is wrong, use once". */
+  /** 0 = Sunday … 6 = Saturday, or null for a one-time nudge. */
   weekday: number | null;
   hour: number;
   minute: number;
+}
+
+/** When each one-time nudge was last planned to fire (epoch ms), by `onceNudgeKey`. */
+export type NudgeDeliveryLog = Record<string, number>;
+
+export type PlannedNudgeTrigger =
+  | { type: "weekly"; weekday: number; hour: number; minute: number }
+  | { type: "date"; date: Date };
+
+export interface PlannedCoachNotification {
+  key: string;
+  nudge: CoachNudge;
+  trigger: PlannedNudgeTrigger;
 }
 
 function isFiniteInt(value: unknown): value is number {
@@ -60,13 +94,29 @@ export function parseCoachNudges(value: unknown): CoachNudgeResponse {
     const body = typeof entry.body === "string" ? entry.body.trim() : "";
     if (title.length < 3 || body.length < 10) continue;
 
-    const weekday = isFiniteInt(entry.weekday) ? Math.round(entry.weekday) : null;
-    const hour = isFiniteInt(entry.hour) ? Math.round(entry.hour) : null;
+    const rawWeekday = isFiniteInt(entry.weekday) ? Math.round(entry.weekday) : null;
+    const rawHour = isFiniteInt(entry.hour) ? Math.round(entry.hour) : null;
+    const weekday = rawWeekday !== null && rawWeekday >= 0 && rawWeekday <= 6 ? rawWeekday : null;
+    // Entries cached before `timing` existed repeated weekly exactly when they
+    // had a weekday. A weekly nudge without a day cannot repeat, so it fires once.
+    const timing: NudgeTiming =
+      entry.timing === "once" || weekday === null
+        ? "once"
+        : entry.timing === "weekly" || entry.timing === undefined
+          ? "weekly"
+          : "once";
+    const expiresAt =
+      typeof entry.expiresAt === "string" && Number.isFinite(Date.parse(entry.expiresAt))
+        ? entry.expiresAt
+        : null;
+
     nudges.push({
       kind: typeof entry.kind === "string" ? entry.kind : "unknown",
       goalId: typeof entry.goalId === "string" ? entry.goalId : "",
-      weekday: weekday !== null && weekday >= 0 && weekday <= 6 ? weekday : null,
-      hour: hour !== null && hour >= 0 && hour <= 23 ? hour : null,
+      weekday,
+      hour: rawHour !== null && rawHour >= 0 && rawHour <= 23 ? rawHour : null,
+      timing,
+      expiresAt,
       title,
       body,
       confidence: isFiniteInt(entry.confidence)
@@ -107,11 +157,84 @@ export function nudgeSchedule(nudge: CoachNudge): NudgeSchedule {
   return { weekday: nudge.weekday, hour, minute };
 }
 
-/** Nudges worth scheduling, strongest first, capped so it never nags. */
+/**
+ * Nudges worth scheduling, capped so it never nags. The server already orders
+ * them by importance (a missed weekly target before a nice-to-know trend), and
+ * confidence values of different kinds are not comparable, so order is kept.
+ */
 export function selectNudges(nudges: CoachNudge[]): CoachNudge[] {
-  return [...nudges]
+  return nudges
     .filter((n) => n.confidence >= MIN_NUDGE_CONFIDENCE)
-    .sort((a, b) => b.confidence - a.confidence)
     .slice(0, MAX_SCHEDULED_NUDGES);
 }
 
+export function onceNudgeKey(nudge: Pick<CoachNudge, "kind" | "goalId">): string {
+  return `${nudge.kind}:${nudge.goalId}`;
+}
+
+function localDayIndex(date: Date): number {
+  return Math.floor(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()) / 86_400_000);
+}
+
+/** Next moment a one-time nudge may fire: today if there is still time, else tomorrow. */
+export function nextOnceFireDate(nudge: CoachNudge, now: Date): Date {
+  const { hour, minute } = nudgeSchedule(nudge);
+  const fire = new Date(now.getTime());
+  fire.setHours(hour, minute, 0, 0);
+  if (fire.getTime() < now.getTime() + MIN_ONCE_LEAD_MINUTES * 60_000) {
+    fire.setDate(fire.getDate() + 1);
+  }
+  return fire;
+}
+
+/**
+ * Turns nudges into concrete triggers. Habit reminders repeat weekly; all other
+ * advice fires once and then respects a cooldown, so the same sentence is not
+ * repeated every time the app starts. Returns the updated delivery log.
+ */
+export function planCoachNotifications(
+  nudges: CoachNudge[],
+  now: Date,
+  log: NudgeDeliveryLog,
+): { planned: PlannedCoachNotification[]; log: NudgeDeliveryLog } {
+  const nowMs = now.getTime();
+  const nextLog: NudgeDeliveryLog = {};
+  for (const [key, at] of Object.entries(log)) {
+    if (Number.isFinite(at) && nowMs - at < DELIVERY_LOG_RETENTION_MS) nextLog[key] = at;
+  }
+
+  const planned: PlannedCoachNotification[] = [];
+  for (const nudge of selectNudges(nudges)) {
+    if (nudge.timing === "weekly" && nudge.weekday !== null) {
+      const when = nudgeSchedule(nudge);
+      planned.push({
+        key: `weekly:${nudge.kind}:${nudge.goalId}:${nudge.weekday}`,
+        nudge,
+        trigger: { type: "weekly", weekday: nudge.weekday, hour: when.hour, minute: when.minute },
+      });
+      continue;
+    }
+
+    const key = onceNudgeKey(nudge);
+    const last = nextLog[key];
+    let fire: Date;
+    if (last !== undefined && last > nowMs) {
+      // Already planned for later: keep that moment, only the copy is refreshed.
+      fire = new Date(last);
+    } else {
+      const cooldownDays = ONCE_COOLDOWN_DAYS[nudge.kind] ?? DEFAULT_ONCE_COOLDOWN_DAYS;
+      if (last !== undefined && localDayIndex(now) - localDayIndex(new Date(last)) < cooldownDays) {
+        continue;
+      }
+      fire = nextOnceFireDate(nudge, now);
+    }
+
+    const expires = nudge.expiresAt ? Date.parse(nudge.expiresAt) : Number.NaN;
+    if (Number.isFinite(expires) && fire.getTime() >= expires) continue;
+
+    nextLog[key] = fire.getTime();
+    planned.push({ key, nudge, trigger: { type: "date", date: fire } });
+  }
+
+  return { planned, log: nextLog };
+}

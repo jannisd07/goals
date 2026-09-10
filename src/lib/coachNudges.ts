@@ -8,9 +8,9 @@
 
 import * as Notifications from "expo-notifications";
 import {
-  nudgeSchedule,
-  selectNudges,
+  planCoachNotifications,
   type CoachNudge,
+  type NudgeDeliveryLog,
 } from "./coachSchedule";
 
 export const COACH_NUDGE_ID_PREFIX = "coach-nudge-";
@@ -20,11 +20,19 @@ export {
   MAX_SCHEDULED_NUDGES,
   nudgeSchedule,
   parseCoachNudges,
+  planCoachNotifications,
   selectNudges,
   type CoachNudge,
   type CoachNudgeResponse,
+  type NudgeDeliveryLog,
   type NudgeSchedule,
 } from "./coachSchedule";
+
+export interface CoachNudgeSyncResult {
+  scheduled: number;
+  /** Updated one-time delivery log; persist it for the next sync. */
+  log: NudgeDeliveryLog;
+}
 
 async function hasPermission(): Promise<boolean> {
   try {
@@ -59,29 +67,33 @@ export async function clearCoachNudges(): Promise<void> {
 export async function syncCoachNudges(
   nudges: CoachNudge[],
   enabled: boolean,
-): Promise<number> {
+  log: NudgeDeliveryLog = {},
+  now: Date = new Date(),
+): Promise<CoachNudgeSyncResult> {
   await clearCoachNudges();
-  if (!enabled || nudges.length === 0) return 0;
-  if (!(await hasPermission())) return 0;
+  if (!enabled || nudges.length === 0) return { scheduled: 0, log };
+  if (!(await hasPermission())) return { scheduled: 0, log };
 
-  const selected = selectNudges(nudges);
+  const plan = planCoachNotifications(nudges, now, log);
+  const nextLog: NudgeDeliveryLog = { ...plan.log };
   let scheduled = 0;
 
-  for (let index = 0; index < selected.length; index += 1) {
-    const nudge = selected[index];
-    const when = nudgeSchedule(nudge);
+  for (let index = 0; index < plan.planned.length; index += 1) {
+    const { key, nudge, trigger } = plan.planned[index];
     const identifier = `${COACH_NUDGE_ID_PREFIX}${index}`;
     const content = { title: nudge.title, body: nudge.body, sound: false };
 
     try {
-      if (when.weekday === null) {
+      if (trigger.type === "weekly") {
         await Notifications.scheduleNotificationAsync({
           identifier,
           content,
           trigger: {
-            type: Notifications.SchedulableTriggerInputTypes.DAILY,
-            hour: when.hour,
-            minute: when.minute,
+            type: Notifications.SchedulableTriggerInputTypes.WEEKLY,
+            // expo-notifications counts weekdays from 1 = Sunday, the coach from 0.
+            weekday: trigger.weekday + 1,
+            hour: trigger.hour,
+            minute: trigger.minute,
           },
         });
       } else {
@@ -89,18 +101,20 @@ export async function syncCoachNudges(
           identifier,
           content,
           trigger: {
-            type: Notifications.SchedulableTriggerInputTypes.WEEKLY,
-            // expo-notifications counts weekdays from 1 = Sunday, the coach from 0.
-            weekday: when.weekday + 1,
-            hour: when.hour,
-            minute: when.minute,
+            type: Notifications.SchedulableTriggerInputTypes.DATE,
+            date: trigger.date,
           },
         });
       }
       scheduled += 1;
     } catch (error) {
       console.warn("Could not schedule a coach nudge:", error);
+      // Nothing was scheduled, so no cooldown may start from it.
+      if (trigger.type === "date") {
+        if (log[key] === undefined) delete nextLog[key];
+        else nextLog[key] = log[key];
+      }
     }
   }
-  return scheduled;
+  return { scheduled, log: nextLog };
 }

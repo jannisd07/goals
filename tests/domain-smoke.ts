@@ -11,20 +11,29 @@ import { buildConstellation } from "../src/lib/constellation";
 import { planOnboardingGoals } from "../src/lib/onboardingPlan";
 import { classifyGeofenceSession } from "../src/lib/geofenceSessions";
 import {
+  buildStatsInsight,
   detectCoachPatterns,
+  fixedOffsetClock,
   patternFingerprint,
+  selectNotificationPatterns,
+  timeZoneClock,
+  type CoachGoal,
   type CoachSession,
 } from "../supabase/functions/_shared/coachPatterns";
 import {
   buildWriterPayload,
   fallbackNudges,
+  isFaithfulCopy,
   mergeWriterResponse,
+  reuseCachedNudges,
   MAX_TITLE_CHARS,
 } from "../supabase/functions/_shared/coachWriter";
 import {
   nudgeSchedule,
   parseCoachNudges,
+  planCoachNotifications,
   selectNudges,
+  type CoachNudge,
 } from "../src/lib/coachSchedule";
 import { normalizeMinVisitMinutes } from "../src/types";
 import {
@@ -519,152 +528,367 @@ assert(
 // Personal coach: long-term pattern detection
 // ---------------------------------------------------------------------------
 
-const COACH_GOALS = [
-  { id: "gym", name: "Gym", type: "physical" },
-  { id: "study", name: "Studying", type: "focus" },
-];
+const DAY = 86_400_000;
+const UTC_CLOCK = fixedOffsetClock(0);
+// 2026-09-10 is a Thursday; its week (Monday start, like Home) began 2026-09-07.
+const COACH_NOW = new Date(Date.UTC(2026, 8, 10, 18, 0, 0));
+const atNow = { clock: UTC_CLOCK, now: COACH_NOW };
 
-/** Builds a session at a given UTC day offset, hour, rating and length. */
+const GYM: CoachGoal = {
+  id: "gym",
+  name: "Gym",
+  type: "physical",
+  is_active: true,
+  target_sessions_per_week: 0,
+  target_hours_per_week: 0,
+};
+const GYM_TARGET: CoachGoal = { ...GYM, target_sessions_per_week: 4 };
+const STUDY: CoachGoal = {
+  id: "study",
+  name: "Studying",
+  type: "focus",
+  is_active: true,
+  target_sessions_per_week: 0,
+  target_hours_per_week: 0,
+};
+
+/** A session `daysAgo` days before 2026-09-10 (UTC) at hour:minute. */
 function coachSession(
   daysAgo: number,
   hour: number,
   rating: number | null,
   minutes = 60,
   goalId = "gym",
+  minute = 0,
 ): CoachSession {
-  // 2026-09-01 was a Tuesday, which keeps the weekday maths readable.
-  const base = Date.UTC(2026, 8, 1, hour, 0, 0);
-  const start = new Date(base - daysAgo * 86_400_000);
+  const start = new Date(Date.UTC(2026, 8, 10, hour, minute, 0) - daysAgo * DAY);
   return {
     start_time: start.toISOString(),
     end_time: new Date(start.getTime() + minutes * 60_000).toISOString(),
-    duration_seconds: minutes * 60,
+    duration_seconds: Math.round(minutes * 60),
     rating,
     goal_id: goalId,
-    trigger: "geofence",
+    trigger: goalId === "gym" ? "geofence" : "manual_pomodoro",
   };
 }
 
-const COACH_NOW = new Date(Date.UTC(2026, 8, 1, 20, 0, 0));
+// A real habit: four of the last five Mondays around 5pm, never at the same
+// minute. Exact weekday+hour buckets used to split this across two hours.
+const mondayHabit: CoachSession[] = [
+  coachSession(3, 17, null, 60, "gym", 10),
+  coachSession(10, 16, null, 60, "gym", 50),
+  coachSession(17, 17, null, 60, "gym", 5),
+  coachSession(31, 17, null, 60, "gym", 20),
+  coachSession(5, 11, null, 45),
+  coachSession(19, 11, null, 45),
+];
+const habitPatterns = detectCoachPatterns(mondayHabit, [GYM], atNow);
+const usualTime = habitPatterns.find((p) => p.kind === "usual_time");
+assert(usualTime?.weekday === 1, "a Monday habit is detected");
+assert(usualTime?.hour === 17, "start times within the habit window cluster around 5pm");
+assert(usualTime?.timing === "weekly", "a habit reminder repeats weekly");
+assert(
+  String(usualTime?.fallbackBody).includes("4 of the last 5 Mondays"),
+  "the habit says on how many of the recent weekdays it happened",
+);
+assert(
+  detectCoachPatterns(mondayHabit, [{ ...GYM, is_active: false }], atNow).length === 0,
+  "inactive goals get no advice",
+);
 
-// Tuesdays at 14:00 are rated 5, every other visit 3. Exactly the case the
-// product promises: "your Tuesday 2pm gym sessions were especially good".
-const tuesdaySessions: CoachSession[] = [];
-for (let week = 0; week < 10; week += 1) {
-  tuesdaySessions.push(coachSession(week * 7, 14, 5));       // Tuesdays 14:00
-  tuesdaySessions.push(coachSession(week * 7 + 3, 18, 3));   // Saturdays 18:00
+// Taps and abandoned starts are not sessions: eight Tuesday taps under a
+// minute used to produce "Tuesdays are your best".
+const tapsAndSessions: CoachSession[] = [];
+for (let week = 0; week < 8; week += 1) {
+  tapsAndSessions.push(coachSession(2 + week * 7, 18, null, 0.3, "study"));
 }
-
-const tuesdayPatterns = detectCoachPatterns(
-  tuesdaySessions,
-  COACH_GOALS,
-  0,
-  COACH_NOW,
+tapsAndSessions.push(
+  coachSession(1, 9, null, 50, "study"),
+  coachSession(4, 9, null, 40, "study"),
+  coachSession(6, 20, null, 35, "study"),
 );
-const bestSlot = tuesdayPatterns.find((p) => p.kind === "best_slot");
-assert(bestSlot !== undefined, "a repeated strong weekday/hour slot is detected");
-assert(bestSlot?.weekday === 2, "the detected slot is a Tuesday");
-assert(bestSlot?.hour === 14, "the detected slot is the 14:00 hour");
+const tapPatterns = detectCoachPatterns(tapsAndSessions, [STUDY], atNow);
+assert(tapPatterns.length === 0, "sessions under five minutes never create a pattern");
+const tapInsight = buildStatsInsight(tapsAndSessions, [STUDY], tapPatterns, "study");
+assert(tapInsight.status === "insufficient_data", "too few real sessions keep the Stats card honest");
+assert(tapInsight.insight.includes("3 so far"), "the Stats card counts only real sessions");
+
+// Three sessions slightly above a stable average are luck, not a pattern.
+const ratedStudy: CoachSession[] = [
+  ...[6, 13, 20].map((d) => coachSession(d, 10, 5, 50, "study")), // Fridays
+  coachSession(3, 10, 4, 50, "study"),
+  coachSession(10, 10, 4, 50, "study"),
+  coachSession(17, 10, 5, 50, "study"), // Mondays
+  coachSession(1, 10, 4, 50, "study"),
+  coachSession(8, 10, 5, 50, "study"),
+  coachSession(15, 10, 4, 50, "study"), // Wednesdays
+  coachSession(2, 10, 4, 50, "study"),
+  coachSession(9, 10, 4, 50, "study"),
+  coachSession(16, 10, 5, 50, "study"), // Tuesdays
+  coachSession(28, 10, 4, 50, "study"), // a Thursday, so the history spans four weeks
+];
 assert(
-  (bestSlot?.sampleSize ?? 0) >= 3,
-  "a detected slot is backed by at least three sessions",
+  !detectCoachPatterns(ratedStudy, [STUDY], atNow).some((p) => p.kind === "best_time"),
+  "three sessions slightly above a stable average are not called a pattern",
+);
+// One busy week with a few very long sessions (forgotten timers or full work
+// days) is not a long-term pattern, however large the difference looks.
+const burstWeek: CoachSession[] = [
+  coachSession(42, 17, null, 58, "study"),
+  coachSession(42, 19, null, 97, "study"),
+  coachSession(41, 16, null, 220, "study"),
+  coachSession(40, 13, null, 492, "study"),
+  coachSession(39, 11, null, 591, "study"),
+  coachSession(38, 12, null, 436, "study"),
+];
+assert(
+  !detectCoachPatterns(burstWeek, [STUDY], atNow).some((p) => p.kind === "best_time"),
+  "one busy week is not reported as the best time of day",
+);
+const strongStudy: CoachSession[] = [
+  ...[6, 13, 20, 27, 34].map((d) => coachSession(d, 10, 5, 50, "study")),
+  ...[3, 10, 17, 1, 8, 15].map((d) => coachSession(d, 10, 3, 50, "study")),
+];
+const bestTime = detectCoachPatterns(strongStudy, [STUDY], atNow).find((p) => p.kind === "best_time");
+assert(bestTime?.weekday === 5, "a clearly better weekday is found");
+assert(
+  bestTime?.facts.group_value === "5/5" && bestTime?.facts.other_value === "3/5",
+  "a comparison uses ratings on both sides, never ratings against minutes",
+);
+
+// Local time per session: daylight saving must not move a 5pm habit.
+const berlin = timeZoneClock("Europe/Berlin");
+assert(
+  berlin(Date.parse("2026-01-12T16:00:00Z")).hour === 17 &&
+    berlin(Date.parse("2026-07-13T15:00:00Z")).hour === 17,
+  "a 5pm session stays at 5pm in winter and summer",
 );
 assert(
-  String(bestSlot?.fallbackBody ?? "").includes("Tuesday"),
-  "the deterministic fallback names the day, so the feature works without a model",
+  berlin(Date.parse("2026-03-29T22:30:00Z")).weekday === 1,
+  "a late UTC session already falls on the next local weekday",
 );
-
-// Too little history must stay silent instead of inventing advice.
 assert(
-  detectCoachPatterns(tuesdaySessions.slice(0, 4), COACH_GOALS, 0, COACH_NOW).length === 0,
-  "fewer than eight sessions produce no patterns at all",
+  timeZoneClock("Not/AZone", 120)(Date.parse("2026-01-12T16:00:00Z")).hour === 18,
+  "an unknown time zone falls back to the device offset",
 );
 
-// Local time matters: a +120 minute offset shifts the slot two hours later.
-const shifted = detectCoachPatterns(tuesdaySessions, COACH_GOALS, 120, COACH_NOW)
-  .find((p) => p.kind === "best_slot");
-assert(shifted?.hour === 16, "the device offset moves the slot into local time");
+// Weekly target: Thursday, two of four visits done.
+const thisWeek = [coachSession(3, 17, null, 60), coachSession(2, 18, null, 60)];
+const targetPattern = detectCoachPatterns(thisWeek, [GYM_TARGET], atNow)
+  .find((p) => p.kind === "weekly_target");
+assert(
+  targetPattern?.facts.done === 2 && targetPattern?.facts.days_left === 4,
+  "Thursday with 2 of 4 visits leaves 2 to go in 4 days",
+);
+assert(
+  targetPattern?.volatile === true && targetPattern?.timing === "once",
+  "weekly progress is time-sensitive and fires once",
+);
+assert(
+  targetPattern?.expiresAt === "2026-09-14T00:00:00.000Z",
+  "weekly target advice expires when the week ends",
+);
+assert(
+  !detectCoachPatterns(
+    [...thisWeek, coachSession(1, 17, null, 60), coachSession(0, 7, null, 60)],
+    [GYM_TARGET],
+    atNow,
+  ).some((p) => p.kind === "weekly_target"),
+  "a met target produces no reminder",
+);
+assert(
+  !detectCoachPatterns([], [GYM_TARGET], {
+    clock: UTC_CLOCK,
+    now: new Date(Date.UTC(2026, 8, 7, 9, 0, 0)),
+  }).some((p) => p.kind === "weekly_target"),
+  "Monday morning with the whole week ahead is not nagged",
+);
+assert(
+  detectCoachPatterns([...thisWeek, coachSession(1, 17, null, 1)], [GYM_TARGET], {
+    clock: UTC_CLOCK,
+    now: new Date(Date.UTC(2026, 8, 12, 18, 0, 0)),
+  }).find((p) => p.kind === "weekly_target")?.facts.done === 3,
+  "every finished session counts toward the week, exactly like on Home",
+);
+const STUDY_HOURS: CoachGoal = { ...STUDY, target_hours_per_week: 10 };
+const hoursPattern = detectCoachPatterns([coachSession(2, 9, null, 120, "study")], [STUDY_HOURS], atNow)
+  .find((p) => p.kind === "weekly_target");
+assert(
+  hoursPattern?.fallbackTitle === "8h left for Studying" &&
+    String(hoursPattern?.fallbackBody).includes("2h of 10h this week"),
+  "an hours target counts this week's hours",
+);
+assert(
+  String(
+    detectCoachPatterns([], [STUDY_HOURS], atNow).find((p) => p.kind === "weekly_target")?.statsText,
+  ).startsWith("No Studying time logged yet this week"),
+  "an empty week is described plainly, not as 0 min",
+);
+assert(
+  !detectCoachPatterns([], [STUDY_HOURS], {
+    clock: UTC_CLOCK,
+    now: new Date(Date.UTC(2026, 8, 13, 9, 0, 0)),
+  }).some((p) => p.kind === "weekly_target"),
+  "an hours target that would need more than four hours a day is not pushed",
+);
 
-// An established rhythm that has lapsed becomes an overdue nudge.
-const cadence: CoachSession[] = [];
+// Lapses.
+const lapsedPatterns = detectCoachPatterns(
+  [24, 22, 20].map((d) => coachSession(d, 17, null, 60)),
+  [GYM_TARGET],
+  atNow,
+);
+assert(
+  lapsedPatterns.some((p) => p.kind === "dormant" && p.facts.days_since_last === 20),
+  "twenty quiet days become a restart nudge",
+);
+assert(
+  !lapsedPatterns.some((p) => p.kind === "weekly_target"),
+  "a restart nudge replaces the weekly count instead of adding to it",
+);
+assert(
+  !detectCoachPatterns(
+    [...[24, 22, 20].map((d) => coachSession(d, 17, null, 60)), coachSession(2, 17, null, 0.5)],
+    [GYM],
+    atNow,
+  ).some((p) => p.kind === "dormant"),
+  "a short session two days ago means the goal is not dormant",
+);
+const rhythm: CoachSession[] = [];
 for (let i = 0; i < 12; i += 1) {
-  cadence.push(coachSession(9 + i * 3, 17, 4));
+  rhythm.push(coachSession(9 + i * 3, 17, 4, 60, "study"));
 }
-const cadencePatterns = detectCoachPatterns(cadence, COACH_GOALS, 0, COACH_NOW);
+const rhythmPatterns = detectCoachPatterns(rhythm, [STUDY], atNow);
 assert(
-  cadencePatterns.some((p) => p.kind === "cadence_due"),
+  rhythmPatterns.some((p) => p.kind === "overdue"),
   "a three-day rhythm that is nine days idle is reported as overdue",
 );
-assert(
-  cadencePatterns[0].kind === "cadence_due",
-  "an overdue goal outranks softer observations",
-);
+assert(rhythmPatterns[0].kind === "overdue", "time-sensitive advice outranks habits and trends");
 
-// The fingerprint is what stops repeat model calls.
+// Selection, Stats text and fingerprint.
+const busy = detectCoachPatterns(mondayHabit, [GYM_TARGET], atNow);
+const selectedBusy = selectNotificationPatterns(busy);
 assert(
-  patternFingerprint(tuesdayPatterns) ===
-    patternFingerprint(detectCoachPatterns(tuesdaySessions, COACH_GOALS, 0, COACH_NOW)),
+  selectedBusy[0]?.kind === "weekly_target" && selectedBusy[1]?.kind === "usual_time",
+  "a goal gets one current and one habit nudge, the current one first",
+);
+const gymInsight = buildStatsInsight(mondayHabit, [GYM_TARGET], busy, "gym");
+assert(
+  gymInsight.status === "ready" && gymInsight.insight.includes("Mondays around 5pm"),
+  "the Stats card leads with the detected habit",
+);
+assert(gymInsight.insight.includes("1 of 4 visits this week"), "the Stats card adds this week's progress");
+const emptyInsight = buildStatsInsight([], [STUDY], [], "study");
+assert(
+  emptyInsight.status === "insufficient_data" && emptyInsight.insight.includes("0 so far"),
+  "a goal without sessions says what unlocks its patterns",
+);
+assert(
+  buildStatsInsight(mondayHabit, [GYM_TARGET, STUDY], busy, null).goalId === "gym",
+  "without a selected goal the busiest goal is described",
+);
+assert(
+  patternFingerprint(habitPatterns) ===
+    patternFingerprint(detectCoachPatterns(mondayHabit, [GYM], atNow)),
   "identical history yields an identical fingerprint, so the cache holds",
 );
 assert(
-  patternFingerprint(tuesdayPatterns) !== patternFingerprint(cadencePatterns),
-  "different advice yields a different fingerprint",
+  patternFingerprint(habitPatterns) !==
+    patternFingerprint(detectCoachPatterns(mondayHabit.filter((_, i) => i !== 3), [GYM], atNow)),
+  "changed numbers change the fingerprint, so cached copy never quotes old counts",
 );
-assert(patternFingerprint([]) === "empty", "no patterns fingerprint as empty");
+assert(
+  patternFingerprint(busy.filter((p) => p.volatile)) === "empty",
+  "time-sensitive advice never enters the cache fingerprint",
+);
 
-// The prompt carries computed numbers only, never raw session rows.
-const payload = buildWriterPayload(tuesdayPatterns);
+// The prompt carries computed numbers only, and only for stable advice.
+const payload = buildWriterPayload(selectedBusy);
 assert(!payload.includes("start_time"), "the prompt contains no raw session fields");
-assert(payload.includes("Tuesday"), "the prompt contains the computed weekday");
+assert(
+  payload.includes("Monday") && !payload.includes("weekly_target"),
+  "weekly counters never reach the model",
+);
 
 // ---------------------------------------------------------------------------
 // Personal coach: model output handling
 // ---------------------------------------------------------------------------
 
 const goodCompletion = JSON.stringify({
-  nudges: [{ id: "n0", title: "Tuesdays at 2pm suit you", body: "Your Tuesday 2pm visits average 5/5 against 3/5 otherwise. Worth going today." }],
+  nudges: [{ id: "n0", title: "Gym around 5pm today?", body: "You went on 4 of the last 5 Mondays around 5pm. Keep the slot." }],
 });
-const merged = mergeWriterResponse(tuesdayPatterns, goodCompletion);
-assert(merged[0].written === true, "valid model copy is used");
-assert(merged[0].title === "Tuesdays at 2pm suit you", "model copy is preserved verbatim");
+const merged = mergeWriterResponse(habitPatterns, goodCompletion);
+assert(merged[0].written === true, "faithful model copy is used");
+assert(merged[0].title === "Gym around 5pm today?", "model copy is preserved verbatim");
+assert(merged.length === habitPatterns.length, "every pattern still yields exactly one nudge");
 assert(
-  merged.length === tuesdayPatterns.length,
-  "every pattern still yields exactly one nudge",
+  mergeWriterResponse(
+    habitPatterns,
+    JSON.stringify({ nudges: [{ id: "n0", title: "Gym around 5pm today?", body: "You went on 9 of the last 10 Mondays around 5pm." }] }),
+  )[0].written === false,
+  "copy with a number the pattern does not contain is rejected",
 );
 assert(
-  merged.slice(1).every((n) => n.written === false),
-  "patterns the model skipped keep their deterministic wording",
+  mergeWriterResponse(
+    habitPatterns,
+    JSON.stringify({ nudges: [{ id: "n0", title: "Mondays keep getting better", body: "Your Monday visits are up from 4 to 5 recently." }] }),
+  )[0].written === false,
+  "a comparison may not be described as a change over time",
 );
-
 assert(
-  mergeWriterResponse(tuesdayPatterns, "not json").every((n) => !n.written),
+  isFaithfulCopy(
+    {
+      kind: "trend", goalId: "g", weekday: null, hour: null, timing: "once", expiresAt: null,
+      confidence: 0.4, volatile: false, facts: { earlier: "1× a week", recent: "3× a week" },
+      fallbackTitle: "t", fallbackBody: "b",
+    },
+    "Gym is happening more often",
+    "Up from 1× a week to 3× a week recently.",
+  ),
+  "a real trend may say that it went up",
+);
+assert(
+  mergeWriterResponse(
+    selectedBusy,
+    JSON.stringify({ nudges: [{ id: "n0", title: "Only 2 left, go today", body: "You have 2 visits left this week, go today." }] }),
+  )[0].written === false,
+  "weekly counters always use the deterministic wording",
+);
+const reused = reuseCachedNudges(selectedBusy, merged);
+assert(
+  reused[1].title === "Gym around 5pm today?" && reused[1].written,
+  "cached copy is reused for unchanged stable advice",
+);
+assert(
+  reused[0].written === false && reused[0].body.includes("1 of 4"),
+  "time-sensitive advice is worded fresh even on a cache hit",
+);
+assert(
+  mergeWriterResponse(habitPatterns, "not json").every((n) => !n.written),
   "unparseable model output falls back instead of failing",
 );
 assert(
-  mergeWriterResponse(tuesdayPatterns, JSON.stringify({ nudges: "nope" })).every(
-    (n) => !n.written,
-  ),
+  mergeWriterResponse(habitPatterns, JSON.stringify({ nudges: "nope" })).every((n) => !n.written),
   "a malformed nudges field falls back",
 );
 assert(
   mergeWriterResponse(
-    tuesdayPatterns,
+    habitPatterns,
     JSON.stringify({ nudges: [{ id: "n0", title: "Hi", body: "short" }] }),
   )[0].written === false,
   "copy that is too short to be useful is rejected",
 );
 const overlong = mergeWriterResponse(
-  tuesdayPatterns,
-  JSON.stringify({
-    nudges: [{ id: "n0", title: "x".repeat(200), body: "y".repeat(400) }],
-  }),
+  habitPatterns,
+  JSON.stringify({ nudges: [{ id: "n0", title: "x".repeat(200), body: "y".repeat(400) }] }),
 );
 assert(
   overlong[0].title.length <= MAX_TITLE_CHARS,
   "overlong model titles are trimmed to the notification limit",
 );
 assert(
-  fallbackNudges(tuesdayPatterns).every((n) => n.title.length > 0 && n.body.length > 0),
+  fallbackNudges([...busy, ...detectCoachPatterns(strongStudy, [STUDY], atNow)])
+    .every((n) => n.title.length > 0 && n.body.length > 0),
   "every pattern has usable wording without any model at all",
 );
 
@@ -672,48 +896,116 @@ assert(
 // Personal coach: scheduling
 // ---------------------------------------------------------------------------
 
+function nudge(overrides: Partial<CoachNudge> = {}): CoachNudge {
+  return {
+    kind: "best_time", goalId: "gym", weekday: null, hour: null, timing: "once",
+    expiresAt: null, title: "t", body: "b", confidence: 0.5, written: true,
+    ...overrides,
+  };
+}
+
 assert(
-  JSON.stringify(
-    nudgeSchedule({ kind: "best_slot", goalId: "gym", weekday: 2, hour: 14, title: "t", body: "b", confidence: 0.5, written: true }),
-  ) === JSON.stringify({ weekday: 2, hour: 12, minute: 30 }),
+  JSON.stringify(nudgeSchedule(nudge({ weekday: 2, hour: 14, timing: "weekly" }))) ===
+    JSON.stringify({ weekday: 2, hour: 12, minute: 30 }),
   "a 14:00 slot is announced 90 minutes ahead, at 12:30",
 );
 assert(
-  nudgeSchedule({ kind: "best_slot", goalId: "gym", weekday: 1, hour: 6, title: "t", body: "b", confidence: 0.5, written: true }).hour === 8,
+  nudgeSchedule(nudge({ weekday: 1, hour: 6, timing: "weekly" })).hour === 8,
   "an early-morning slot never fires during the night",
 );
+assert(nudgeSchedule(nudge()).hour === 10, "a nudge without a time of day becomes a mid-morning reminder");
 assert(
-  nudgeSchedule({ kind: "cadence_due", goalId: "gym", weekday: null, hour: null, title: "t", body: "b", confidence: 0.5, written: true }).hour === 10,
-  "a nudge without a time of day becomes a mid-morning reminder",
-);
-assert(
-  selectNudges([
-    { kind: "a", goalId: "g", weekday: null, hour: null, title: "t", body: "b", confidence: 0.9, written: true },
-    { kind: "b", goalId: "g", weekday: null, hour: null, title: "t", body: "b", confidence: 0.05, written: true },
-  ]).length === 1,
+  selectNudges([nudge({ confidence: 0.9 }), nudge({ confidence: 0.05 })]).length === 1,
   "low-confidence nudges are never scheduled",
 );
 assert(
-  selectNudges(
-    Array.from({ length: 6 }, (_, i) => ({
-      kind: `k${i}`, goalId: "g", weekday: null, hour: null,
-      title: "t", body: "b", confidence: 0.5, written: true,
-    })),
-  ).length === 3,
+  selectNudges(Array.from({ length: 6 }, (_, i) => nudge({ kind: `k${i}` }))).length === 3,
   "at most three nudges are scheduled so the app never nags",
 );
+assert(
+  selectNudges([
+    nudge({ kind: "weekly_target", confidence: 0.6 }),
+    nudge({ kind: "usual_time", confidence: 0.9 }),
+  ])[0].kind === "weekly_target",
+  "the server's priority order is kept",
+);
+
+const targetNudge = nudge({ kind: "weekly_target", hour: 17 });
+const thursdayMorning = new Date(2026, 8, 10, 9, 0, 0);
+const firstPlan = planCoachNotifications([targetNudge], thursdayMorning, {});
+const firstTrigger = firstPlan.planned[0]?.trigger;
+const firstFire = firstTrigger?.type === "date" ? firstTrigger.date : null;
+assert(
+  firstFire !== null &&
+    firstFire.getDate() === 10 &&
+    firstFire.getHours() === 15 &&
+    firstFire.getMinutes() === 30,
+  "a one-time nudge fires today, 90 minutes before the usual start",
+);
+assert(
+  planCoachNotifications([targetNudge], new Date(2026, 8, 10, 19, 0, 0), firstPlan.log)
+    .planned.length === 0,
+  "the same one-time advice does not fire twice on one day",
+);
+assert(
+  planCoachNotifications([targetNudge], new Date(2026, 8, 11, 9, 0, 0), firstPlan.log)
+    .planned.length === 1,
+  "a weekly target reminder may return the next day",
+);
+const keptTrigger = planCoachNotifications(
+  [targetNudge],
+  new Date(2026, 8, 10, 12, 0, 0),
+  firstPlan.log,
+).planned[0]?.trigger;
+assert(
+  keptTrigger?.type === "date" && keptTrigger.date.getTime() === firstFire?.getTime(),
+  "a nudge planned for later keeps its moment when the app reopens",
+);
+assert(
+  planCoachNotifications(
+    [nudge({ kind: "weekly_target", hour: 17, expiresAt: new Date(2026, 8, 10, 12, 0, 0).toISOString() })],
+    thursdayMorning,
+    {},
+  ).planned.length === 0,
+  "advice that expires before it would fire is dropped",
+);
+assert(
+  planCoachNotifications([nudge()], thursdayMorning, {
+    "best_time:gym": new Date(2026, 8, 5, 10, 0, 0).getTime(),
+  }).planned.length === 0,
+  "a quality insight waits two weeks before it repeats",
+);
+const weeklyPlan = planCoachNotifications(
+  [nudge({ kind: "usual_time", weekday: 1, hour: 17, timing: "weekly" })],
+  thursdayMorning,
+  {},
+);
+const weeklyTrigger = weeklyPlan.planned[0]?.trigger;
+assert(
+  weeklyTrigger?.type === "weekly" &&
+    weeklyTrigger.weekday === 1 &&
+    weeklyTrigger.hour === 15 &&
+    weeklyTrigger.minute === 30,
+  "a habit reminder repeats every Monday at 15:30",
+);
+assert(Object.keys(weeklyPlan.log).length === 0, "weekly reminders need no delivery log");
 
 const parsedNudges = parseCoachNudges({
   status: "ready",
   nudges: [
     { kind: "best_slot", goalId: "gym", weekday: 2, hour: 14, title: "Good", body: "A believable body.", confidence: 0.4, written: true },
     { kind: "broken", goalId: "gym", weekday: 99, hour: 14, title: "x", body: "" },
+    { kind: "cadence_due", goalId: "gym", weekday: null, hour: 9, title: "Overdue", body: "Cached before timing existed.", confidence: 0.5 },
+    { kind: "usual_time", goalId: "gym", weekday: null, hour: 9, timing: "weekly", title: "Weekly", body: "A weekly nudge without a day.", confidence: 0.5 },
   ],
   source: "model",
   generated_at: "2026-09-01T10:00:00.000Z",
   sessions_analyzed: 42,
 });
-assert(parsedNudges.nudges.length === 1, "unusable server entries are dropped");
+assert(parsedNudges.nudges.length === 3, "unusable server entries are dropped");
+assert(parsedNudges.nudges[0].timing === "weekly", "older cached nudges with a weekday keep repeating weekly");
+assert(parsedNudges.nudges[1].timing === "once", "older cached nudges without a weekday fire once, not daily");
+assert(parsedNudges.nudges[2].timing === "once", "a weekly nudge without a day cannot repeat and fires once");
 assert(parsedNudges.sessionsAnalyzed === 42, "the analyzed count is carried through");
 assert(
   parseCoachNudges(null).status === "insufficient_data",

@@ -1,16 +1,21 @@
 import type { Session } from "../types";
 
+/** Shorter sessions are usually accidental taps or abandoned starts. */
+const MIN_INSIGHT_SESSION_SECONDS = 5 * 60;
+
 /**
  * Local heuristic insight — one calm sentence derived from the user's own data.
- * Presented without any "AI" framing (per product decision). A server-side model
- * (Ornith / edge function analyze-sessions) can replace this later; the UI stays identical.
+ * Presented without any "AI" framing (per product decision). Only shown when
+ * the `analyze-sessions` pattern insight cannot be loaded.
  */
 export function computeLocalInsight(
   sessions: Session[],
   physical = false,
 ): string | null {
-  const completed = sessions.filter((s) => s.end_time && s.duration_seconds > 0);
-  if (completed.length < 3) return null;
+  const completed = sessions.filter(
+    (s) => s.end_time && s.duration_seconds >= MIN_INSIGHT_SESSION_SECONDS,
+  );
+  if (completed.length < 4) return null;
 
   const bucketSeconds = { morning: 0, afternoon: 0, evening: 0 };
   const weekdaySeconds = new Array(7).fill(0) as number[];
@@ -67,7 +72,7 @@ export function computeLocalInsight(
   if (weekdaySeconds[bestDay] > 0) {
     return physical
       ? `${dayNames[bestDay]} is your most consistent check-in day.`
-      : `${dayNames[bestDay]} is your strongest day. A short session today keeps the rhythm.`;
+      : `${dayNames[bestDay]} is your strongest focus day this month.`;
   }
 
   return null;

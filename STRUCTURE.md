@@ -21,9 +21,9 @@
 | `assets/` | Icons, Splash und `sounds/` (CC0-Fokus-Musik); `island/` enthält 4 alte Platzhalter-PNGs und wird Zielordner der gerenderten Insel-WebPs |
 | `plugins/withGoalsNativeConfig.js` | Expo-Config-Plugin: native App-IDs/URL-Schemes/Permissions bereinigen |
 | `supabase/` | Schema, Migrationen, Edge Functions |
-| `supabase/functions/_shared/coachPatterns.ts` | Deterministische Langzeit-Musteranalyse (ohne KI) |
-| `supabase/functions/_shared/coachWriter.ts` | Groq-Aufruf, formuliert Nudges; fällt auf feste Texte zurück |
-| `supabase/functions/coach-nudges/` | Edge Function: Muster → Cache → höchstens 1 Modell-Call/Tag |
+| `supabase/functions/_shared/coachPatterns.ts` | Deterministische Musteranalyse ohne KI für Coach-Nudges und Stats-Insight: Wochenziel, übliche Zeit, beste Zeit, Pause, Rhythmus, Trend |
+| `supabase/functions/_shared/coachWriter.ts` | Groq formuliert nur stabile Muster und wird gegen deren Zahlen geprüft; sonst feste Texte |
+| `supabase/functions/coach-nudges/` | Edge Function: Muster → Notification-Auswahl → Text-Cache → höchstens 1 Modell-Call/Tag |
 | `island/` | Insel-Progression (Grove v2): `ISLAND.md` (alles: Entscheidungen, Design, System, Pipeline, Log), `mockups/` (SVG-Comic-Mockups), `blender/islandlib/` (Python-Pipeline), `concepts/`, `references/` (CC0-Vorlagen) |
 
 ## src/theme
@@ -110,7 +110,8 @@ Entfernt: `CreateGoalScreen.tsx`, `SessionLengthPicker.tsx`, `GardenOrb.tsx`,
 | `useAuth.ts` | Einziger globaler Supabase-Auth-Bootstrap, Profile (insert/update, nie upsert: Spalten-Grants), Login/Signup/OAuth-Aktionen, Sign-out/Delete-Cleanup |
 | `useGoals.ts` | Goals laden/mutieren (React Query) |
 | `useSessions.ts` | Sessions, Wochenfortschritt, Monatsdaten; loggt Start-Koordinaten und steuert den manuellen Auto-Check-In-Fallback |
-| `useInsights.ts` | JWT-geschützte Stats-Insights mit 24h React-Query-Cache, Server-Refresh und lokalem Fehler-Fallback |
+| `useInsights.ts` | JWT-geschützter Stats-Insight pro gewähltem Goal (sendet Geräte-Zeitzone), 10-min-Client-Cache, lokaler Fehler-Fallback |
+| `useCoachNudges.ts` | Holt Coach-Nudges (1× pro Tag und bei neuem Wochenfortschritt) und plant die lokalen Notifications |
 | `usePomodoro.ts` | Wall-clock-Timer: Start-Deduplizierung, Intervall/Flowtime, Pause, Hintergrund-/Restart-Reconciliation |
 | `useAmbientSound.ts` | Fokus-Musik-Player (expo-audio, Loop, Hintergrund) |
 | `useFriends.ts` | Friend-Code (generieren/teilen), Freund hinzufügen/entfernen, Wochenübersicht |
@@ -126,7 +127,9 @@ Entfernt: `CreateGoalScreen.tsx`, `SessionLengthPicker.tsx`, `GardenOrb.tsx`,
 | `supabase.ts` | Supabase-Client |
 | `pomodoro.ts` | Session-Längen-/Pausen-Berechnung (Intervall adaptiv + Flowtime) |
 | `streaks.ts` | Streak-Berechnung aus Sessions |
-| `insights.ts` | Lokale deterministische Insight-Heuristik als Offline-/Serverfehler-Fallback |
+| `insights.ts` | Lokale Insight-Heuristik (nur Sessions ab 5 min) als Offline-/Serverfehler-Fallback |
+| `coachSchedule.ts` | Reine Planung der Coach-Notifications: Gewohnheiten wöchentlich, alles andere einmalig mit Sperrfrist |
+| `coachNudges.ts` | Coach-Notifications über expo-notifications planen und löschen |
 | `serverInsights.ts` | Validierung und Zeitlabel für Antworten der `analyze-sessions`-Function |
 | `notifications.ts` | Streak-, Wochen-, Study-Spot- und Timer-Phasen-Notifications + Account-Cleanup |
 | `studySpots.ts` | Fokus-Ort-Clustering + Persistenz für den Study-Spot-Geofence |
@@ -135,7 +138,7 @@ Entfernt: `CreateGoalScreen.tsx`, `SessionLengthPicker.tsx`, `GardenOrb.tsx`,
 | `onboardingPlan.ts` | Reine, getestete Reconciliation-Planung für vorhandene/fehlende/duplizierte Onboarding-Goals |
 | `focusStyle.ts` | Serialisierte Server-Persistenz für schnelle Focus-Style-Wechsel |
 | `placeSearch.ts` | Gemeinsame Ortssuche, Kontinent-Priorisierung und Geofence-Radiusoptionen für Onboarding und Setup |
-| `time.ts` | Datum/Zeit-Formatierung |
+| `time.ts` | Datum/Zeit-Formatierung, Wochenstart (Montag), Geräte-Zeitzone |
 | `haptics.ts` | Haptik-Wrapper |
 | `constellation.ts` | Deterministisches 3D-Sternbild-Layout und Projektion für den aktiven Grove |
 
@@ -158,5 +161,5 @@ Entfernt: `CreateGoalScreen.tsx`, `SessionLengthPicker.tsx`, `GardenOrb.tsx`,
 | `schema.sql` | Kanonisches Fresh-Project-App-Schema: 4 nutzerbezogene Tabellen, Constraints, RLS und abgesicherte Friend-RPCs |
 | `migrations/` | Inkrementelle SQL-Migrationen einschließlich privatem Place-Search-/Insight-Betrieb und `manual_checkin`; alle sieben Migrationen sind remote angewendet |
 | `functions/delete-account/` | Deployte Edge Function: JWT-validierte Hard-Delete des eigenen Kontos |
-| `functions/analyze-sessions/` | Deployte Edge Function v7: JWT-validierte Session-Analyse, privater 24h-Cache und drei manuelle Refreshes pro UTC-Tag |
+| `functions/analyze-sessions/` | Deployte Edge Function: JWT-validierter Stats-Insight pro Goal aus der Coach-Engine, immer frisch berechnet (kein Cache, kein Refresh-Limit mehr) |
 | `functions/place-search/` | Deployte JWT-geschützte Ortssuche mit gemeinsamem Cache, Nutzerquote und globaler Upstream-Queue |

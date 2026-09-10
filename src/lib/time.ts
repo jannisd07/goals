@@ -43,6 +43,16 @@ export function getGreeting(): string {
   return "Good evening";
 }
 
+/** IANA zone of the device ("Europe/Berlin"), or null when the runtime cannot tell. */
+export function deviceTimeZone(): string | null {
+  try {
+    const zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    return typeof zone === "string" && zone.length > 0 ? zone : null;
+  } catch {
+    return null;
+  }
+}
+
 export function getWeekStart(): Date {
   const now = new Date();
   const day = now.getDay();

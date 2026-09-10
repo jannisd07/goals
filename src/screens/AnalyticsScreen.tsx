@@ -176,7 +176,6 @@ export function AnalyticsScreen() {
     isError,
     refetch,
   } = useMonthSessions(year, month);
-  const serverInsight = useServerInsight();
   const boundaryWeekSessions = useMemo(() => sessions ?? [], [sessions]);
   const monthSessions = useMemo(
     () =>
@@ -191,6 +190,7 @@ export function AnalyticsScreen() {
   const selectedGoal =
     activeGoals.find((g) => g.id === selectedGoalId) ?? activeGoals[0] ?? null;
   const effectiveGoalId = selectedGoal?.id ?? null;
+  const serverInsight = useServerInsight(effectiveGoalId);
   const isPhysical = selectedGoal?.type === "physical";
 
   const isCurrentMonth = year === now.getFullYear() && month === now.getMonth();
