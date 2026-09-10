@@ -25,10 +25,20 @@ export async function completePendingOnboarding(
     CHECKIN_CATEGORIES.find((c) => c.key === pending.checkin_category)?.label ??
     "Auto Check-In";
 
-  const { error: upsertError } = await supabase
+  // The account row is created at sign-in (loadOrCreateUserConfig) before any
+  // setup is saved, so it is only checked here, never written. Writing it broke
+  // every save: an upsert needs UPDATE on `id`, which is not granted (42501), and
+  // ON CONFLICT DO NOTHING still trips the display-name CHECK on the placeholder
+  // row before the conflict is detected (23514).
+  const { data: account, error: accountError } = await supabase
     .from("users")
-    .upsert({ id: userId }, { onConflict: "id" });
-  if (upsertError) throw upsertError;
+    .select("id")
+    .eq("id", userId)
+    .maybeSingle();
+  if (accountError) throw accountError;
+  if (!account) {
+    throw new Error("Your account profile is missing. Sign out and sign in again.");
+  }
 
   const { data: existingRows, error: existingError } = await supabase
     .from("goals")

@@ -16,7 +16,7 @@ import * as Crypto from "expo-crypto";
 import Svg, { Path } from "react-native-svg";
 import { supabase } from "../lib/supabase";
 import { useAppStore } from "../store";
-import { useAuth } from "../hooks/useAuth";
+import { saveUserDisplayName, useAuth } from "../hooks/useAuth";
 import { hapticSuccess, hapticLight } from "../lib/haptics";
 import { TextAction } from "../components/ui/TextAction";
 import { MinimalTextInput } from "../components/ui/MinimalTextInput";
@@ -204,42 +204,41 @@ async function signInWithApple() {
     .join(" ");
 
   if (displayName && data.user) {
-    const [metadataResult, profileResult] = await Promise.all([
-      supabase.auth.updateUser({
-        data: {
-          display_name: displayName,
-          full_name: displayName,
-          given_name: givenName,
-          family_name: familyName,
-        },
-      }),
-      supabase
-        .from("users")
-        .upsert(
-          {
-            id: data.user.id,
-            display_name: displayName,
-            updated_at: new Date().toISOString(),
-          },
-          { onConflict: "id" },
-        ),
-    ]);
-
     // Authentication itself succeeded. A transient auxiliary name write must
-    // not turn that into a misleading sign-in failure.
-    if (metadataResult.error || profileResult.error) {
+    // not turn that into a misleading sign-in failure. The profile row is
+    // written before the auth metadata: updateUser emits USER_UPDATED, and the
+    // profile reload that event starts must already read the saved name.
+    let savedName: string | null = null;
+    try {
+      savedName = await saveUserDisplayName(data.user, displayName);
+    } catch (profileError) {
       console.warn(
-        "Apple Sign-In succeeded, but the first-time name could not be saved:",
-        metadataResult.error ?? profileResult.error,
+        "Apple Sign-In succeeded, but the first-time name could not be saved to the profile:",
+        profileError,
       );
-    } else {
-      const current = useAppStore.getState();
-      if (current.userConfig?.id === data.user.id) {
-        current.setUserConfig({
-          ...current.userConfig,
-          display_name: displayName,
-        });
-      }
+    }
+
+    const { error: metadataError } = await supabase.auth.updateUser({
+      data: {
+        display_name: displayName,
+        full_name: displayName,
+        given_name: givenName,
+        family_name: familyName,
+      },
+    });
+    if (metadataError) {
+      console.warn(
+        "Apple Sign-In succeeded, but the first-time name could not be saved to the account metadata:",
+        metadataError,
+      );
+    }
+
+    const current = useAppStore.getState();
+    if (savedName && current.userConfig?.id === data.user.id) {
+      current.setUserConfig({
+        ...current.userConfig,
+        display_name: savedName,
+      });
     }
   }
 }

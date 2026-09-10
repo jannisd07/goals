@@ -55,44 +55,90 @@ const DEFAULT_COMMITMENTS = {
   daily_overhead_hours: 2,
 };
 
-async function loadOrCreateUserConfig(user: User): Promise<UserConfig> {
+// `users` grants UPDATE only on profile columns, never on `id`, so a PostgREST
+// upsert (ON CONFLICT DO UPDATE) is always rejected with 42501, and
+// ON CONFLICT DO NOTHING trips the display-name CHECK on a placeholder row
+// (23514). Rows are therefore created with a plain insert, where losing a race
+// is a unique violation, and names change through a plain update.
+const UNIQUE_VIOLATION = "23505";
+
+// Mirrors the users_display_name_valid CHECK: 1–80 characters after trimming.
+function toValidDisplayName(raw: unknown): string {
+  return String(raw ?? "").trim().slice(0, 80).trim();
+}
+
+async function selectUserConfig(userId: string): Promise<UserConfig | null> {
   const { data, error } = await supabase
     .from("users")
     .select("*")
-    .eq("id", user.id)
+    .eq("id", userId)
     .maybeSingle();
-
   if (error) throw error;
+  return data as UserConfig | null;
+}
 
-  let config = data as UserConfig | null;
-  if (!config) {
-    const metadata = user.user_metadata ?? {};
-    const fallbackName =
-      metadata.display_name ??
-      metadata.full_name ??
-      metadata.name ??
-      user.email?.split("@")[0] ??
-      "there";
+async function loadOrCreateUserConfig(user: User): Promise<UserConfig> {
+  const existing = await selectUserConfig(user.id);
+  if (existing) return existing;
 
-    const { data: created, error: createError } = await supabase
+  const metadata = user.user_metadata ?? {};
+  const fallbackName =
+    metadata.display_name ??
+    metadata.full_name ??
+    metadata.name ??
+    user.email?.split("@")[0] ??
+    "there";
+
+  const { data: created, error: createError } = await supabase
+    .from("users")
+    .insert({
+      id: user.id,
+      display_name: toValidDisplayName(fallbackName) || "there",
+      fixed_commitments: DEFAULT_COMMITMENTS,
+      onboarding_complete: false,
+    })
+    .select("*")
+    .single();
+
+  if (!createError) return created as UserConfig;
+  // A concurrent profile load (an auth event racing the bootstrap) created the
+  // row between the select and the insert.
+  if (createError.code !== UNIQUE_VIOLATION) throw createError;
+  const concurrent = await selectUserConfig(user.id);
+  if (!concurrent) throw createError;
+  return concurrent;
+}
+
+/**
+ * Saves a display name on the signed-in user's profile and returns the stored
+ * value. An update on a row that does not exist yet matches nothing, so the row
+ * is created first and the update retried once.
+ */
+export async function saveUserDisplayName(
+  user: User,
+  displayName: string,
+): Promise<string> {
+  const name = toValidDisplayName(displayName);
+  if (!name) throw new Error("The display name is empty.");
+
+  const updateName = () =>
+    supabase
       .from("users")
-      .upsert(
-        {
-          id: user.id,
-          display_name: String(fallbackName).trim() || "there",
-          fixed_commitments: DEFAULT_COMMITMENTS,
-          onboarding_complete: false,
-        },
-        { onConflict: "id" },
-      )
-      .select("*")
-      .single();
+      .update({ display_name: name, updated_at: new Date().toISOString() })
+      .eq("id", user.id)
+      .select("id");
 
-    if (createError) throw createError;
-    config = created as UserConfig;
+  const first = await updateName();
+  if (first.error) throw first.error;
+  if (first.data.length > 0) return name;
+
+  await loadOrCreateUserConfig(user);
+  const retry = await updateName();
+  if (retry.error) throw retry.error;
+  if (retry.data.length === 0) {
+    throw new Error("Your account profile is missing. Sign out and sign in again.");
   }
-
-  return config;
+  return name;
 }
 
 function applyUserConfig(config: UserConfig): void {
@@ -355,7 +401,7 @@ export function useAuth() {
     }
 
     // Profile creation is owned by the single global auth bootstrap. Keeping it
-    // out of the form action avoids two concurrent upserts and prevents an
+    // out of the form action avoids two concurrent profile writes and prevents an
     // auxiliary profile request from making a successful signup look failed.
 
     return {

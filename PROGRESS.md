@@ -1071,3 +1071,36 @@ die fünf Props der Master-Szene.
 
 **Nutzeraktion:** Vor jeder Insel-Arbeitssitzung Blender öffnen, `N`, Tab
 „MCP for Blender", „Start MCP Server".
+
+## 2026-09-10 — Setup-Speichern scheiterte an `users`-Upsert
+
+- In den App-Logs (`sim.sh logs`) stand beim Login: `Failed to flush onboarding
+  setup: permission denied for table users` (42501). Der Wochenziel-Fix von heute
+  Vormittag lief also bis zum ersten Schritt und brach dort ab.
+- Ursache: `completePendingOnboarding` machte `upsert({ id })` auf `users`. Das
+  wird `ON CONFLICT DO UPDATE` und braucht UPDATE auf `id` (nicht gegrantet).
+  `ignoreDuplicates` hilft nicht: `DO NOTHING` scheitert am CHECK
+  `users_display_name_valid` (23514). Beides per zurückgerollter SQL-Probe als
+  `authenticated` reproduziert. Goal-Update und `users.update` gehen durch.
+- Fix: Die Zeile wird nur noch geprüft, nie geschrieben. Sie existiert immer,
+  weil `loadOrCreateUserConfig` sie beim Login anlegt.
+- Gleiches Muster in `AuthScreen` (Apple-Name) und `loadOrCreateUserConfig`,
+  ebenfalls behoben:
+  - Apple-Name: Der Upsert scheiterte immer mit 42501, ein `console.warn`
+    verschluckte das, der Name wurde nie gespeichert. Jetzt speichert
+    `saveUserDisplayName` (`useAuth.ts`) per `update` auf
+    `display_name`/`updated_at`; bei 0 Treffern wird die Zeile angelegt und das
+    Update einmal wiederholt. Das passiert vor `auth.updateUser`, damit der
+    Profil-Reload nach `USER_UPDATED` den Namen schon liest.
+  - `loadOrCreateUserConfig`: Lief ein Auth-Event parallel zum Bootstrap, wurde
+    der Upsert zu `DO UPDATE` → 42501 → Login fehlgeschlagen. Jetzt `insert`;
+    23505 (`unique_violation`) heißt „existiert schon" → Zeile neu lesen.
+  - Namen werden auf die 80 Zeichen des CHECKs gekürzt. Der Trigger
+    `on_auth_user_created` legt `public.users` für jeden neuen Auth-User ohnehin
+    an; die Insert-Pfade sind nur Absicherung.
+- Geprüft per zurückgerollter SQL-Probe als `authenticated` mit zwei
+  Wegwerf-Usern: alter Upsert 42501, Update auf vorhandene Zeile 1 Treffer,
+  Insert auf vorhandene Zeile 23505, Update auf fehlende Zeile 0 → Insert ok →
+  Retry 1, fremde Zeile 0 (RLS), keine Reste. Typecheck, Domain-Suite und
+  `sim.sh bundle` grün, App startet eingeloggt. Apple-Login selbst ist nicht
+  Ende-zu-Ende getestet (im Simulator nicht möglich).

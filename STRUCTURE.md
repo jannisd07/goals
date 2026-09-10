@@ -107,7 +107,7 @@ Entfernt: `CreateGoalScreen.tsx`, `SessionLengthPicker.tsx`, `GardenOrb.tsx`,
 
 | Datei | Zweck |
 |---|---|
-| `useAuth.ts` | Einziger globaler Supabase-Auth-Bootstrap, Profile, Login/Signup/OAuth-Aktionen, Sign-out/Delete-Cleanup |
+| `useAuth.ts` | Einziger globaler Supabase-Auth-Bootstrap, Profile (insert/update, nie upsert: Spalten-Grants), Login/Signup/OAuth-Aktionen, Sign-out/Delete-Cleanup |
 | `useGoals.ts` | Goals laden/mutieren (React Query) |
 | `useSessions.ts` | Sessions, Wochenfortschritt, Monatsdaten; loggt Start-Koordinaten und steuert den manuellen Auto-Check-In-Fallback |
 | `useInsights.ts` | JWT-geschützte Stats-Insights mit 24h React-Query-Cache, Server-Refresh und lokalem Fehler-Fallback |
@@ -131,7 +131,7 @@ Entfernt: `CreateGoalScreen.tsx`, `SessionLengthPicker.tsx`, `GardenOrb.tsx`,
 | `notifications.ts` | Streak-, Wochen-, Study-Spot- und Timer-Phasen-Notifications + Account-Cleanup |
 | `studySpots.ts` | Fokus-Ort-Clustering + Persistenz für den Study-Spot-Geofence |
 | `geofenceSessions.ts` | Reine, getestete Dauerentscheidung: kurzer Visit, gültige Session oder >18h-Orphan |
-| `onboarding.ts` | Onboarding-Abschluss idempotent in Supabase schreiben (users + Focus Goal + optionales Auto-Check-In Goal) |
+| `onboarding.ts` | Onboarding-Abschluss idempotent in Supabase schreiben (users-Zeile nur prüfen, Focus Goal + optionales Auto-Check-In Goal schreiben) |
 | `onboardingPlan.ts` | Reine, getestete Reconciliation-Planung für vorhandene/fehlende/duplizierte Onboarding-Goals |
 | `focusStyle.ts` | Serialisierte Server-Persistenz für schnelle Focus-Style-Wechsel |
 | `placeSearch.ts` | Gemeinsame Ortssuche, Kontinent-Priorisierung und Geofence-Radiusoptionen für Onboarding und Setup |
