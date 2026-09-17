@@ -950,7 +950,15 @@ Testgrenzen:
   Dauer stammt aus dem lokal gespeicherten Eintritt; ein verspätet geliefertes
   Verlassen kann sie über das Zeitfenster hinaus wachsen lassen. Deckelung auf
   `end_time − start_time` wäre der Fix, berührt aber die Auto-Check-In-Buchhaltung.
-- [ ] Build 45 in TestFlight für interne Tester freigeben und den Tester
+- [x] Builds 46–50 am 2026-09-17/18 hochgeladen. **Build `1.0.0 (50)` ist der
+  aktuelle**, Delivery UUID `cf1c394d-b7ff-4fad-9bc1-aec47ba10beb`. Enthält:
+  neues App-Icon und neuen Startbildschirm (beide lagen nur in `assets/`, das
+  native Projekt hatte noch die Juli-Fassung), feinere Flowtime-Skala ohne
+  Sprünge über eine Stunde, repariertes Wochenziel-Rad, korrigierte
+  Pausentexte in Onboarding *und* Einstellungen, „invested this week" statt
+  Restbudget, `goalPayload` gegen den PostgREST-NULL-Fehler beim Onboarding,
+  und die Anzeigefehler „3 / 0 sessions" und „1 sessions".
+- [ ] Build 50 in TestFlight für interne Tester freigeben und den Tester
   eintragen, der bisher auf Build 36 festhing (Apple-Konto
   `3bff58e6-…`, Profil vorhanden, 0 Ziele, Onboarding offen). Ursache war der
   Profil-Upsert beim Anmelden in Build 36: `authenticated` hat UPDATE auf jede
