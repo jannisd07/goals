@@ -463,7 +463,10 @@ async function handleGeofenceExit(goalId: string): Promise<void> {
     // Leaving is also a fact about the world. Whatever happens to the write, the
     // local record of this visit is cleared exactly once, and the visit itself
     // is kept in the outbox until it arrives.
+    /** True once this visit is only on the phone, not yet on the server. */
+    let visitOnlyOnPhone = false;
     const keepVisitForLater = async (): Promise<void> => {
+      visitOnlyOnPhone = true;
       await queueSession({
         id: visitId,
         serverId: activeSession.sessionId,
@@ -537,14 +540,31 @@ async function handleGeofenceExit(goalId: string): Promise<void> {
       .not("end_time", "is", null)
       .gte("start_time", weekStart.toISOString());
 
-    // Offline the count is unknown. Saying "0 sessions this week" would be a
-    // lie in the one moment the player just earned one, so it is left out.
-    const sessionsThisWeek = count ?? 0;
-    const progressStr = countError
-      ? ""
-      : weeklyTarget > 0
-        ? ` ${sessionsThisWeek}/${weeklyTarget} this week.`
-        : ` ${sessionsThisWeek} sessions this week.`;
+    /**
+     * How many visits this week — or nothing at all.
+     *
+     * The notification said "0/4" in the moment somebody had just finished a
+     * visit, which is the worst possible lie: it reads as "that did not count".
+     * Two ways it got there, and both are fixed here.
+     *
+     * `count ?? 0` turned *unknown* into *zero*. An error was already handled,
+     * but a missing count without an error — no session in the background task,
+     * an unexpected response — fell straight through to zero. Unknown now means
+     * the sentence is left out; a visit with no number beside it is honest,
+     * "0/4" is not.
+     *
+     * And a visit that only made it into the outbox is not on the server yet,
+     * so the server cannot count it. It happened all the same.
+     */
+    const counted = countError ? null : (count ?? null);
+    const sessionsThisWeek =
+      counted === null ? null : counted + (visitOnlyOnPhone ? 1 : 0);
+    const progressStr =
+      sessionsThisWeek === null
+        ? ""
+        : weeklyTarget > 0
+          ? ` ${sessionsThisWeek}/${weeklyTarget} this week.`
+          : ` ${sessionsThisWeek} sessions this week.`;
 
     // Keep the grown object until it is added; the notification opens the reveal.
     const grew = durationSeconds >= MIN_GROW_SESSION_SECONDS;

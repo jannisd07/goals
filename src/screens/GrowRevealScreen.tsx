@@ -649,7 +649,13 @@ export function GrowRevealScreen() {
             <Pressable
               onPress={() => {
                 hapticLight();
-                navigation.navigate("IslandPlace", {
+                // The reward is already on the island; this screen has nothing
+                // left to ask. `replace` takes it off the stack so the tick on
+                // the placing screen goes home instead of back to a picker for
+                // a choice that has already been made. The rating is handed
+                // over here, because this screen will not be around to do it.
+                setLastCompletedSessionId(sessionId);
+                navigation.replace("IslandPlace", {
                   objectKey: selected.object.key,
                   level: selected.toLevel,
                 });

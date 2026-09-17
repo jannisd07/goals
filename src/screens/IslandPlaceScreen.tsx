@@ -304,7 +304,10 @@ export function IslandPlaceScreen() {
     if (!userId) return;
     for (const [key, spot] of Object.entries(moves)) placeIslandObject(userId, key, spot);
     hapticSuccess();
-    navigation.goBack();
+    // Confirming ends the errand, so it ends on the island — never back on the
+    // screen that sent us here.
+    if (navigation.canGoBack()) navigation.goBack();
+    else navigation.navigate("MainTabs");
   };
 
   const moved = Object.keys(moves).length;
