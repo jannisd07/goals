@@ -958,7 +958,11 @@ Testgrenzen:
   Pausentexte in Onboarding *und* Einstellungen, „invested this week" statt
   Restbudget, `goalPayload` gegen den PostgREST-NULL-Fehler beim Onboarding,
   und die Anzeigefehler „3 / 0 sessions" und „1 sessions".
-- [ ] Build 50 in TestFlight für interne Tester freigeben und den Tester
+- [x] Build `1.0.0 (51)` am 2026-09-18 hochgeladen, Delivery UUID
+  `ce4bf962-2b21-4a8e-895c-b0c39b92bc21`. Gegenüber 50: Das Antippen einer
+  Auto-Check-In-Live-Activity öffnet nur noch die App, statt einen Fokus-Timer
+  mit dem Namen des Check-in-Ziels anzubieten.
+- [ ] Build 51 in TestFlight für interne Tester freigeben und den Tester
   eintragen, der bisher auf Build 36 festhing (Apple-Konto
   `3bff58e6-…`, Profil vorhanden, 0 Ziele, Onboarding offen). Ursache war der
   Profil-Upsert beim Anmelden in Build 36: `authenticated` hat UPDATE auf jede
