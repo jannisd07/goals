@@ -938,8 +938,16 @@ Testgrenzen:
   (`Q9YLV5YZW6`, Issuer `f0f26376-…`) statt über ein Apple-ID-Passwort; der
   Schlüssel erzeugt dabei auch die Distributions-Profile für App Groups und die
   Widget-Erweiterung, an denen der Xcode-Organizer-Weg vorher gescheitert ist.
-- [ ] Build 43 in TestFlight für interne Tester freigeben, sobald Apple ihn
-  verarbeitet hat.
+- [x] Build `1.0.0 (44)` am 2026-09-17 hochgeladen, Delivery UUID
+  `6993dc39-d3dd-48bd-898b-06cac528aae6`. Zusätzlich zu 43: die Setup-Fehler
+  nennen ihre echte Ursache.
+- [ ] Build 44 in TestFlight für interne Tester freigeben und den Tester
+  eintragen, der bisher auf Build 36 festhing (Apple-Konto
+  `3bff58e6-…`, Profil vorhanden, 0 Ziele, Onboarding offen). Ursache war der
+  Profil-Upsert beim Anmelden in Build 36: `authenticated` hat UPDATE auf jede
+  Spalte außer `id`, ein Upsert braucht genau die, Postgres antwortet 42501 und
+  PostgREST 403. Im Code seit Längerem behoben (Insert statt Upsert); sein Gerät
+  hing nur auf dem alten Build.
 - [x] Migration `place_search_proxy` über die Supabase Management API
   angewendet, Edge Function `place-search` deployt und
   `EXPO_PUBLIC_PLACE_SEARCH_ENDPOINT=supabase` für Preview/Production gesetzt.
