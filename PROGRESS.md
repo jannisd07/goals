@@ -941,7 +941,16 @@ Testgrenzen:
 - [x] Build `1.0.0 (44)` am 2026-09-17 hochgeladen, Delivery UUID
   `6993dc39-d3dd-48bd-898b-06cac528aae6`. Zusätzlich zu 43: die Setup-Fehler
   nennen ihre echte Ursache.
-- [ ] Build 44 in TestFlight für interne Tester freigeben und den Tester
+- [x] Build `1.0.0 (45)` am 2026-09-17 hochgeladen, Delivery UUID
+  `ad05f3e9-8f5e-4635-829b-3412f66218d4`. Gegenüber 44: der Haken beim
+  Platzieren führt auf Home statt zurück in den Wähl-Screen, und die
+  Besuchs-Benachrichtigung meldet nie mehr „0/4", wenn die Zahl unbekannt ist.
+- [ ] Offen zur Entscheidung: Bei Besuch `fbca8fdf-…` liegen 16 Sekunden
+  zwischen `start_time` und `end_time`, gespeichert sind 3006 Sekunden. Die
+  Dauer stammt aus dem lokal gespeicherten Eintritt; ein verspätet geliefertes
+  Verlassen kann sie über das Zeitfenster hinaus wachsen lassen. Deckelung auf
+  `end_time − start_time` wäre der Fix, berührt aber die Auto-Check-In-Buchhaltung.
+- [ ] Build 45 in TestFlight für interne Tester freigeben und den Tester
   eintragen, der bisher auf Build 36 festhing (Apple-Konto
   `3bff58e6-…`, Profil vorhanden, 0 Ziele, Onboarding offen). Ursache war der
   Profil-Upsert beim Anmelden in Build 36: `authenticated` hat UPDATE auf jede
