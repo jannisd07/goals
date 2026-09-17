@@ -302,6 +302,12 @@ export function IslandPlaceScreen() {
 
   const keep = () => {
     if (!userId) return;
+    // Something still in hand has no place yet: confirming here would drop it
+    // silently and the player would count one change more than the island got.
+    if (heldRef.current) {
+      hapticLight();
+      return;
+    }
     for (const [key, spot] of Object.entries(moves)) placeIslandObject(userId, key, spot);
     hapticSuccess();
     // Confirming ends the errand, so it ends on the island — never back on the
@@ -314,7 +320,7 @@ export function IslandPlaceScreen() {
   const hint = held
     ? ghost?.valid
       ? "Let go to put it down."
-      : "It cannot stand here — keep dragging."
+      : "It cannot stand here — put it down before you confirm."
     : only
       ? "Drag it where you want it."
       : "Drag anything on your island.";
