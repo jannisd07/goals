@@ -8,7 +8,7 @@
  * and a failed write left nothing behind to retry from.
  *
  * Now every finished session is written here first if it could not be sent, and
- * the queue is emptied whenever the app has a connection again. Two rules keep
+ * the queue is emptied whenever the app has a connection again. Three rules keep
  * it honest:
  *
  *   1. **Nothing is queued twice.** Entries are keyed by the session id the app
@@ -16,6 +16,10 @@
  *      still on the server is matched by goal and start time before inserting.
  *   2. **Nothing is dropped silently.** The cap is high enough that it cannot be
  *      reached by normal use, and hitting it is logged rather than swallowed.
+ *   3. **One bad entry never blocks the rest.** An entry the server rejects for
+ *      good (a constraint, a deleted goal) is skipped, retried a few times on
+ *      later flushes, and finally dropped with a note — found on 2026-09-17,
+ *      when a single rejected row kept every later session on the phone.
  *
  * Kept under its own AsyncStorage key rather than in the Zustand store, for the
  * same reason as `pendingGrows.ts`: the Auto Check-In background task writes
@@ -24,6 +28,7 @@
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { supabase } from "./supabase";
+import { consistentEndTime } from "./sessionTimes";
 import type { AmbientSoundKey, SessionTrigger } from "../types";
 
 export const SESSION_OUTBOX_KEY = "goals-session-outbox";
@@ -34,6 +39,15 @@ export const SESSION_OUTBOX_KEY = "goals-session-outbox";
  * broken write loop cannot fill the device, not as a product limit.
  */
 const MAX_QUEUED_SESSIONS = 200;
+
+/**
+ * How often the server may reject an entry outright before it is given up.
+ * Rejections are counted per flush, so this is many app starts, not seconds.
+ */
+const MAX_REJECTIONS = 8;
+
+/** Open focus rows older than this can never be finished by anybody. */
+const ORPHAN_AGE_MS = 24 * 60 * 60 * 1000;
 
 export interface QueuedSession {
   /** The id the app used for this session. Local ids start with `local-`. */
@@ -54,6 +68,8 @@ export interface QueuedSession {
   rating: number | null;
   notes: string | null;
   queuedAt: string;
+  /** How often the server has rejected this entry so far (not: how often it was offline). */
+  rejections?: number;
 }
 
 const LOCAL_ID_PREFIX = "local-";
@@ -107,6 +123,7 @@ function toQueuedSession(value: unknown): QueuedSession | null {
     rating: typeof entry.rating === "number" ? entry.rating : null,
     notes: typeof entry.notes === "string" ? entry.notes : null,
     queuedAt: typeof entry.queuedAt === "string" ? entry.queuedAt : new Date().toISOString(),
+    rejections: number(entry.rejections, 0),
   };
 }
 
@@ -156,7 +173,10 @@ function change(
 export async function queueSession(session: QueuedSession): Promise<void> {
   await change((current) => [
     ...current.filter((entry) => entry.id !== session.id),
-    session,
+    {
+      ...session,
+      endTime: consistentEndTime(session.startTime, session.endTime, session.durationSeconds),
+    },
   ]);
 }
 
@@ -192,37 +212,68 @@ export async function clearSessionOutbox(): Promise<void> {
   await AsyncStorage.removeItem(SESSION_OUTBOX_KEY);
 }
 
+type SendOutcome = "sent" | "offline" | "rejected";
+
+function isConnectionProblem(error: unknown): boolean {
+  // PostgREST answers carry a code; a request that never got an answer does not.
+  const code = (error as { code?: unknown } | null)?.code;
+  return typeof code !== "string" || code.length === 0;
+}
+
 /**
- * Sends one queued session. Returns true when it is safely on the server (or
- * was already there), false when it should stay queued for the next attempt.
+ * Sends one queued session.
+ *
+ * "sent" also covers a row that turned out to be finished or gone already —
+ * there is nothing left to do for it either way. "offline" means the request
+ * did not get through and the whole flush should stop; "rejected" means the
+ * server answered no, and the next entry may still get through.
  */
 async function sendQueuedSession(
   entry: QueuedSession,
   userId: string,
-): Promise<boolean> {
+): Promise<SendOutcome> {
+  const endTime = consistentEndTime(entry.startTime, entry.endTime, entry.durationSeconds);
+  const closing = {
+    end_time: endTime,
+    duration_seconds: entry.durationSeconds,
+    pomodoro_cycles: entry.pomodoroCycles,
+    growth_stage: entry.growthStage,
+    ambient_sound: entry.ambientSound,
+    ...(entry.rating !== null ? { rating: entry.rating, notes: entry.notes } : {}),
+  };
+
   if (entry.serverId) {
-    const { data, error } = await supabase
-      .from("sessions")
-      .update({
-        end_time: entry.endTime,
-        duration_seconds: entry.durationSeconds,
-        pomodoro_cycles: entry.pomodoroCycles,
-        growth_stage: entry.growthStage,
-        ambient_sound: entry.ambientSound,
-        ...(entry.rating !== null ? { rating: entry.rating, notes: entry.notes } : {}),
-      })
-      .eq("id", entry.serverId)
-      // Only ever close a session that is still open. A row that was finished
-      // by another path in the meantime keeps its own duration.
-      .is("end_time", null)
-      .select("id");
-    if (error) return false;
-    // No row came back: the session was deleted, or somebody else closed it.
-    // Either way there is nothing left to send.
-    if (!data || data.length === 0) {
-      console.warn("A queued session no longer exists on the server; dropping it.");
+    const close = (end: string) =>
+      supabase
+        .from("sessions")
+        .update({ ...closing, end_time: end })
+        .eq("id", entry.serverId as string)
+        // Only ever close a session that is still open. A row that was finished
+        // by another path in the meantime keeps its own duration.
+        .is("end_time", null)
+        .select("id");
+
+    let { data, error } = await close(endTime);
+    if (error && error.code === "23514") {
+      // The server's own start for this row may lie after the phone's; move the
+      // end behind it so the measured duration can still be written.
+      const { data: row } = await supabase
+        .from("sessions")
+        .select("start_time")
+        .eq("id", entry.serverId)
+        .maybeSingle();
+      const serverStart = (row as { start_time?: string } | null)?.start_time;
+      if (serverStart) {
+        ({ data, error } = await close(
+          consistentEndTime(serverStart, endTime, entry.durationSeconds),
+        ));
+      }
     }
-    return true;
+    if (error) return isConnectionProblem(error) ? "offline" : "rejected";
+    if (!data || data.length === 0) {
+      console.warn("A queued session was already closed or removed; nothing to send.");
+    }
+    return "sent";
   }
 
   // The row was never created. Guard against a duplicate from an attempt that
@@ -235,74 +286,129 @@ async function sendQueuedSession(
     .eq("start_time", entry.startTime)
     .limit(1)
     .maybeSingle();
-  if (existingError) return false;
-  if (existing) return true;
+  if (existingError) return isConnectionProblem(existingError) ? "offline" : "rejected";
+  if (existing) return "sent";
 
   const { error } = await supabase.from("sessions").insert({
     user_id: userId,
     goal_id: entry.goalId,
     trigger: entry.trigger,
     start_time: entry.startTime,
-    end_time: entry.endTime,
-    duration_seconds: entry.durationSeconds,
-    pomodoro_cycles: entry.pomodoroCycles,
-    growth_stage: entry.growthStage,
-    ambient_sound: entry.ambientSound,
     start_latitude: entry.startLatitude,
     start_longitude: entry.startLongitude,
-    rating: entry.rating,
-    notes: entry.notes,
+    ...closing,
   });
-  if (error) {
-    // A goal that no longer exists can never be sent. Keeping it would block
-    // the queue forever, so it is dropped with a reason in the log.
-    if (error.code === "23503") {
-      console.warn("A queued session points at a deleted goal; dropping it.");
-      return true;
-    }
-    return false;
+  if (!error) return "sent";
+  if (isConnectionProblem(error)) return "offline";
+  // A goal that no longer exists can never be sent; keeping the entry would
+  // only make it fail again on every flush.
+  if (error.code === "23503") {
+    console.warn("A queued session points at a deleted goal; dropping it.");
+    return "sent";
   }
-  return true;
+  return "rejected";
+}
+
+/**
+ * Removes open focus rows that nobody can finish any more.
+ *
+ * Every path that drops a session now closes or removes its row, but rows from
+ * before that, and rows left by a crash between "created" and "persisted", stay
+ * open for ever with a duration of zero. They hold no information — every
+ * reader filters on end_time — and only clutter the account. The active
+ * session is never touched, however old it looks.
+ */
+async function sweepOrphanedFocusRows(userId: string, keepSessionId: string | null): Promise<void> {
+  const before = new Date(Date.now() - ORPHAN_AGE_MS).toISOString();
+  let query = supabase
+    .from("sessions")
+    .delete()
+    .eq("user_id", userId)
+    .eq("trigger", "manual_pomodoro")
+    .is("end_time", null)
+    .eq("duration_seconds", 0)
+    .lt("start_time", before);
+  if (keepSessionId && !isLocalSessionId(keepSessionId)) {
+    query = query.neq("id", keepSessionId);
+  }
+  const { error } = await query;
+  if (error) console.warn("Could not remove orphaned focus sessions:", error.message);
 }
 
 let flushInFlight: Promise<number> | null = null;
+/** A flush was asked for while one was running; run once more when it ends. */
+let flushRequestedAgain = false;
+let sweptForUser: string | null = null;
 
 /**
  * Tries to send everything that is waiting. Returns how many sessions arrived.
  * Safe to call often: it does nothing when the queue is empty, and only one
- * flush runs at a time.
+ * flush runs at a time — a request that arrives mid-flush is not merged into
+ * the running one (which may already have read an empty queue) but repeated
+ * after it.
  */
-export function flushSessionOutbox(): Promise<number> {
-  if (flushInFlight) return flushInFlight;
+export function flushSessionOutbox(activeSessionId: string | null = null): Promise<number> {
+  if (flushInFlight) {
+    flushRequestedAgain = true;
+    return flushInFlight;
+  }
 
   const run = (async () => {
     const entries = await readSessionOutbox();
-    if (entries.length === 0) return 0;
-
     const { data, error } = await supabase.auth.getUser();
     if (error || !data.user) return 0; // no connection or no session: try later
-
     const userId = data.user.id;
+
+    if (sweptForUser !== userId) {
+      sweptForUser = userId;
+      await sweepOrphanedFocusRows(userId, activeSessionId).catch(() => undefined);
+    }
+    if (entries.length === 0) return 0;
+
     const sent: string[] = [];
+    const rejected: string[] = [];
     for (const entry of entries) {
-      let ok = false;
+      let outcome: SendOutcome;
       try {
-        ok = await sendQueuedSession(entry, userId);
+        outcome = await sendQueuedSession(entry, userId);
       } catch {
-        ok = false;
+        outcome = "offline";
       }
-      if (!ok) break; // the connection is gone again; keep the rest in order
+      if (outcome === "offline") break; // the connection is gone again; keep the rest in order
+      if (outcome === "rejected") {
+        rejected.push(entry.id);
+        continue;
+      }
       sent.push(entry.id);
     }
 
-    if (sent.length > 0) {
-      await change((current) => current.filter((entry) => !sent.includes(entry.id)));
+    if (sent.length > 0 || rejected.length > 0) {
+      await change((current) =>
+        current
+          .filter((entry) => !sent.includes(entry.id))
+          .map((entry) =>
+            rejected.includes(entry.id)
+              ? { ...entry, rejections: (entry.rejections ?? 0) + 1 }
+              : entry,
+          )
+          .filter((entry) => {
+            if ((entry.rejections ?? 0) < MAX_REJECTIONS) return true;
+            console.warn(
+              `Giving up on a queued session the server kept rejecting (${entry.id}).`,
+            );
+            return false;
+          }),
+      );
     }
     return sent.length;
   })();
 
   flushInFlight = run.finally(() => {
     flushInFlight = null;
+    if (flushRequestedAgain) {
+      flushRequestedAgain = false;
+      void flushSessionOutbox(activeSessionId);
+    }
   });
   return flushInFlight;
 }

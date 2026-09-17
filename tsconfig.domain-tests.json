@@ -21,6 +21,7 @@
     "src/lib/sliders.ts",
     "src/lib/serverInsights.ts",
     "src/lib/time.ts",
+    "src/lib/sessionTimes.ts",
     "supabase/functions/_shared/placeSearch.ts",
     "supabase/functions/_shared/coachPatterns.ts",
     "supabase/functions/_shared/coachWriter.ts",

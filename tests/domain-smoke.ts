@@ -53,9 +53,11 @@ import {
   GROW_CATEGORIES,
   GROW_OBJECTS,
   GROW_STEPS_BY_TIER,
+  categoryCount,
   growCopies,
   growOptions,
   isGrowCategory,
+  type GrowCategory,
   liveGrowth,
   tierForRatio,
   type GrowOption,
@@ -137,6 +139,8 @@ import {
 } from "../supabase/functions/_shared/placeSearch";
 import { computeDisposableTime, formatTimer } from "../src/lib/time";
 import { BEACH_SPRITES } from "../src/components/grow/beachSprites";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { islandSprite, spriteReach } from "../src/components/island/islandSprites";
 import { BUILDING_SPRITES } from "../src/components/grow/buildingSprites";
 import { PLANT_SPRITES } from "../src/components/grow/plantSprites";
@@ -151,6 +155,7 @@ import {
   sliderRatioFromPageX,
   sliderThumbLeft,
 } from "../src/lib/sliders";
+import { consistentEndTime } from "../src/lib/sessionTimes";
 import type { Goal, PomodoroState } from "../src/types";
 
 let assertionCount = 0;
@@ -1379,6 +1384,79 @@ for (const stage of [1, 2, 3, 4, 5] as const) {
   );
 }
 
+// --- a reward nobody came back for is still placed ---------------------------
+{
+  // `growDelivery.ts` was fully written, documented and covered by these tests —
+  // and nothing in the app ever called it. The reveal screen promised a blocked
+  // reward would "land by itself", Home held a celebration for it, and neither
+  // could ever happen. Logic without a caller is not a feature, so the wiring
+  // is part of what these tests protect.
+  // From the repo root: the suite is run through npm, and the compiled tests
+  // sit in a build directory whose depth is not this test's business.
+  const repo = process.cwd();
+  const appSource = readFileSync(join(repo, "App.tsx"), "utf8");
+  const hookSource = readFileSync(join(repo, "src", "hooks", "useGrowDelivery.ts"), "utf8");
+  assert(
+    appSource.includes("useGrowDelivery()"),
+    "the app mounts the hook that places waiting rewards",
+  );
+  assert(
+    hookSource.includes("overdueGrows") && hookSource.includes("autoGrowPick"),
+    "that hook is the one that uses the delivery rules",
+  );
+  assert(
+    hookSource.includes("applyGrowReward") && hookSource.includes("removePendingGrow"),
+    "a reward it places is both put on the island and taken off the waiting list",
+  );
+  // A reward the player has open in front of them is theirs to decide. Without
+  // this the reveal screen answers its own question and says "Already on your
+  // island" while somebody is still choosing.
+  const revealSource = readFileSync(
+    join(repo, "src", "screens", "GrowRevealScreen.tsx"),
+    "utf8",
+  );
+  assert(
+    hookSource.includes("revealIsOpenFor"),
+    "the delivery leaves alone the reward whose reveal is open",
+  );
+  assert(
+    revealSource.includes("markRevealOpen") && revealSource.includes("markRevealClosed"),
+    "the reveal screen says while it is open, and says when it closes",
+  );
+
+  // Placing several overdue rewards in a row must respect the island's room:
+  // each one is decided against the island the one before it left behind.
+  let island: Record<string, { level: number }> = {};
+  const limitFor = (category: GrowCategory) =>
+    categoryLimit(islandStageFor(island), category);
+  let placed = 0;
+  for (let round = 0; round < 40; round += 1) {
+    const pick = autoGrowPick({ category: "plant", objectKey: null }, 3, island, limitFor);
+    if (!pick) break;
+    island = { ...island, [pick.instanceId]: { level: pick.toLevel } };
+    placed += 1;
+    assert(
+      categoryCount("plant", island) <= limitFor("plant"),
+      "placing rewards one after another never overfills a category",
+    );
+  }
+  assert(placed > 0, "an empty island can take a reward");
+  // A full island hands back nothing rather than inventing a place, so the
+  // reward keeps waiting instead of being thrown away.
+  const stuffed: Record<string, { level: number }> = {};
+  for (const category of GROW_CATEGORIES) {
+    for (const object of GROW_OBJECTS[category.key]) {
+      for (let copy = 1; copy <= growCopies(object); copy += 1) {
+        stuffed[copy === 1 ? object.key : `${object.key}#${copy}`] = { level: object.maxLevel };
+      }
+    }
+  }
+  assert(
+    autoGrowPick({ category: "plant", objectKey: null }, 3, stuffed, () => 99) === null,
+    "a finished island takes no more rewards, and says so instead of guessing",
+  );
+}
+
 // --- taking hold of an object goes by its picture ----------------------------
 {
   // A house is drawn tall and upwards from the cell it stands on, so asking
@@ -2043,6 +2121,30 @@ assert(
 assert(
   isStaleSession({ startTimeMs: null, focusedSeconds: 600, lastTickMs: NOW - 9 * 3600 * 1000, nowMs: NOW }) === true,
   "a nine hour gap drops it as well",
+);
+
+
+// A queued session whose end lies before its start (the phone's clock was
+// corrected, or the server's start is later than the phone's) is moved to
+// start + duration instead of being rejected for ever. A consistent end stays.
+assert(
+  consistentEndTime("2026-09-17T12:31:13.000Z", "2026-09-17T03:31:39.000Z", 900) ===
+    "2026-09-17T12:46:13.000Z",
+  "an end before the start is moved to start + duration",
+);
+assert(
+  consistentEndTime("2026-09-17T12:00:00.000Z", "2026-09-17T12:20:00.000Z", 900) ===
+    "2026-09-17T12:20:00.000Z",
+  "an end after start + duration is kept as it is",
+);
+assert(
+  consistentEndTime("2026-09-17T12:00:00.000Z", "2026-09-17T12:10:00.000Z", 900) ===
+    "2026-09-17T12:15:00.000Z",
+  "an end earlier than the measured duration allows is moved to start + duration",
+);
+assert(
+  consistentEndTime("not a date", "2026-09-17T12:10:00.000Z", 900) === "2026-09-17T12:10:00.000Z",
+  "an unreadable start leaves the end alone",
 );
 
 console.log(`Domain smoke tests passed: ${assertionCount} assertions.`);

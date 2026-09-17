@@ -52,6 +52,7 @@ import {
 } from "../lib/growRewards";
 import { categoryLimit, islandGrowth, islandStageFor } from "../lib/islandScene";
 import { addPendingGrow, readPendingGrows, removePendingGrow } from "../lib/pendingGrows";
+import { markRevealClosed, markRevealOpen } from "../lib/openReveal";
 import { describeInstance } from "../lib/islandInstances";
 import { useAppStore } from "../store";
 import type { RootStackParamList } from "../navigation/types";
@@ -257,6 +258,13 @@ export function GrowRevealScreen() {
   // The island only has room for so many objects per category; the rest waits
   // for the next island size (src/lib/islandScene.ts).
   const islandStage = useMemo(() => islandStageFor(island), [island]);
+  // While this screen is up, the reward belongs to the player, not to the
+  // automatic delivery (src/lib/openReveal.ts).
+  useEffect(() => {
+    markRevealOpen(sessionId);
+    return () => markRevealClosed(sessionId);
+  }, [sessionId]);
+
   const growth = useMemo(() => islandGrowth(island), [island]);
   const toNextIsland = growth.toNext;
   const options = useMemo(
@@ -523,7 +531,7 @@ export function GrowRevealScreen() {
           </Text>
           <Text style={styles.subline}>
             {waitingForRoom
-              ? "This reward is kept and lands by itself as soon as your island grows."
+              ? "This reward is kept. Put it down yourself once there is room — or leave it, and the app plants it for you after a day."
               : `All ${growth.total} levels are grown — every object, every copy, at its full size. Nothing is left for this one to grow, and the session still counts towards your hours, your streak and your stats.`}
           </Text>
         </View>

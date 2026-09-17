@@ -36,6 +36,9 @@ export async function settleAbandonedSession(
   await rememberSessionReward(session);
 
   const focusedSeconds = Math.max(0, Math.floor(pomodoro.focused_seconds ?? 0));
+  // The last tick is when the timer was last known to run. A clock that was
+  // corrected in between can put it before the start; the queue moves such an
+  // end behind start + duration before sending (sessionOutbox.ts).
   const endedAtMs = pomodoro.last_tick_at_ms || Date.now();
   const plausible = focusedSeconds > 0 && focusedSeconds <= MAX_PLAUSIBLE_FOCUS_SECONDS;
 

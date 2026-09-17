@@ -5,6 +5,7 @@ import { useAppStore } from "../store";
 import { clearPersistedGeofenceVisit } from "../services/geofencing";
 import { getWeekStart, getWeekEnd } from "../lib/time";
 import { MAX_GEOFENCE_SESSION_MS } from "../lib/geofenceSessions";
+import { normalizeMinVisitMinutes } from "../types";
 import {
   flushSessionOutbox,
   isLocalSessionId,
@@ -253,6 +254,30 @@ export function useEndActiveCheckIn() {
         ),
       );
       const growthStage = Math.min(4, Math.floor(durationSeconds / 1800));
+
+      // The start sheet promises that "visits shorter than X are not counted, so
+      // passing by never becomes a session". Auto Check-In keeps that promise on
+      // the way out (geofencing.ts); ending by hand used to log a three-second
+      // visit as a full session — one more towards the weekly target, a streak
+      // day, a rated session. Below the minimum the row is removed instead.
+      const goal = useAppStore.getState().goals.find((entry) => entry.id === session.goal_id);
+      const minVisitSeconds =
+        normalizeMinVisitMinutes(goal?.min_visit_minutes ?? null) * 60;
+      if (durationSeconds < minVisitSeconds) {
+        await removeQueuedSession(session.id);
+        if (!isLocalSessionId(session.id)) {
+          const { error } = await supabase
+            .from("sessions")
+            .delete()
+            .eq("id", session.id)
+            .is("end_time", null);
+          // Offline the open row stays; the next Enter for this goal discards it.
+          if (error && !isRetryable(error)) throw error;
+        }
+        await clearPersistedGeofenceVisit(session.goal_id).catch(() => undefined);
+        return null;
+      }
+
       const keepForLater = async (): Promise<null> => {
         await queueSession({
           id: session.id,
@@ -304,7 +329,7 @@ export function useEndActiveCheckIn() {
       await clearPersistedGeofenceVisit(session.goal_id).catch(() => undefined);
       return data as Session;
     },
-    onSuccess: (_result, session) => {
+    onSuccess: (result, session) => {
       void flushSessionOutbox();
       queryClient.setQueryData(
         [...ACTIVE_CHECKIN_KEY, session.goal_id],
@@ -317,7 +342,10 @@ export function useEndActiveCheckIn() {
       queryClient.invalidateQueries({ queryKey: WEEKLY_PROGRESS_KEY });
       queryClient.invalidateQueries({ queryKey: ["streak"] });
       queryClient.invalidateQueries({ queryKey: ["stats", "server-insight"] });
-      useAppStore.getState().setLastCompletedSessionId(session.id);
+      // A visit that was too short to count has nothing to rate.
+      if (result !== null || isLocalSessionId(session.id)) {
+        useAppStore.getState().setLastCompletedSessionId(session.id);
+      }
     },
   });
 }

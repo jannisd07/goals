@@ -50,7 +50,7 @@ import { useRefreshPermissionWarnings } from "../hooks/useRefreshPermissionWarni
 import { PermissionWarningPill } from "../components/PermissionWarningPill";
 import { persistFocusStyle } from "../lib/focusStyle";
 import { userFacingMessage } from "../lib/errors";
-import type { Goal } from "../types";
+import { formatMinVisitDuration, normalizeMinVisitMinutes, type Goal } from "../types";
 import type { RootStackParamList } from "../navigation/types";
 
 /** Stable empty island, so the selector never hands back a fresh object. */
@@ -165,6 +165,9 @@ export function HomeScreen() {
   const setFocusGrowCategory = useAppStore((s) => s.setFocusGrowCategory);
   const setFocusGrowObject = useAppStore((s) => s.setFocusGrowObject);
   const [sessionPickerGoal, setSessionPickerGoal] = useState<Goal | null>(null);
+  // A focus session that is still running — after a restart the app lands here,
+  // not on the timer, and Home must say so instead of offering to start another.
+  const runningSession = useAppStore((s) => (s.activeSession?.pomodoro ? s.activeSession : null));
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
   const islandObjects = useAppStore(
     (s) => (s.userConfig ? s.islandObjectsByUser[s.userConfig.id] : undefined) ?? NO_ISLAND_OBJECTS,
@@ -261,15 +264,36 @@ export function HomeScreen() {
   const handleCheckIn = useCallback(
     (goal: Goal) => {
       const open = activeCheckIn.data;
-      const action = open
-        ? endActiveCheckIn.mutateAsync(open)
-        : startManualCheckIn.mutateAsync(goal);
-      void action.catch((error: unknown) => {
+      const run = () => {
+        const action = open
+          ? endActiveCheckIn.mutateAsync(open)
+          : startManualCheckIn.mutateAsync(goal);
+        void action.catch((error: unknown) => {
+          Alert.alert(
+            open ? "Couldn’t end check-in" : "Couldn’t start check-in",
+            userFacingMessage(error, "Check your connection and try again."),
+          );
+        });
+      };
+      // Ending early is allowed, but it must not look like a logged visit: the
+      // start sheet says shorter visits are not counted, and the mutation keeps
+      // that promise — so say it here, before anything is thrown away.
+      const minVisitSeconds = normalizeMinVisitMinutes(goal.min_visit_minutes ?? null) * 60;
+      const elapsedSeconds = open
+        ? Math.floor((Date.now() - new Date(open.start_time).getTime()) / 1000)
+        : 0;
+      if (open && elapsedSeconds < minVisitSeconds) {
         Alert.alert(
-          open ? "Couldn’t end check-in" : "Couldn’t start check-in",
-          userFacingMessage(error, "Check your connection and try again."),
+          "End check-in?",
+          `This visit is shorter than ${formatMinVisitDuration(goal.min_visit_minutes)} and won’t count as a session.`,
+          [
+            { text: "Keep going", style: "cancel" },
+            { text: "End without logging", style: "destructive", onPress: run },
+          ],
         );
-      });
+        return;
+      }
+      run();
     },
     [activeCheckIn.data, endActiveCheckIn, startManualCheckIn],
   );
@@ -312,14 +336,24 @@ export function HomeScreen() {
             <Pressable
               onPress={() => navigation.navigate("Rewards")}
               accessibilityRole="button"
-              accessibilityLabel={`Open rewards, ${formatRewardHours(lifetimeHours.data ?? 0)} tracked`}
+              accessibilityLabel={
+                lifetimeHours.data === undefined
+                  ? "Open rewards, hours not loaded"
+                  : `Open rewards, ${formatRewardHours(lifetimeHours.data)} tracked`
+              }
               hitSlop={6}
               style={({ pressed }) => [styles.rewardsTouch, { opacity: pressed ? 0.8 : 1 }]}
             >
               <View style={styles.rewardsPill}>
                 <PixelSprite name="trophy" size={20} />
                 <Text style={styles.rewardsText}>
-                  {lifetimeHours.isLoading ? "…" : formatRewardHours(lifetimeHours.data ?? 0)}
+                  {/*
+                    A failed load is not zero hours. Showing "0 h" to someone
+                    with a year of work behind them reads as lost progress.
+                  */}
+                  {lifetimeHours.data === undefined
+                    ? "—"
+                    : formatRewardHours(lifetimeHours.data)}
                 </Text>
               </View>
             </Pressable>
@@ -421,13 +455,22 @@ export function HomeScreen() {
         <View style={styles.cards}>
           <Pressable
             onPress={() =>
-              focusGoal
-                ? setSessionPickerGoal(focusGoal)
-                : navigation.navigate("SetupStudying")
+              runningSession
+                ? navigation.navigate("FocusSession", {
+                    goalId: runningSession.goal_id,
+                    sessionLengthMinutes: lastSessionMinutes,
+                  })
+                : focusGoal
+                  ? setSessionPickerGoal(focusGoal)
+                  : navigation.navigate("SetupStudying")
             }
             accessibilityRole="button"
             accessibilityLabel={
-              focusGoal ? `Start ${focusGoal.name} session` : "Set up a focus goal"
+              runningSession
+                ? `Resume ${runningSession.goal_name} session`
+                : focusGoal
+                  ? `Start ${focusGoal.name} session`
+                  : "Set up a focus goal"
             }
             style={styles.card}
           >
@@ -441,9 +484,13 @@ export function HomeScreen() {
               {focusGoal?.name ?? "Focus"}
             </Text>
             <Text style={styles.cardMeta}>
-              {focusGoal
-                ? `${focusHours.toFixed(1)} / ${Math.round(focusTarget)}h`
-                : "Tap to set up"}
+              {runningSession
+                ? runningSession.pomodoro?.is_running
+                  ? "Running · tap to resume"
+                  : "Paused · tap to resume"
+                : focusGoal
+                  ? `${focusHours.toFixed(1)} / ${Math.round(focusTarget)}h`
+                  : "Tap to set up"}
             </Text>
             <View style={styles.bar}>
               <View style={[styles.barFill, { width: `${focusRatio * 100}%` }]} />

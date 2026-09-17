@@ -27,6 +27,7 @@ import { PendingRatingSheet } from "./src/components/PendingRatingSheet";
 import { useAuthBootstrap } from "./src/hooks/useAuth";
 import { useIslandSync } from "./src/hooks/useIslandSync";
 import { useMilestoneDelivery } from "./src/hooks/useMilestoneDelivery";
+import { useGrowDelivery } from "./src/hooks/useGrowDelivery";
 import { useCoachNudges } from "./src/hooks/useCoachNudges";
 import { useStudySpotSync } from "./src/hooks/useStudySpotSync";
 import { useFocusLiveActivity } from "./src/hooks/useFocusLiveActivity";
@@ -298,6 +299,8 @@ function AppContent() {
   // The hour milestones are derived from the total tracked time, so they put
   // themselves on the island whenever the hours are known.
   useMilestoneDelivery();
+  // Rewards nobody came back for: placed by the app itself (useGrowDelivery).
+  useGrowDelivery();
   const queryCache = useQueryClient();
   const isAuthenticated = useAppStore((s) => s.isAuthenticated);
   const isLoading = useAppStore((s) => s.isLoading);
