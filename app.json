@@ -10,11 +10,11 @@
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#E0E5EC"
+      "backgroundColor": "#F3F3EE"
     },
     "ios": {
       "icon": "./assets/icon.png",
-      "buildNumber": "49",
+      "buildNumber": "50",
       "supportsTablet": false,
       "bundleIdentifier": "com.vibetime.app",
       "usesAppleSignIn": true,
@@ -56,7 +56,7 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#E0E5EC",
+          "backgroundColor": "#F3F3EE",
           "image": "./assets/splash-icon.png",
           "imageWidth": 180,
           "resizeMode": "contain"
