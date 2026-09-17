@@ -9,13 +9,6 @@ export function computeDisposableTime(commitments: FixedCommitments): number {
   return Math.max(0, TOTAL_WEEKLY_HOURS - fixedTotal);
 }
 
-export function formatHours(hours: number): string {
-  if (hours >= 10) {
-    return `${Math.floor(hours)}`;
-  }
-  return hours.toFixed(1);
-}
-
 export function formatDuration(seconds: number): string {
   const hrs = Math.floor(seconds / 3600);
   const mins = Math.floor((seconds % 3600) / 60);
@@ -47,13 +40,6 @@ export function formatTimer(seconds: number): string {
   return `${mins.toString().padStart(2, "0")}:${paddedSeconds}`;
 }
 
-export function getGreeting(): string {
-  const hour = new Date().getHours();
-  if (hour < 12) return "Good morning";
-  if (hour < 17) return "Good afternoon";
-  return "Good evening";
-}
-
 /** IANA zone of the device ("Europe/Berlin"), or null when the runtime cannot tell. */
 export function deviceTimeZone(): string | null {
   try {
@@ -80,12 +66,4 @@ export function getWeekEnd(): Date {
   end.setDate(end.getDate() + 6);
   end.setHours(23, 59, 59, 999);
   return end;
-}
-
-export function formatDate(): string {
-  return new Date().toLocaleDateString("en-US", {
-    weekday: "long",
-    month: "long",
-    day: "numeric",
-  });
 }

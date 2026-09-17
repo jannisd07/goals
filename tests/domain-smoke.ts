@@ -12,7 +12,6 @@ import {
 } from "../src/lib/pomodoro";
 import { computeStreak } from "../src/lib/streaks";
 import { detectStudySpot } from "../src/lib/studySpots";
-import { buildConstellation } from "../src/lib/constellation";
 import { planOnboardingGoals } from "../src/lib/onboardingPlan";
 import { classifyGeofenceSession } from "../src/lib/geofenceSessions";
 import {
@@ -152,7 +151,7 @@ import {
   sliderRatioFromPageX,
   sliderThumbLeft,
 } from "../src/lib/sliders";
-import type { Goal, PomodoroState, Session } from "../src/types";
+import type { Goal, PomodoroState } from "../src/types";
 
 let assertionCount = 0;
 
@@ -189,30 +188,6 @@ function basePomodoro(overrides: Partial<PomodoroState> = {}): PomodoroState {
     focused_seconds: 0,
     last_tick_at_ms: 0,
     ...overrides,
-  };
-}
-
-function session(
-  id: string,
-  goalId: string,
-  start: string,
-  durationSeconds: number,
-  rating: number | null = null,
-): Session {
-  return {
-    id,
-    user_id: "user",
-    goal_id: goalId,
-    start_time: start,
-    end_time: new Date(new Date(start).getTime() + durationSeconds * 1000).toISOString(),
-    duration_seconds: durationSeconds,
-    trigger: "manual_pomodoro",
-    rating,
-    pomodoro_cycles: 1,
-    ambient_sound: null,
-    notes: null,
-    growth_stage: 0,
-    created_at: start,
   };
 }
 
@@ -458,24 +433,6 @@ assert(
   ]) === null,
   "Auto Check-In overlap suppresses the learned spot",
 );
-
-// Grove layout is deterministic and builds one MST edge fewer than stars in
-// each goal cluster.
-const constellationSessions = [
-  session("s1", "g1", "2026-07-20T10:00:00.000Z", 900, 3),
-  session("s2", "g1", "2026-07-21T10:00:00.000Z", 1800, 4),
-  session("s3", "g1", "2026-07-22T10:00:00.000Z", 2700, 5),
-  session("s4", "g2", "2026-07-23T10:00:00.000Z", 1200),
-  session("s5", "g2", "2026-07-24T10:00:00.000Z", 2400),
-];
-const firstConstellation = buildConstellation(constellationSessions);
-const secondConstellation = buildConstellation(constellationSessions);
-assert(
-  JSON.stringify(firstConstellation) === JSON.stringify(secondConstellation),
-  "constellation layout is deterministic",
-);
-assert(firstConstellation.stars.length === 5, "every completed session becomes one star");
-assert(firstConstellation.lines.length === 3, "MST creates n-1 edges per goal cluster");
 
 assert(
   approximately(

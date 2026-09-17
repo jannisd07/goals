@@ -1,4 +1,5 @@
 import { useCallback } from "react";
+import { Share } from "react-native";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import * as Crypto from "expo-crypto";
 import { supabase } from "../lib/supabase";
@@ -113,10 +114,21 @@ export function useRemoveFriend() {
   });
 }
 
+/**
+ * Share sheet with the player's own code.
+ *
+ * `Share` is imported at the top of the file on purpose. It used to be pulled in
+ * with `await import("react-native")` inside the handler, which crashed the app
+ * on every tap in a release build: the dynamic import builds a module namespace
+ * for all of React Native, and doing that reads every lazy export getter at
+ * once — including ones whose native side is not in the binary, which throws
+ * "`new NativeEventEmitter()` requires a non-null argument" and takes the whole
+ * app down (crash report 2026-09-16 15:22). There was never a reason to load
+ * it late.
+ */
 export function useShareFriendCode(code: string | null | undefined) {
   return useCallback(async () => {
     if (!code) return;
-    const { Share } = await import("react-native");
     await Share.share({
       message: `Add me on Goals — my friend code is ${code}`,
     }).catch(() => null);

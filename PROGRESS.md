@@ -1470,3 +1470,26 @@ nach einem fehlgeschlagenen Modellaufruf, verschluckter Cache-Lesefehler,
 Weiterhin offen, bewusst nicht allein entschieden: Kontolöschung braucht nur
 einen gültigen Login, ohne erneute Bestätigung; die Belohnungsschleife endet bei
 der größten Insel ohne weiteres Ziel; Freunde sehen die Insel nicht.
+
+### Release-Prüfung 2026-09-17
+
+Kompletter Durchgang vor dem Release: Konfiguration, Abhängigkeiten, Timer,
+Store, Navigation, Fehlerbehandlung, toter Code. Typecheck, Domain-Tests
+(362 Prüfungen), Expo Doctor (20/20), `pod install` und der Release-Bundle-
+Export laufen sauber.
+
+| Fund | Wirkung | Behoben in |
+|---|---|---|
+| Share-Button in Friends stürzte ab (Regression aus `175320f`) | `await import("react-native")` ließ Release-Builds beim Tippen abstürzen | `useFriends.ts`, statischer Import |
+| Verwaiste Fokus-Sessions wurden dreimal verschieden behandelt | Belohnung teils behalten, Server-Zeile nie geschlossen — Insel wuchs aus Stunden, die Statistik nie sah | `src/lib/abandonedSession.ts`, genutzt von `usePomodoro`, `focusLiveActivityActions`, `RootNavigator` |
+| Home zeigte bei Ladefehler Nullen | Startseite ohne Fehlerzustand | `LoadErrorPill` in `HomeScreen.tsx` |
+| Technische Fehlertexte in Dialogen | PostgREST-/Edge-Function-Meldungen landeten beim Nutzer | `src/lib/errors.ts` |
+| Sieben nirgends importierte Dateien, ungenutzte Icons/Helfer | Altlast aus Neumorphismus/Grove | gelöscht, Doku bereinigt |
+| `@react-navigation/bottom-tabs`, `@expo/ui` direkt | ungenutzt | entfernt (`@expo/ui` bleibt transitiv über `expo-widgets`) |
+| 13 Expo-Pakete unter der SDK-Erwartung | `npm run check` schlug fehl | `npx expo install --fix`; **nativer Rebuild nötig** |
+
+Bewusst offen gelassen (Produkt-/manuelle Entscheidungen): Kontolöschung ohne
+zweite Bestätigung; keine Datenexport-Funktion; Android nie gebaut (kein
+`android/`, kein EAS-Profil, `versionCode` fehlt, Package-ID ≠ Bundle-ID); kein
+Crash-Reporting; CLAUDE.md §3 beschreibt weiter das blaue Neumorphismus-System,
+der Code ist das Paper-/Insel-Design.

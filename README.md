@@ -2,7 +2,7 @@
 
 Goals is an Expo/React Native app for planning a weekly time budget, tracking
 focus sessions, logging location-based habits automatically, and turning
-completed sessions into a personal Grove constellation.
+completed sessions into objects that grow on a personal pixel-art island.
 
 ## Product
 
@@ -13,19 +13,19 @@ completed sessions into a personal Grove constellation.
 - **Weekly budget:** 168 hours minus sleep, work and daily overhead.
 - **Stats:** monthly calendar heatmap, weekly drill-down, a personal server
   insight computed per request and an offline heuristic fallback.
-- **Grove:** deterministic, interactive 3D constellation; every completed session
-  becomes a star.
+- **Island:** every long enough session grows an object on the player's island;
+  the island itself grows with the collection, and friends can visit it.
 - **Friends:** opt-in six-character codes and week-only aggregates—never raw
   friend sessions.
 
 The visible bottom navigation has intentionally been removed. Stats, Friends and
-Settings open from Home; the Grove opens from its Home preview. Every secondary
+Settings open from Home; the island lives on Home itself. Every secondary
 screen has its own Back/Close action.
 
 ## Stack
 
 - Expo 55, React Native 0.83 and strict TypeScript
-- React Navigation (native stack plus a hidden Home/Grove route container)
+- React Navigation (native stack; Home is the single main screen)
 - Zustand with AsyncStorage persistence
 - TanStack React Query
 - Supabase Auth, PostgreSQL/RLS and Edge Functions

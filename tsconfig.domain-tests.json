@@ -15,7 +15,6 @@
     "src/lib/pomodoro.ts",
     "src/lib/streaks.ts",
     "src/lib/studySpots.ts",
-    "src/lib/constellation.ts",
     "src/lib/geofenceSessions.ts",
     "src/lib/placeSearchProvider.ts",
     "src/lib/onboardingPlan.ts",

@@ -750,10 +750,25 @@ Immer `src/components/ui/MinimalTextInput.tsx` verwenden:
 `NeumorphicInsetOverlay` bleibt ausschließlich für den nicht als Button dienenden
 inneren Pomodoro-Dial erlaubt. Slider, Toggles und Inputs bleiben vollständig flach.
 
-### 10.1 Social Sign-in
+### 10.1 Anmeldung: nur Apple und Google (2026-09-17, Jannis)
 
-Social Sign-in steht unter einem ruhigen Divider. Apple und Google sind zwei
-**runde Buttons nebeneinander**, nicht gestapelte Full-Width-Buttons:
+**E-Mail und Passwort gibt es nicht mehr.** Supabase liefert seine eingebauten
+Mails ausschließlich an Mitglieder der eigenen Organisation aus; für echte Nutzer
+käme keine einzige Bestätigungs- oder Wiederherstellungsmail an, und einen eigenen
+Mailversand will Jannis nicht betreiben. Also fällt der ganze Zweig weg: kein
+Registrierungsformular, keine Bestätigungsmail, kein „Forgot password?",
+keine Tabs zwischen Anmelden und Registrieren. Die erste Anmeldung legt das Konto
+an — das steht als einzelner Satz unter den Buttons.
+
+Der Auth-Screen ist damit: Back, Überschrift, ein Satz, die beiden Kreise mit
+ihren Namen darunter, ein Hinweissatz. Sonst nichts. `PasswordResetScreen` bleibt
+nur als Ziel alter Wiederherstellungslinks bestehen und ist aus der Oberfläche
+nicht mehr erreichbar.
+
+Apple und Google sind weiterhin zwei **runde Buttons nebeneinander**, nicht
+gestapelte Full-Width-Buttons — was sich geändert hat, ist der Raum um sie herum:
+Sie stehen mittig statt unter einem Divider und tragen ihren Namen darunter, weil
+ein unbeschrifteter Kreis keine Einladung ist.
 
 - 66×66pt, Radius 33pt;
 - `NEU.card`, 1pt `NEU.track`-Kontur, kein Schatten;
@@ -764,23 +779,20 @@ Social Sign-in steht unter einem ruhigen Divider. Apple und Google sind zwei
 - `accessibilityLabel` lautet „Continue with Apple/Google";
 - auf iOS müssen beide Buttons sichtbar sein, ohne initiales Scrollen oder Clipping.
 
-### 10.2 Auth-Primäraktion und vertikale Komposition
+### 10.2 Auth-Komposition (Stand 2026-09-17)
 
-- Auth verwendet bewusst keinen generischen Accent-CTA und nicht den globalen
-  `PrimaryButton`: Die Primäraktion ist eine ruhige, monochrome Fläche in
-  `NEU.textPrimary`, 56pt hoch, Radius 16pt, weiße 17pt/600-Beschriftung, ohne
-  Verlauf, Glow oder Neumorphismus.
-- Die Aktion benennt das Ergebnis: `Create account` statt `Continue`; beim Login
-  bleibt `Sign In`.
-- Sichtbare Füllfarben liegen auf einer inneren `View`, nicht direkt auf
+- Es gibt keine Primäraktion als Fläche mehr. Die beiden Kreise **sind** die
+  Aktion; ein zusätzlicher Button darüber oder darunter wäre eine zweite Tür zum
+  selben Raum.
+- Der Inhalt sitzt vertikal mittig (`flexGrow: 1`, `justifyContent: "center"`),
+  Back oben links. Kein Divider mehr — es gibt nichts, wovon zu trennen wäre.
+- Ein Fehler erscheint als ruhige Karte über den Buttons, nie nur als Farbe.
+- Sichtbare Füllfarben liegen weiterhin auf einer inneren `View`, nicht direkt auf
   `Pressable`, da React Native Pressable-Hintergründe in diesem Projekt bereits
   mehrfach im Simulator ausgefallen sind.
-- Zwischen `Forgot password?` und `Sign In` liegen mindestens 26pt visueller
-  Abstand; die Passwortaktion steht rechts.
-- Freien vertikalen Raum nicht als zufälligen Leerraum unter den Social-Buttons
-  lassen: Der E-Mail-Flow bildet den oberen Hauptblock, der Divider und die beiden
-  Social-Kreise werden durch Auto-Margin als eigener, am unteren Bereich
-  verankerter Block behandelt.
+- **Historisch, nicht wieder einführen:** monochrome 56pt-Primärfläche,
+  `Create account`/`Sign In`-Tabs, `Forgot password?`, Bestätigungsmail-Hinweis
+  mit „Resend".
 
 ## 11. Icons
 
@@ -919,9 +931,10 @@ wieder verlangt.
 - Footer ist eine einzige horizontale Zeile. Maximal eine Textaktion links und eine
   rechts, beide gleiche vertikale Mitte und mindestens 44pt hoch.
 - Footer-Textaktionen verwenden 32pt Abstand zur linken bzw. rechten Displaykante.
-- Zulässige linke Aktionen: `Sign In` auf der ersten Pre-Auth-Seite oder `Back`.
-  Zulässige rechte Aktionen: `Get Started`, `Continue`, optional `Skip`,
-  `Create Account` oder `Finish`.
+- Zulässige linke Aktionen: `I have an account` auf der ersten Pre-Auth-Seite
+  oder `Back`. Zulässige rechte Aktionen: `Get Started`, `Continue`, optional
+  `Skip`, `Sign In` oder `Finish`. `Create Account` ist entfallen: Anmelden und
+  Registrieren sind seit 2026-09-17 dieselbe Tür (§10.1).
 - Keine gefüllten Footerbuttons, keine Schatten, keine zweite Aktionszeile.
 
 ## 14. Modals, Popups, Empty States und Warnungen
@@ -1217,9 +1230,6 @@ Vor einer visuellen Migration gezielt diese Dateien lesen:
 - `src/components/ProgressBar.tsx` — Progress
 - `src/components/TabIcons.tsx` — Icons
 - `src/screens/HomeScreen.tsx` — Screenkomposition
-- `src/components/BalanceCard.tsx` — große Statuskarte
-- `src/components/GoalCard.tsx` — kompakte Karte + Start-Pill
-- `src/components/GardenPreview.tsx` — terminale Karte + iPhone-Radius
 - `src/navigation/MainTabs.tsx` — Routencontainer, rendert nur noch Home
 
 Keine zweite Komponentenfamilie parallel anlegen. Wenn ein Rezept fehlt, die

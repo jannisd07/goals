@@ -49,6 +49,7 @@ import { usePageRefreshAnimation } from "../hooks/usePageRefreshAnimation";
 import { useRefreshPermissionWarnings } from "../hooks/useRefreshPermissionWarnings";
 import { PermissionWarningPill } from "../components/PermissionWarningPill";
 import { persistFocusStyle } from "../lib/focusStyle";
+import { userFacingMessage } from "../lib/errors";
 import type { Goal } from "../types";
 import type { RootStackParamList } from "../navigation/types";
 
@@ -130,6 +131,29 @@ function PlayDisc({ size = 52 }: { size?: number }) {
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
+/**
+ * Home used to show zeros when goals or the week could not be fetched — the
+ * one screen everybody lands on after sign-in, and the one without any error
+ * state. Same shape as the other lines on Home, with the way out on it.
+ */
+function LoadErrorPill({ onRetry }: { onRetry: () => void }) {
+  return (
+    <Pressable
+      onPress={onRetry}
+      accessibilityRole="button"
+      accessibilityLabel="Your week could not be loaded. Tap to try again."
+      style={({ pressed }) => [styles.loadErrorTouch, { opacity: pressed ? 0.85 : 1 }]}
+    >
+      <View style={styles.loadErrorPill}>
+        <Text style={styles.loadErrorText} numberOfLines={2}>
+          Your week could not be loaded
+        </Text>
+        <Text style={styles.loadErrorAction}>Retry</Text>
+      </View>
+    </Pressable>
+  );
+}
+
 export function HomeScreen() {
   const navigation = useNavigation<Nav>();
   const goals = useAppStore((s) => s.goals);
@@ -192,7 +216,7 @@ export function HomeScreen() {
     height: islandRect.height * bgScale,
   };
 
-  useGoals();
+  const goalsQuery = useGoals();
   const progressQuery = useWeeklyProgress();
   const disposableTimeHours = useAppStore((st) => st.disposableTimeHours);
   const usedTimeThisWeekSeconds = useAppStore((st) => st.usedTimeThisWeekSeconds);
@@ -243,7 +267,7 @@ export function HomeScreen() {
       void action.catch((error: unknown) => {
         Alert.alert(
           open ? "Couldn’t end check-in" : "Couldn’t start check-in",
-          error instanceof Error ? error.message : "Check your connection and try again.",
+          userFacingMessage(error, "Check your connection and try again."),
         );
       });
     },
@@ -344,6 +368,16 @@ export function HomeScreen() {
           </View>
           <BalanceRing progress={remainingRatio} size={48} />
         </View>
+
+        {/* A failed load must not look like an empty week. */}
+        {(goalsQuery.isError && goals.length === 0) || progressQuery.isError ? (
+          <LoadErrorPill
+            onRetry={() => {
+              void goalsQuery.refetch();
+              void progressQuery.refetch();
+            }}
+          />
+        ) : null}
 
         {/* A permission that is off stops the app silently; say so here. */}
         <PermissionWarningPill
@@ -613,4 +647,16 @@ const styles = StyleSheet.create({
     borderWidth: 2.4, borderColor: "#DDE3EA",
   },
   dotDone: { backgroundColor: C.green, borderColor: C.green },
+  loadErrorTouch: { marginHorizontal: 20, marginTop: 10, minHeight: 44, justifyContent: "center" },
+  loadErrorPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 999,
+    backgroundColor: "rgba(255,255,255,0.92)",
+  },
+  loadErrorText: { flex: 1, color: C.ink, fontSize: 14 },
+  loadErrorAction: { color: C.green, fontSize: 14, fontWeight: "600" },
 });

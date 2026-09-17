@@ -3,10 +3,8 @@ import {
   View,
   Text,
   Pressable,
-  KeyboardAvoidingView,
   Platform,
   ScrollView,
-  Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
@@ -20,152 +18,14 @@ import * as Crypto from "expo-crypto";
 import Svg, { Path } from "react-native-svg";
 import { supabase } from "../lib/supabase";
 import { useAppStore } from "../store";
-import { saveUserDisplayName, useAuth } from "../hooks/useAuth";
+import { saveUserDisplayName } from "../hooks/useAuth";
 import { hapticSuccess, hapticLight } from "../lib/haptics";
 import { TextAction } from "../components/ui/TextAction";
-import { MinimalTextInput } from "../components/ui/MinimalTextInput";
 import type { RootStackParamList } from "../navigation/types";
 import { NEU, NEU_FONTS } from "../theme/neumorphism";
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
-// ---------- Inline Text Input ----------
-function AuthInput({
-  placeholder,
-  value,
-  onChangeText,
-  secureTextEntry,
-  autoCapitalize,
-  keyboardType,
-  autoCorrect,
-  error,
-  onToggleSecure,
-  showToggle,
-}: {
-  placeholder: string;
-  value: string;
-  onChangeText: (t: string) => void;
-  secureTextEntry?: boolean;
-  autoCapitalize?: "none" | "words" | "sentences";
-  keyboardType?: "email-address" | "default";
-  autoCorrect?: boolean;
-  error?: string;
-  onToggleSecure?: () => void;
-  showToggle?: boolean;
-}) {
-  return (
-    <View style={{ marginBottom: 16 }}>
-      <MinimalTextInput
-        accessibilityLabel={placeholder}
-        placeholder={placeholder}
-        value={value}
-        onChangeText={onChangeText}
-        secureTextEntry={secureTextEntry}
-        autoCapitalize={autoCapitalize ?? "none"}
-        keyboardType={keyboardType ?? "default"}
-        autoCorrect={autoCorrect ?? false}
-        error={Boolean(error)}
-        rightAccessory={
-          showToggle ? (
-          <Pressable
-            onPress={onToggleSecure}
-            accessibilityRole="button"
-            accessibilityLabel={secureTextEntry ? "Show password" : "Hide password"}
-            style={{
-              minWidth: NEU.hitTarget,
-              minHeight: NEU.hitTarget,
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <Text
-              style={{
-                fontFamily: NEU_FONTS.body,
-                fontSize: 13,
-                color: NEU.textSecondary,
-              }}
-            >
-              {secureTextEntry ? "Show" : "Hide"}
-            </Text>
-          </Pressable>
-          ) : null
-        }
-      />
-      {error ? (
-        <Text
-          style={{
-            fontFamily: NEU_FONTS.body,
-            fontSize: 13,
-            color: NEU.textPrimary,
-            marginTop: 6,
-            marginLeft: 4,
-          }}
-        >
-          {error}
-        </Text>
-      ) : null}
-    </View>
-  );
-}
-
-// ---------- Tab Selector ----------
-function AuthTabs({
-  activeTab,
-  onSelect,
-  disabled,
-}: {
-  activeTab: "signin" | "signup";
-  onSelect: (t: "signin" | "signup") => void;
-  disabled?: boolean;
-}) {
-  return (
-    <View
-      style={{
-        flexDirection: "row",
-        marginBottom: 30,
-        gap: 32,
-        justifyContent: "center",
-      }}
-    >
-      {(["signup", "signin"] as const).map((tab) => {
-        const isActive = activeTab === tab;
-        return (
-          <Pressable
-            key={tab}
-            onPress={() => {
-              if (disabled) return;
-              hapticLight();
-              onSelect(tab);
-            }}
-            disabled={disabled}
-            accessibilityRole="button"
-            accessibilityState={{ selected: isActive, disabled: Boolean(disabled) }}
-            style={{
-              paddingBottom: 8,
-              minHeight: NEU.hitTarget,
-              justifyContent: "flex-end",
-              borderBottomWidth: isActive ? 2 : 0,
-              borderBottomColor: NEU.accent,
-              opacity: disabled ? 0.6 : 1,
-            }}
-          >
-            <Text
-              style={{
-                fontFamily: isActive ? NEU_FONTS.label : NEU_FONTS.body,
-                fontSize: 16,
-                color: isActive ? NEU.textPrimary : NEU.textSecondary,
-              }}
-            >
-              {tab === "signin" ? "Sign In" : "Sign Up"}
-            </Text>
-          </Pressable>
-        );
-      })}
-    </View>
-  );
-}
-
-// ---------- OAuth Helpers ----------
 async function signInWithApple() {
   const rawNonce = Array.from(
     await Crypto.getRandomBytesAsync(16),
@@ -378,187 +238,12 @@ function GoogleLogo() {
   );
 }
 
-function AuthSubmitButton({
-  label,
-  onPress,
-  disabled,
-}: {
-  label: string;
-  onPress: () => void;
-  disabled?: boolean;
-}) {
-  return (
-    <Pressable
-      onPress={onPress}
-      disabled={disabled}
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      accessibilityState={{ disabled: Boolean(disabled) }}
-      style={({ pressed }) => ({
-        minHeight: 56,
-        opacity: disabled ? 0.42 : pressed ? 0.82 : 1,
-        transform: [{ scale: pressed ? 0.985 : 1 }],
-      })}
-    >
-      <View
-        pointerEvents="none"
-        style={{
-          minHeight: 56,
-          flex: 1,
-          borderRadius: NEU.radius,
-          backgroundColor: NEU.card,
-          borderWidth: 1,
-          borderColor: NEU.track,
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        <Text
-          style={{
-            color: NEU.textPrimary,
-            fontSize: 17,
-            fontFamily: NEU_FONTS.label,
-            letterSpacing: 0.1,
-          }}
-        >
-          {label}
-        </Text>
-      </View>
-    </Pressable>
-  );
-}
-
-// ---------- Main Auth Screen ----------
 export function AuthScreen() {
   const navigation = useNavigation<Nav>();
-  const {
-    signInWithEmail,
-    signUpWithEmail,
-    resendSignupConfirmation,
-    requestPasswordReset,
-  } = useAuth();
-
-  const [activeTab, setActiveTab] = useState<"signin" | "signup">("signup");
-  const [firstName, setFirstName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [notice, setNotice] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<{ general?: string }>({});
 
-  const [fieldErrors, setFieldErrors] = useState<{
-    firstName?: string;
-    email?: string;
-    password?: string;
-    general?: string;
-  }>({});
-
-  const clearErrors = () => setFieldErrors({});
-
-  const clearFeedback = () => {
-    clearErrors();
-    setNotice(null);
-  };
-
-  const validate = (): boolean => {
-    const errors: typeof fieldErrors = {};
-    if (activeTab === "signup" && !firstName.trim()) {
-      errors.firstName = "First name is required.";
-    }
-    if (!email.trim()) {
-      errors.email = "Email is required.";
-    } else if (!/\S+@\S+\.\S+/.test(email.trim())) {
-      errors.email = "Please enter a valid email.";
-    }
-    if (!password) {
-      errors.password = "Password is required.";
-    } else if (activeTab === "signup" && password.length < 8) {
-      errors.password = "Password must be at least 8 characters.";
-    }
-    setFieldErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
-
-  const handleSubmit = useCallback(async () => {
-    if (!validate()) return;
-    setLoading(true);
-    clearFeedback();
-
-    const normalizedEmail = email.trim().toLowerCase();
-
-    try {
-      if (activeTab === "signin") {
-        await signInWithEmail(normalizedEmail, password);
-      } else {
-        const result = await signUpWithEmail(normalizedEmail, password, firstName.trim());
-        if (result.requiresEmailConfirmation) {
-          setNotice("Check your inbox to confirm your email before signing in.");
-          setActiveTab("signin");
-        }
-      }
-      hapticSuccess();
-    } catch (err: unknown) {
-      const message =
-        err instanceof Error
-          ? err.message
-          : activeTab === "signup"
-            ? "Could not create account. Please check your details and try again."
-            : "Could not sign in. Please check your email and password.";
-      setFieldErrors({ general: message });
-    } finally {
-      setLoading(false);
-    }
-  }, [email, password, firstName, activeTab, signInWithEmail, signUpWithEmail]);
-
-  const handleForgotPassword = useCallback(async () => {
-    const normalizedEmail = email.trim().toLowerCase();
-    if (!normalizedEmail) {
-      setFieldErrors((prev) => ({ ...prev, email: "Enter your email first." }));
-      return;
-    }
-    if (!/\S+@\S+\.\S+/.test(normalizedEmail)) {
-      setFieldErrors((prev) => ({ ...prev, email: "Please enter a valid email." }));
-      return;
-    }
-
-    try {
-      setLoading(true);
-      clearFeedback();
-      await requestPasswordReset(normalizedEmail);
-      Alert.alert("Reset email sent", "If the account exists, a password reset email has been sent.");
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Could not send reset email.";
-      setFieldErrors({ general: message });
-    } finally {
-      setLoading(false);
-    }
-  }, [email, requestPasswordReset]);
-
-  const handleResendConfirmation = useCallback(async () => {
-    const normalizedEmail = email.trim().toLowerCase();
-    if (!normalizedEmail || !/\S+@\S+\.\S+/.test(normalizedEmail)) {
-      setFieldErrors((current) => ({
-        ...current,
-        email: "Enter the email you signed up with.",
-      }));
-      return;
-    }
-
-    try {
-      setLoading(true);
-      await resendSignupConfirmation(normalizedEmail);
-      setNotice("A new confirmation email was requested. Check your inbox and spam folder.");
-    } catch (error) {
-      setFieldErrors({
-        general:
-          error instanceof Error
-            ? error.message
-            : "Could not resend the confirmation email.",
-      });
-    } finally {
-      setLoading(false);
-    }
-  }, [email, resendSignupConfirmation]);
+  const clearFeedback = () => setFieldErrors({});
 
   const handleAppleSignIn = useCallback(async () => {
     setLoading(true);
@@ -592,76 +277,57 @@ export function AuthScreen() {
     }
   }, []);
 
-  const switchTab = (tab: "signin" | "signup") => {
-    if (loading) return;
-    setActiveTab(tab);
-    clearFeedback();
-  };
-
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: NEU.pageSolid }}>
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
+      <ScrollView
+        bounces={false}
+        alwaysBounceVertical={false}
+        contentContainerStyle={{
+          flexGrow: 1,
+          paddingTop: 16,
+          paddingBottom: 32,
+          paddingHorizontal: 24,
+        }}
+        showsVerticalScrollIndicator={false}
       >
-        <ScrollView
-          bounces={false}
-          alwaysBounceVertical={false}
-          contentContainerStyle={{
-            flexGrow: 1,
-            paddingTop: 16,
-            paddingBottom: 32,
-            paddingHorizontal: 24,
+        <TextAction
+          label="Back"
+          onPress={() => {
+            if (loading) return;
+            hapticLight();
+            if (navigation.canGoBack()) navigation.goBack();
+            else navigation.navigate("Onboarding");
           }}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-        >
-          {/* Back + Header */}
-          <View style={{ marginBottom: 30 }}>
-            <TextAction
-              label="Back"
-              onPress={() => {
-                if (loading) return;
-                hapticLight();
-                if (navigation.canGoBack()) {
-                  navigation.goBack();
-                } else {
-                  navigation.navigate("Onboarding");
-                }
-              }}
-              disabled={loading}
-              containerStyle={{ marginBottom: 22, alignSelf: "flex-start" }}
-              textStyle={{ color: NEU.textPrimary }}
-            />
-            <Text
-              style={{
-                fontFamily: NEU_FONTS.heading,
-                fontSize: 30,
-                color: NEU.textPrimary,
-                letterSpacing: -0.3,
-                marginBottom: 6,
-              }}
-            >
-              {activeTab === "signup" ? "Create your account" : "Welcome back"}
-            </Text>
-            <Text
-              style={{
-                fontFamily: NEU_FONTS.body,
-                fontSize: 16,
-                color: NEU.textSecondary,
-                lineHeight: 23,
-              }}
-            >
-              {activeTab === "signup"
-                ? "Your goals and sessions, safe across devices."
-                : "Sign in to continue where you left off."}
-            </Text>
-          </View>
+          disabled={loading}
+          containerStyle={{ marginBottom: 22, alignSelf: "flex-start" }}
+          textStyle={{ color: NEU.textPrimary }}
+        />
 
-          {/* Tabs */}
-          <AuthTabs activeTab={activeTab} onSelect={switchTab} disabled={loading} />
+        <View style={{ flexGrow: 1, justifyContent: "center", paddingBottom: 40 }}>
+          <Text
+            style={{
+              fontFamily: NEU_FONTS.heading,
+              fontSize: 30,
+              color: NEU.textPrimary,
+              letterSpacing: -0.3,
+              marginBottom: 8,
+            }}
+          >
+            Sign in to Goals
+          </Text>
+          <Text
+            style={{
+              fontFamily: NEU_FONTS.body,
+              fontSize: 16,
+              color: NEU.textSecondary,
+              lineHeight: 23,
+              marginBottom: 40,
+            }}
+          >
+            Your goals, your sessions and your island, safe across devices. No
+            password to remember and no email to confirm.
+          </Text>
 
-          {/* General error */}
           {fieldErrors.general ? (
             <View
               style={{
@@ -669,7 +335,7 @@ export function AuthScreen() {
                 borderRadius: NEU.radiusSmall,
                 paddingVertical: 12,
                 paddingHorizontal: 16,
-                marginBottom: 16,
+                marginBottom: 24,
               }}
             >
               <Text
@@ -685,162 +351,64 @@ export function AuthScreen() {
             </View>
           ) : null}
 
-          {notice ? (
-            <View
-              style={{
-                backgroundColor: NEU.card,
-                borderRadius: NEU.radiusSmall,
-                paddingVertical: 12,
-                paddingHorizontal: 16,
-                marginBottom: 16,
-              }}
-            >
-              <Text
-                style={{
-                  fontFamily: NEU_FONTS.body,
-                  fontSize: 14,
-                  color: NEU.textSecondary,
-                  textAlign: "center",
-                }}
-              >
-                {notice}
-              </Text>
-
-              <TextAction
-                label="Resend confirmation email"
-                align="center"
-                disabled={loading}
-                onPress={() => void handleResendConfirmation()}
-                containerStyle={{ alignSelf: "center", marginTop: 4 }}
-              />
-            </View>
-          ) : null}
-
-          {/* Sign Up: first name field */}
-          {activeTab === "signup" && (
-            <AuthInput
-              placeholder="First name"
-              value={firstName}
-              onChangeText={(t) => {
-                setFirstName(t);
-                if (fieldErrors.firstName) setFieldErrors((p) => ({ ...p, firstName: undefined }));
-                if (fieldErrors.general || notice) clearFeedback();
-              }}
-              autoCapitalize="words"
-              error={fieldErrors.firstName}
-            />
-          )}
-
-          {/* Email */}
-          <AuthInput
-            placeholder="Email address"
-            value={email}
-            onChangeText={(t) => {
-              setEmail(t);
-              if (fieldErrors.email) setFieldErrors((p) => ({ ...p, email: undefined }));
-              if (fieldErrors.general || notice) clearFeedback();
-            }}
-            keyboardType="email-address"
-            error={fieldErrors.email}
-          />
-
-          {/* Password with show/hide */}
-          <AuthInput
-            placeholder="Password"
-            value={password}
-            onChangeText={(t) => {
-              setPassword(t);
-              if (fieldErrors.password) setFieldErrors((p) => ({ ...p, password: undefined }));
-              if (fieldErrors.general || notice) clearFeedback();
-            }}
-            secureTextEntry={!showPassword}
-            showToggle
-            onToggleSecure={() => setShowPassword(!showPassword)}
-            error={fieldErrors.password}
-          />
-
-          {/* Forgot password (sign in only) */}
-          {activeTab === "signin" && (
-            <View style={{ alignItems: "flex-end", marginTop: 0, marginBottom: 26 }}>
-              <TextAction
-                label={loading ? "Please wait..." : "Forgot password?"}
-                align="right"
-                onPress={() => void handleForgotPassword()}
-                disabled={loading}
-                containerStyle={{ width: 160 }}
-                textStyle={{ fontSize: 14, color: NEU.textSecondary }}
-              />
-            </View>
-          )}
-
-          {/* Submit button */}
-          <AuthSubmitButton
-            label={
-              loading
-                ? "Please wait..."
-                : activeTab === "signin"
-                  ? "Sign In"
-                  : "Create account"
-            }
-            onPress={() => void handleSubmit()}
-            disabled={loading}
-          />
-
+          {/*
+            The two circles are now the way in rather than an alternative to it,
+            but they keep the shape the design settled on (CLAUDE.md §10.1):
+            66pt, side by side, flat outline. What changed is the room around
+            them — they sit in the middle of the screen with their names under
+            them, because an unlabelled circle is not an invitation.
+          */}
           <View
             style={{
-              flexGrow: 1,
-              minHeight: 220,
+              flexDirection: "row",
               justifyContent: "center",
-              paddingTop: 24,
+              alignItems: "flex-start",
+              gap: 34,
             }}
           >
-            {/* Divider */}
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                marginBottom: 30,
-              }}
-            >
-              <View style={{ flex: 1, height: 1, backgroundColor: NEU.track }} />
-              <Text
-                style={{
-                  fontFamily: NEU_FONTS.body,
-                  fontSize: 13,
-                  color: NEU.textSecondary,
-                  marginHorizontal: 16,
-                }}
-              >
-                or continue with
-              </Text>
-              <View style={{ flex: 1, height: 1, backgroundColor: NEU.track }} />
-            </View>
-
-            {/* OAuth Buttons */}
-            <View
-              style={{
-                flexDirection: "row",
-                justifyContent: "center",
-                alignItems: "center",
-                gap: 34,
-              }}
-            >
-              {Platform.OS === "ios" && (
+            {Platform.OS === "ios" ? (
+              <View style={{ alignItems: "center" }}>
                 <SocialAuthButton
                   provider="apple"
                   onPress={() => void handleAppleSignIn()}
                   disabled={loading}
                 />
-              )}
+                <Text style={socialLabel}>Apple</Text>
+              </View>
+            ) : null}
+            <View style={{ alignItems: "center" }}>
               <SocialAuthButton
                 provider="google"
                 onPress={() => void handleGoogleSignIn()}
                 disabled={loading}
               />
+              <Text style={socialLabel}>Google</Text>
             </View>
           </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+
+          <Text
+            style={{
+              fontFamily: NEU_FONTS.body,
+              fontSize: 13,
+              color: NEU.textSecondary,
+              textAlign: "center",
+              lineHeight: 19,
+              marginTop: 34,
+            }}
+          >
+            {loading
+              ? "Please wait…"
+              : "Signing in for the first time creates your account."}
+          </Text>
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
+
+const socialLabel = {
+  fontFamily: NEU_FONTS.label,
+  fontSize: 14,
+  color: NEU.textPrimary,
+  marginTop: 10,
+} as const;

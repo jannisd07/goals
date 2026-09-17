@@ -7,35 +7,6 @@ interface IconProps {
   strokeWidth?: number;
 }
 
-export function HomeIcon({ size = 24, color = "#000000", strokeWidth = 1.5 }: IconProps) {
-  return (
-    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <Path
-        d="M3 10.5L12 3L21 10.5V20C21 20.55 20.55 21 20 21H15V15H9V21H4C3.45 21 3 20.55 3 20V10.5Z"
-        stroke={color}
-        strokeWidth={strokeWidth}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </Svg>
-  );
-}
-
-export function GardenIcon({ size = 24, color = "#000000", strokeWidth = 1.5 }: IconProps) {
-  return (
-    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <Circle cx="12" cy="12" r="4" stroke={color} strokeWidth={strokeWidth} />
-      <Circle cx="12" cy="12" r="8" stroke={color} strokeWidth={strokeWidth} opacity={0.35} />
-      <Path
-        d="M12 2V4M12 20V22M2 12H4M20 12H22"
-        stroke={color}
-        strokeWidth={strokeWidth}
-        strokeLinecap="round"
-      />
-    </Svg>
-  );
-}
-
 export function AnalyticsIcon({ size = 24, color = "#000000" }: IconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
@@ -84,14 +55,6 @@ export function LocationIcon({ size = 16, color = "#000000", strokeWidth = 1.5 }
   );
 }
 
-export function PlusIcon({ size = 20, color = "#000000", strokeWidth = 1.5 }: IconProps) {
-  return (
-    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <Path d="M12 5V19M5 12H19" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" />
-    </Svg>
-  );
-}
-
 export function ChevronLeftIcon({ size = 20, color = "#000000", strokeWidth = 1.5 }: IconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
@@ -125,22 +88,6 @@ export function PauseIcon({ size = 24, color = "#000000" }: IconProps) {
   );
 }
 
-export function StopIcon({ size = 24, color = "#000000" }: IconProps) {
-  return (
-    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <Rect x="6" y="6" width="12" height="12" rx="2" fill={color} />
-    </Svg>
-  );
-}
-
-export function CloseIcon({ size = 24, color = "#000000", strokeWidth = 1.5 }: IconProps) {
-  return (
-    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <Path d="M18 6L6 18M6 6L18 18" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" />
-    </Svg>
-  );
-}
-
 /** A tick, for confirming a set of changes. */
 export function CheckIcon({ size = 24, color = "#000000", strokeWidth = 2 }: IconProps) {
   return (
@@ -161,24 +108,6 @@ export function RefreshIcon({ size = 20, color = "#000000", strokeWidth = 1.5 }:
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
       <Path d="M1 4V10H7" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" />
       <Path d="M3.51 15A9 9 0 1 0 5.64 5.64L1 10" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" />
-    </Svg>
-  );
-}
-
-export function FriendsIcon({ size = 20, color = "#000000" }: IconProps) {
-  return (
-    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <Circle cx="9" cy="8" r="3.4" fill={color} />
-      <Path
-        d="M3 19.2C3 15.9 5.7 13.6 9 13.6C12.3 13.6 15 15.9 15 19.2C15 19.64 14.64 20 14.2 20H3.8C3.36 20 3 19.64 3 19.2Z"
-        fill={color}
-      />
-      <Circle cx="16.5" cy="9" r="2.7" fill={color} opacity={0.55} />
-      <Path
-        d="M16.1 13.3C18.85 13.5 21 15.5 21 18.3C21 18.69 20.69 19 20.3 19H16.6C16.85 18.44 17 17.83 17 17.2C17 15.7 16.66 14.37 16.1 13.3Z"
-        fill={color}
-        opacity={0.55}
-      />
     </Svg>
   );
 }

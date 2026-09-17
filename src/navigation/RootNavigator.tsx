@@ -22,6 +22,7 @@ import { PasswordResetScreen } from "../screens/PasswordResetScreen";
 import { useAppStore } from "../store";
 import { completePendingOnboarding } from "../lib/onboarding";
 import { isStaleSession } from "../lib/pomodoro";
+import { settleAbandonedSession } from "../lib/abandonedSession";
 import { supabase } from "../lib/supabase";
 import { NEU } from "../theme/neumorphism";
 import { NEU_FONTS } from "../theme/neumorphism";
@@ -46,6 +47,9 @@ export function RootNavigator() {
     });
     if (stale) {
       console.warn("Dropping a stale focus session from the store");
+      // Same settlement as the other two places that notice such a session:
+      // keep the reward, close the row with the time that was really focused.
+      void settleAbandonedSession(restoredSession);
       useAppStore.getState().endSession(false);
     }
   }, [restoredSession]);

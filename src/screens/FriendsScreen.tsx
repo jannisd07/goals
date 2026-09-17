@@ -11,6 +11,7 @@ import {
 import Animated, { FadeIn } from "react-native-reanimated";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { userFacingMessage } from "../lib/errors";
 import { MinimalTextInput } from "../components/ui/MinimalTextInput";
 import { PrimaryButton } from "../components/ui/PrimaryButton";
 import { IslandBadge } from "../components/island/IslandBadge";
@@ -163,7 +164,7 @@ export function FriendsScreen() {
       hapticMedium();
       Alert.alert("Connected", `You and ${display_name} are now friends.`);
     } catch (error) {
-      Alert.alert("Could not add friend", error instanceof Error ? error.message : "Try again.");
+      Alert.alert("Could not add friend", userFacingMessage(error, "Try again."));
     }
   }, [codeInput, addFriendMutation]);
 
@@ -178,7 +179,7 @@ export function FriendsScreen() {
             void removeFriendMutation.mutateAsync(friend.friend_id).catch((error) => {
               Alert.alert(
                 "Could not remove friend",
-                error instanceof Error ? error.message : "Please try again.",
+                userFacingMessage(error, "Please try again."),
               );
             });
           },

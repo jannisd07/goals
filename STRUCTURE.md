@@ -36,11 +36,7 @@
 
 | Datei | Zweck |
 |---|---|
-| `NeumorphicSurface.tsx` | Basis-Karte (duale Schatten, Clipping); `NeumorphicInsetOverlay` ist nur für ausdrücklich erlaubte mechanische Vertiefungen reserviert |
-| `AtmosphericBackground.tsx` | Einfarbige `NEU.bg`-Fläche (Name historisch) |
-| `BalanceCard.tsx` | Große Statuskarte auf der Homepage (Wochenbudget) |
-| `GoalCard.tsx` | Kompakte Goal-Karte mit Progress + Start-Pill (Homepage) |
-| `GardenPreview.tsx` | Grove-Vorschau, terminale Karte der Homepage (20pt oben / 31pt unten) |
+| `NeumorphicSurface.tsx` | Basis-Karte (duale Schatten, Clipping) |
 | `ProgressBar.tsx` | Flache Progress-Bar (Accent-Fill, Track `NEU.track`) |
 | `RatingSheet.tsx` | **Popup** nach Session-Ende: „Wie war die Session?" (Rating fließt in KI-Insights, wird nie angezeigt) |
 | `DisplayNameSheet.tsx` | **Popup** aus Settings → Account: Anzeigenamen ändern (1–80 Zeichen, speichert über `useAuth().updateDisplayName`) |
@@ -56,7 +52,6 @@
 | `island/IslandObjectsLayer.tsx` | Zeichnet alles Gewachsene über den Home-Hintergrund: Wasser an festen Plätzen, Land an seinem gefundenen |
 | `island/islandSprites.ts` | Eine Suche über alle vier Sprite-Dateien, samt Palette und Ankerpixel |
 | `PendingRatingSheet.tsx` | Globale Rating-Destination für manuell beendete Sessions und Check-In-Notifications |
-| `FocusSetupSheet.tsx` | **Popup** vor Deep-Work-Start (Long-Press auf Start-Pill): Modus Intervall/Flowtime, Presets, Slider, Pausenvorschau |
 | `CategoryCards.tsx` | „Wofür ist es"-Kategorie-Grid + `ValueStepper` (Onboarding + beide Setup-Screens) |
 | `TabIcons.tsx` | Alle SVG-Icons (24×24 ViewBox), inkl. `FriendsIcon`. Neue Icons hier ergänzen, keine Emojis |
 
@@ -71,7 +66,6 @@
 
 ### Alle Popups/Modals im Projekt
 
-- `FocusSetupSheet.tsx` (Deep-Work-Start, via Long-Press)
 - `RatingSheet.tsx` (Session-Bewertung)
 - `GoalStartSheet.tsx` (Start eines Goals, inkl. Auswahl, was wächst)
 - `ui/PopupCard.tsx` (generische Basis)
@@ -81,8 +75,7 @@
 
 | Datei | Route | Zweck |
 |---|---|---|
-| `HomeScreen.tsx` | Tab „Home" | Referenzdesign: Zeitbudget, beide Ziele, Permission-Warnung, Grove-Vorschau, Friends/Stats/Settings |
-| `GardenScreen.tsx` | Tab „Grove" | Interaktive, deterministische 3D-Session-Konstellation mit Pan/Rotation/Tooltip |
+| `HomeScreen.tsx` | Hauptscreen | Insel im Hintergrund, Zeitbudget, beide Ziele, Permission-Warnung, wartende Belohnungen, Friends/Stats/Settings |
 | `AnalyticsScreen.tsx` | Root Stack | Stats-Übersicht; nur über Home-Stats-Button, mit eigener Back-Aktion |
 | `AnalyticsWeekScreen.tsx` | Stack | Wochendetail der Stats |
 | `AuthScreen.tsx` | Stack (unauth) | Login/Signup; flache Minimal-Inputs, zwei runde Apple-/Google-Buttons; Back führt ins Onboarding |
@@ -104,7 +97,7 @@ Entfernt: `CreateGoalScreen.tsx`, `SessionLengthPicker.tsx`, `GardenOrb.tsx`,
 | Datei | Zweck |
 |---|---|
 | `RootNavigator.tsx` | Auth-Gate → Onboarding-Gate → PermissionGate → Stack |
-| `MainTabs.tsx` | Unsichtbarer Home-/Grove-Routencontainer; **keine sichtbare Bottom-Navigation** |
+| `MainTabs.tsx` | Routencontainer, rendert nur Home; **keine sichtbare Bottom-Navigation** |
 | `types.ts` | `RootStackParamList`, `MainTabParamList` |
 
 ## src/store — Zustand (persistiert via AsyncStorage)
@@ -156,7 +149,6 @@ Entfernt: `CreateGoalScreen.tsx`, `SessionLengthPicker.tsx`, `GardenOrb.tsx`,
 | `placeSearch.ts` | Gemeinsame Ortssuche, Kontinent-Priorisierung und Geofence-Radiusoptionen für Onboarding und Setup |
 | `time.ts` | Datum/Zeit-Formatierung, Wochenstart (Montag), Geräte-Zeitzone |
 | `haptics.ts` | Haptik-Wrapper |
-| `constellation.ts` | Deterministisches 3D-Sternbild-Layout und Projektion für den aktiven Grove |
 | `growRewards.ts` | Reine, getestete Belohnungslogik: Kategorien, Katalog v1, Größe aus dem Verlauf, neu hinzufügen oder wachsen |
 | `islandMerge.ts` | Verschmilzt zwei Kopien einer Insel: höhere Stufe gewinnt, Insel schrumpft nie |
 | `islandSync.ts` | Liest und schreibt die Insel in `public.island_state` |

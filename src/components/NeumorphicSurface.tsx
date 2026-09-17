@@ -1,18 +1,10 @@
-import React, { useId } from "react";
+import React from "react";
 import {
   StyleProp,
   StyleSheet,
   View,
   ViewStyle,
 } from "react-native";
-import Svg, {
-  ClipPath,
-  Defs,
-  G,
-  LinearGradient,
-  Rect,
-  Stop,
-} from "react-native-svg";
 import { NEU } from "../theme/neumorphism";
 
 interface SurfaceProps {
@@ -66,64 +58,6 @@ function splitStyle(style: ViewStyle | undefined) {
   });
 
   return { outer, inner };
-}
-
-export function NeumorphicInsetOverlay({
-  radius = NEU.radius,
-  strength = 1,
-}: {
-  radius?: number;
-  strength?: number;
-}) {
-  const id = useId().replace(/:/g, "");
-  const safeStrength = Math.max(0, Math.min(1, strength));
-  const clipId = `neu-inset-clip-${id}`;
-  const darkTop = `neu-inset-dark-top-${id}`;
-  const darkLeft = `neu-inset-dark-left-${id}`;
-  const lightBottom = `neu-inset-light-bottom-${id}`;
-  const lightRight = `neu-inset-light-right-${id}`;
-
-  return (
-    <Svg pointerEvents="none" style={StyleSheet.absoluteFill} width="100%" height="100%">
-      <Defs>
-        <ClipPath id={clipId}>
-          <Rect width="100%" height="100%" rx={radius} ry={radius} />
-        </ClipPath>
-        <LinearGradient id={darkTop} x1="0" y1="0" x2="0" y2="1">
-          <Stop offset="0" stopColor={NEU.dark} stopOpacity={0.72 * safeStrength} />
-          <Stop offset="1" stopColor={NEU.dark} stopOpacity={0} />
-        </LinearGradient>
-        <LinearGradient id={darkLeft} x1="0" y1="0" x2="1" y2="0">
-          <Stop offset="0" stopColor={NEU.dark} stopOpacity={0.72 * safeStrength} />
-          <Stop offset="1" stopColor={NEU.dark} stopOpacity={0} />
-        </LinearGradient>
-        <LinearGradient id={lightBottom} x1="0" y1="1" x2="0" y2="0">
-          <Stop offset="0" stopColor={NEU.light} stopOpacity={0.9 * safeStrength} />
-          <Stop offset="1" stopColor={NEU.light} stopOpacity={0} />
-        </LinearGradient>
-        <LinearGradient id={lightRight} x1="1" y1="0" x2="0" y2="0">
-          <Stop offset="0" stopColor={NEU.light} stopOpacity={0.9 * safeStrength} />
-          <Stop offset="1" stopColor={NEU.light} stopOpacity={0} />
-        </LinearGradient>
-      </Defs>
-      <G clipPath={`url(#${clipId})`}>
-        <Rect width="100%" height={NEU.insetBlur} fill={`url(#${darkTop})`} />
-        <Rect width={NEU.insetBlur} height="100%" fill={`url(#${darkLeft})`} />
-        <Rect
-          y="72%"
-          width="100%"
-          height="28%"
-          fill={`url(#${lightBottom})`}
-        />
-        <Rect
-          x="78%"
-          width="22%"
-          height="100%"
-          fill={`url(#${lightRight})`}
-        />
-      </G>
-    </Svg>
-  );
 }
 
 export function NeumorphicSurface({

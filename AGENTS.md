@@ -28,7 +28,7 @@ No separate linter is configured.
 - **Zustand 5** for local/persisted state (AsyncStorage, key: `"goals-app-state-v3"`)
 - **TanStack React Query** for Supabase data fetching
 - **Supabase** for auth (email/password) and PostgreSQL with RLS
-- **React Navigation** (native stack + hidden Home/Grove route container)
+- **React Navigation** (native stack; Home is the single main screen)
 - **Reanimated 4** for animations
 - **expo-location + expo-task-manager** for background geofencing
 
@@ -51,7 +51,7 @@ Zustand store in `src/store/index.ts` combines 4 slices:
 
 ### Navigation
 - `RootNavigator`: Auth guard → Onboarding guard → MainTabs (+ modal stack screens)
-- `MainTabs`: unsichtbarer Home-/Grove-Routencontainer; es gibt keine sichtbare Bottom-Bar
+- `MainTabs`: Routencontainer, rendert nur Home; es gibt keine sichtbare Bottom-Bar
 - Analytics wird ausschließlich über den Stats-Button auf Home geöffnet und besitzt Back
 
 ### Database

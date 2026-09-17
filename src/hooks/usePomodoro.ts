@@ -10,7 +10,7 @@ import {
   computeAdaptiveBreakMinutes,
 } from "../lib/pomodoro";
 import { syncFocusPhaseBoundary } from "../lib/notifications";
-import { rememberSessionReward } from "../lib/pendingGrows";
+import { settleAbandonedSession } from "../lib/abandonedSession";
 import { localSessionId } from "../lib/sessionOutbox";
 import type { Goal, GrowCategory } from "../types";
 import { asGrowCategory } from "../lib/growRewards";
@@ -148,11 +148,13 @@ export function usePomodoro() {
     const catchUp = catchUpAfterGap(gap);
     if (catchUp.abandoned) {
       // The app was closed for hours: drop the session instead of counting the
-      // whole gap as focus time. The row in Supabase stays open and unfinished.
-      // The focus before the gap was real, so its reward is kept and lands on
-      // the island — losing an hour of work to a flat battery would be unfair.
+      // whole gap as focus time. The focus before the gap was real, so its
+      // reward is kept and the row is closed with exactly that time
+      // (src/lib/abandonedSession.ts) — losing an hour of work to a flat
+      // battery would be unfair, and so would an island that grew from hours
+      // the stats never saw.
       console.warn(`Dropping a focus session that sat idle for ${Math.round(gap / 3600)} h`);
-      void rememberSessionReward(useAppStore.getState().activeSession);
+      void settleAbandonedSession(useAppStore.getState().activeSession);
       endSessionStore(false);
       return;
     }

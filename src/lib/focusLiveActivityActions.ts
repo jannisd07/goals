@@ -1,7 +1,7 @@
 import { useAppStore } from "../store";
 import type { PomodoroState } from "../types";
 import { advancePomodoro, catchUpAfterGap } from "./pomodoro";
-import { rememberSessionReward } from "./pendingGrows";
+import { settleAbandonedSession } from "./abandonedSession";
 import { syncFocusPhaseBoundary } from "./notifications";
 
 export type FocusLiveActivityAction = "toggle-pause" | "toggle-break";
@@ -21,7 +21,7 @@ function advanceToActionTime(timestamp: number): PomodoroState | null {
   const catchUp = catchUpAfterGap(gap);
   if (catchUp.abandoned) {
     console.warn(`Dropping a focus session that sat idle for ${Math.round(gap / 3600)} h`);
-    void rememberSessionReward(store.activeSession);
+    void settleAbandonedSession(store.activeSession);
     store.endSession(false);
     return null;
   }

@@ -29,6 +29,7 @@ import { useAppStore } from "../store";
 import { useAuth } from "../hooks/useAuth";
 import { useDeactivateGoal } from "../hooks/useGoals";
 import { hapticLight } from "../lib/haptics";
+import { userFacingMessage } from "../lib/errors";
 import { persistFocusStyle } from "../lib/focusStyle";
 import { syncWeeklySummary } from "../lib/notifications";
 import { persistUserPreferences } from "../lib/userPreferences";
@@ -324,7 +325,7 @@ export function SettingsScreen() {
           void signOut().catch((error) => {
             Alert.alert(
               "Could not sign out",
-              error instanceof Error ? error.message : "Please try again.",
+              userFacingMessage(error, "Please try again."),
             );
           });
         },
@@ -347,7 +348,7 @@ export function SettingsScreen() {
               await deleteAccount();
               Alert.alert("Account deleted", "Your account and data have been permanently removed.");
             } catch (error) {
-              const message = error instanceof Error ? error.message : "Failed to delete account.";
+              const message = userFacingMessage(error, "Failed to delete account.");
               Alert.alert("Delete failed", message);
             } finally {
               setDeletingAccount(false);

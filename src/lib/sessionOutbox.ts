@@ -187,10 +187,6 @@ export async function removeQueuedSession(sessionId: string): Promise<void> {
   );
 }
 
-export async function countQueuedSessions(): Promise<number> {
-  return (await readSessionOutbox()).length;
-}
-
 /** Queued sessions belong to the signed-in account and never survive a sign-out. */
 export async function clearSessionOutbox(): Promise<void> {
   await AsyncStorage.removeItem(SESSION_OUTBOX_KEY);
@@ -216,6 +212,9 @@ async function sendQueuedSession(
         ...(entry.rating !== null ? { rating: entry.rating, notes: entry.notes } : {}),
       })
       .eq("id", entry.serverId)
+      // Only ever close a session that is still open. A row that was finished
+      // by another path in the meantime keeps its own duration.
+      .is("end_time", null)
       .select("id");
     if (error) return false;
     // No row came back: the session was deleted, or somebody else closed it.

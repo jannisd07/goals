@@ -63,8 +63,3 @@ export const ISLAND_FLAGS: readonly IslandFlag[] = [
   { code: "er", name: "Eritrea", rows: ["rrgggggggggggggg", "rrrrrggggggggggg", "rrrrrrrrgggggggg", "rrrrrrrrrrrggggg", "ryyrrrrrrrrrrrgg", "ryyrrrrrrrrrrrcc", "rrrrrrrrrrrccccc", "rrrrrrrrcccccccc", "rrrrrccccccccccc", "rrcccccccccccccc"] },
   { code: "pk", name: "Pakistan", rows: ["wwwwgggggggggggg", "wwwwgggggggggggg", "wwwwggggggwwwggg", "wwwwgggggwwggggg", "wwwwggggwggggwgg", "wwwwggggwggggggg", "wwwwgggggwwggggg", "wwwwggggggwwwggg", "wwwwgggggggggggg", "wwwwgggggggggggg"] },
 ];
-
-export function islandFlagName(code: string | null | undefined): string | null {
-  if (!code) return null;
-  return ISLAND_FLAGS.find((flag) => flag.code === code)?.name ?? null;
-}

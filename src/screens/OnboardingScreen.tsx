@@ -1227,7 +1227,9 @@ export function OnboardingScreen() {
     const page = pages[pageIndex];
     if (page === "welcome") return "Continue";
     if (page === "permissions") {
-      return postAuth ? (saving ? "Please wait..." : "Finish") : "Create Account";
+      // Signing in and signing up are the same door now: the first time with
+      // Apple or Google creates the account (CLAUDE.md §10.1).
+      return postAuth ? (saving ? "Please wait..." : "Finish") : "Sign In";
     }
     return "Continue";
   }, [pageIndex, pages, postAuth, saving]);
@@ -2178,7 +2180,7 @@ export function OnboardingScreen() {
         ) : pageIndex > 0 ? (
           <TextAction label="Back" onPress={() => goTo(pageIndex - 1)} />
         ) : !postAuth ? (
-          <TextAction label="Sign In" onPress={() => navigation.navigate("Auth")} textStyle={{ color: NEU.textPrimary }} />
+          <TextAction label="I have an account" onPress={() => navigation.navigate("Auth")} textStyle={{ color: NEU.textPrimary }} />
         ) : (
           <View style={{ minWidth: 72, minHeight: 44 }} />
         )}
