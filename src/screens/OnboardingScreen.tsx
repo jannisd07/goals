@@ -33,6 +33,7 @@ import Animated, {
   FadeInUp,
   FadeOut,
   interpolate,
+  runOnJS,
   useAnimatedProps,
   useAnimatedScrollHandler,
   useReducedMotion,
@@ -192,11 +193,8 @@ function HorizontalNumberWheel({
   );
   const initialIndex = Math.max(0, Math.min(values.length - 1, value - min));
   const scrollX = useSharedValue(initialIndex * NUMBER_WHEEL_ITEM_WIDTH);
-  const onScroll = useAnimatedScrollHandler({
-    onScroll: (event) => {
-      scrollX.value = event.contentOffset.x;
-    },
-  });
+  /** The step under the marker, so the value follows the wheel while it turns. */
+  const markedIndex = useSharedValue(initialIndex);
 
   const commitOffset = useCallback(
     (offset: number) => {
@@ -212,6 +210,26 @@ function HorizontalNumberWheel({
     },
     [onChange, value, values],
   );
+
+  /**
+   * The number under the marker *is* the value, the whole time it is turning.
+   *
+   * It used to be read only when the wheel came to rest — on momentum ending,
+   * or on letting go slowly enough. A careful drag produces neither: no
+   * momentum to end, and a flick of velocity just over the threshold. The wheel
+   * then snapped to a number that was never handed on, and the target could not
+   * be set at all.
+   */
+  const onScroll = useAnimatedScrollHandler({
+    onScroll: (event) => {
+      scrollX.value = event.contentOffset.x;
+      const index = Math.round(event.contentOffset.x / NUMBER_WHEEL_ITEM_WIDTH);
+      if (index !== markedIndex.value) {
+        markedIndex.value = index;
+        runOnJS(commitOffset)(event.contentOffset.x);
+      }
+    },
+  });
 
   return (
     <View
@@ -1494,7 +1512,7 @@ export function OnboardingScreen() {
                 <FocusStyleCard
                   title="Flowtime"
                   behavior="No limit"
-                  description="The clock runs until you stop it. The longer you focused, the longer your break."
+                  description="The clock runs until you stop it, and you take your breaks when you want them — the app only suggests how long."
                   selected={focusStyle === "flowtime"}
                   onPress={() => {
                     setFocusStyle("flowtime");

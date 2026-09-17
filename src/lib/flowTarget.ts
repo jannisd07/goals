@@ -12,16 +12,17 @@
  *
  * | range | step | positions |
  * |---|---|---|
- * | 5 min – 1 h | 5 min | 11 |
+ * | 5 min – 1 h | 5 min | 12 |
  * | 1 h – 2 h | 10 min | 6 |
- * | 2 h – 4 h | 30 min | 4 |
- * | 4 h – 8 h | 1 h | 4 |
- * | 8 h – 16 h | 2 h | 4 |
+ * | 2 h – 4 h | 15 min | 8 |
+ * | 4 h – 8 h | 30 min | 8 |
+ * | 8 h – 16 h | 1 h | 8 |
  *
- * 29 steps in total, so one full turn is the whole range at about 12° a step —
- * coarse enough to feel each one, fine enough to land on a value. The first
- * third of the turn covers 5 to 60 minutes, which is where most sessions are,
- * and more than half of it is spent below two hours.
+ * 42 steps in total, so one full turn is the whole range at about 8.5° a step.
+ * No step is ever coarser than an hour: the old scale jumped two hours at the
+ * top, which meant thirteen, fourteen and fifteen hours did not exist at all.
+ * The first quarter of the turn still covers 5 to 60 minutes, which is where
+ * nearly every session lives.
  *
  * Everything here is pure, so the domain suite covers the scale itself.
  */
@@ -33,12 +34,21 @@ interface Band {
   step: number;
 }
 
+/**
+ * Finer than it was, and never coarser than an hour (Jannis, 2026-09-18).
+ *
+ * The top band used to move in two-hour jumps, so thirteen, fourteen and
+ * fifteen hours simply did not exist — the ring went from twelve to fourteen to
+ * sixteen. A scale that cannot express a number a person would say out loud is
+ * the wrong scale. Every band is at most an hour now, and the small end, where
+ * nearly every session lives, is finer still.
+ */
 const BANDS: readonly Band[] = [
   { from: 5, to: 60, step: 5 },
   { from: 60, to: 120, step: 10 },
-  { from: 120, to: 240, step: 30 },
-  { from: 240, to: 480, step: 60 },
-  { from: 480, to: 960, step: 120 },
+  { from: 120, to: 240, step: 15 },
+  { from: 240, to: 480, step: 30 },
+  { from: 480, to: 960, step: 60 },
 ];
 
 /** Every target the ring can land on, from five minutes to sixteen hours. */

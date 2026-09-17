@@ -1631,9 +1631,19 @@ assert(
   flowTargetTurn(5) === 0 &&
     flowTargetTurn(960) === 1 &&
     FLOW_TARGET_SWEEP === 1 &&
-    flowTargetTurn(60) > 0.3 &&
-    flowTargetTurn(60) < 0.45,
-  "16 h is one whole turn, and the first hour still sits inside the first half",
+    flowTargetTurn(60) > 0.2 &&
+    flowTargetTurn(60) < 0.35,
+  "16 h is one whole turn, and the first hour still sits inside the first third",
+);
+// No step may be coarser than an hour. The scale once jumped from twelve hours
+// to fourteen, so a target a person would say out loud could not be set at all.
+assert(
+  FLOW_TARGET_STEPS.every((value, index) => index === 0 || value - FLOW_TARGET_STEPS[index - 1] <= 60),
+  "the dial never skips more than an hour at a time",
+);
+assert(
+  [13, 14, 15, 16].every((hours) => FLOW_TARGET_STEPS.includes(hours * 60)),
+  "every whole hour near the top of the scale can actually be chosen",
 );
 assert(
   formatFlowTarget(45) === "45 min" &&
