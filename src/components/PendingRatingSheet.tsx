@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { RatingSheet } from "./RatingSheet";
 import { useRateSession } from "../hooks/useSessions";
 import { supabase } from "../lib/supabase";
+import { isLocalSessionId, readSessionOutbox, resolveSessionId } from "../lib/sessionOutbox";
 import { formatDuration } from "../lib/time";
 import { useAppStore } from "../store";
 
@@ -25,10 +26,25 @@ export function PendingRatingSheet() {
     queryKey: ["pending-rating", sessionId],
     enabled: isAuthenticated && Boolean(sessionId),
     queryFn: async (): Promise<RatingContext> => {
+      // A session finished offline may still be waiting in the queue — then
+      // everything the sheet needs is there and the rating travels with the
+      // entry — or it has been sent since and lives on the server under its own id.
+      const resolvedId = await resolveSessionId(sessionId!);
+      if (isLocalSessionId(resolvedId)) {
+        const queued = (await readSessionOutbox()).find((entry) => entry.id === resolvedId);
+        if (!queued) throw new Error("This session is no longer waiting to be sent.");
+        const goal = useAppStore.getState().goals.find((entry) => entry.id === queued.goalId);
+        return {
+          goalName: goal?.name ?? "Focus",
+          durationSeconds: queued.durationSeconds,
+          cycles: queued.pomodoroCycles,
+        };
+      }
+
       const { data: session, error: sessionError } = await supabase
         .from("sessions")
         .select("goal_id,duration_seconds,pomodoro_cycles")
-        .eq("id", sessionId!)
+        .eq("id", resolvedId)
         .single();
       if (sessionError) throw sessionError;
 

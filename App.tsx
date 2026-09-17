@@ -36,6 +36,7 @@ import { registerGeofences, setupNotifications } from "./src/services/geofencing
 import { syncWeeklySummary } from "./src/lib/notifications";
 import { readPendingGrows, removePendingGrow } from "./src/lib/pendingGrows";
 import { flushSessionOutbox } from "./src/lib/sessionOutbox";
+import { onSessionsChanged } from "./src/lib/sessionEvents";
 import { autoGrowPick, overdueGrows } from "./src/lib/growDelivery";
 import { computeGrowSize } from "./src/lib/growRewards";
 import { categoryLimit, islandStageFor } from "./src/lib/islandScene";
@@ -448,7 +449,7 @@ function AppContent() {
       void queryCache.invalidateQueries({ queryKey: ["friends-weekly"] });
       // Anything that could not be sent while the phone was offline goes out
       // now, before the aggregates above are read back.
-      void flushSessionOutbox().then((sent) => {
+      void flushSessionOutbox(useAppStore.getState().activeSession?.session_id ?? null).then((sent) => {
         if (sent === 0) return;
         void queryCache.invalidateQueries({ queryKey: ["sessions"] });
         void queryCache.invalidateQueries({ queryKey: ["weekly-progress"] });
@@ -460,13 +461,37 @@ function AppContent() {
     return () => subscription.remove();
   }, [isAuthenticated, queryCache]);
 
+  // An Auto Check-In that starts or ends while the app is open changes the week
+  // and may earn a reward; Home must show both without a trip to the background.
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    return onSessionsChanged(() => {
+      void queryCache.invalidateQueries({ queryKey: ["sessions"] });
+      void queryCache.invalidateQueries({ queryKey: ["weekly-progress"] });
+      void queryCache.invalidateQueries({ queryKey: ["streak"] });
+      void queryCache.invalidateQueries({ queryKey: ["active-checkin"] });
+      void queryCache.invalidateQueries({ queryKey: ["analytics"] });
+      void openNextPendingGrow();
+    });
+  }, [isAuthenticated, queryCache]);
+
   useEffect(() => {
     if (isAuthenticated && !isLoading) {
       flushPendingNotificationDestination();
-      void flushSessionOutbox();
+      // Sessions sent now were finished offline; Home must not keep showing the
+      // week without them until the cache happens to expire.
+      void flushSessionOutbox(useAppStore.getState().activeSession?.session_id ?? null).then(
+        (sent) => {
+          if (sent === 0) return;
+          void queryCache.invalidateQueries({ queryKey: ["sessions"] });
+          void queryCache.invalidateQueries({ queryKey: ["weekly-progress"] });
+          void queryCache.invalidateQueries({ queryKey: ["streak"] });
+          void queryCache.invalidateQueries({ queryKey: ["analytics"] });
+        },
+      );
       void deliverOverduePendingGrows().finally(() => void openNextPendingGrow());
     }
-  }, [isAuthenticated, isLoading]);
+  }, [isAuthenticated, isLoading, queryCache]);
 
   useEffect(() => {
     // Never carry a notification belonging to a signed-out account into the

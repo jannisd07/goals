@@ -254,12 +254,26 @@ export function HomeScreen() {
   // The ring fills with what is still available, so a fresh week reads as full.
   const remainingRatio = totalSeconds > 0 ? remainingSeconds / totalSeconds : 0;
 
-  const progress = progressQuery.data ?? {};
+  // Without a connection the query has nothing; the last known week from the
+  // store is the same source the balance ring already draws from, so the cards
+  // and the ring never disagree.
+  const storedProgress = useAppStore((st) => st.weeklyProgress);
+  const progress = progressQuery.data ?? storedProgress;
   const focusHours = focusGoal ? progress[focusGoal.id]?.total_hours ?? 0 : 0;
   const focusTarget = focusGoal?.target_hours_per_week ?? 0;
   const focusRatio = focusTarget > 0 ? Math.min(1, focusHours / focusTarget) : 0;
   const visits = checkInGoal ? progress[checkInGoal.id]?.sessions_completed ?? 0 : 0;
   const visitTarget = checkInGoal?.target_sessions_per_week ?? 0;
+  // An open visit was invisible on the card — only the accessibility label
+  // changed. Re-rendered on every focus/foreground (refreshKey), so the minutes
+  // are current whenever the player looks; nothing ticks on its own.
+  const checkInElapsedMinutes = activeCheckIn.data
+    ? Math.max(0, Math.floor((Date.now() - new Date(activeCheckIn.data.start_time).getTime()) / 60000))
+    : 0;
+  const checkInElapsedLabel =
+    checkInElapsedMinutes >= 60
+      ? `${Math.floor(checkInElapsedMinutes / 60)}h ${checkInElapsedMinutes % 60}m`
+      : `${checkInElapsedMinutes} min`;
 
   const handleCheckIn = useCallback(
     (goal: Goal) => {
@@ -522,7 +536,11 @@ export function HomeScreen() {
               {checkInGoal?.name ?? "Visits"}
             </Text>
             <Text style={styles.cardMeta}>
-              {checkInGoal ? `${visits} / ${visitTarget} sessions` : "Tap to set up"}
+              {!checkInGoal
+                ? "Tap to set up"
+                : activeCheckIn.data
+                  ? `Checked in · ${checkInElapsedLabel} · tap to end`
+                  : `${visits} / ${visitTarget} sessions`}
             </Text>
             <View style={styles.dots}>
               {Array.from({ length: Math.max(1, Math.min(6, visitTarget)) }).map((_, i) => (

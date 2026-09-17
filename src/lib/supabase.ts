@@ -55,3 +55,19 @@ if (Platform.OS !== "web") {
     }
   });
 }
+
+/**
+ * Who is signed in, from the session on the device.
+ *
+ * Queries used to ask `auth.getUser()`, which goes to the server to verify the
+ * token. Without a connection that returns no user and no thrown error — and
+ * every query then answered "nothing here" instead of failing: goals became
+ * empty, the week showed zeros, and Auto Check-In concluded there was nothing
+ * to watch and switched itself off. Row-level security checks the token on
+ * every request anyway; scoping a query only needs the id.
+ */
+export async function currentUser(): Promise<{ id: string } | null> {
+  const { data } = await supabase.auth.getSession();
+  const user = data.session?.user;
+  return user ? { id: user.id } : null;
+}

@@ -370,7 +370,7 @@ export function GoalStartSheet({
             <>
               <Text style={styles.body}>
                 {checkInActive
-                  ? "A visit is running. End it to log the time and grow something for your island."
+                  ? `A visit is running. End it to log the time and grow something for your island — after ${formatMinVisitDuration(goal.min_visit_minutes)} it counts.`
                   : `Visits shorter than ${formatMinVisitDuration(goal.min_visit_minutes)} are not counted, so passing by never becomes a session. Every counted visit grows something for your island.`}
               </Text>
               <Pressable

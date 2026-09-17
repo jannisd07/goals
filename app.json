@@ -14,7 +14,7 @@
     },
     "ios": {
       "icon": "./assets/icon.png",
-      "buildNumber": "42",
+      "buildNumber": "43",
       "supportsTablet": false,
       "bundleIdentifier": "com.vibetime.app",
       "usesAppleSignIn": true,

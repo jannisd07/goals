@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "../lib/supabase";
+import { currentUser, supabase } from "../lib/supabase";
 import { useAppStore } from "../store";
 import { computeStreak, type StreakInfo } from "../lib/streaks";
 import { syncStreakReminder } from "../lib/notifications";
@@ -13,7 +13,7 @@ export function useStreak(): StreakInfo | null {
   const { data } = useQuery({
     queryKey: ["streak"],
     queryFn: async (): Promise<StreakInfo> => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await currentUser();
       if (!user) return { current: 0, longest: 0, atRiskToday: false };
 
       const since = new Date();

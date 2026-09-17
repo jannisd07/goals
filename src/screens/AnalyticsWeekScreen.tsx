@@ -3,7 +3,7 @@ import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-nati
 import { useRoute, useNavigation, RouteProp } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "../lib/supabase";
+import { currentUser, supabase } from "../lib/supabase";
 import { useAppStore } from "../store";
 import { PaperCard, PaperHeader, PaperScreen } from "../components/paper/PaperUI";
 import { TrashIcon } from "../components/TabIcons";
@@ -102,9 +102,7 @@ export function AnalyticsWeekScreen() {
   const { data: sessions = [], isLoading, isError, refetch } = useQuery({
     queryKey: ["analytics", "week", weekStartISO, weekEndISO, selectedGoalId ?? "all"],
     queryFn: async (): Promise<SessionRow[]> => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const user = await currentUser();
       if (!user) return [];
 
       let query = supabase

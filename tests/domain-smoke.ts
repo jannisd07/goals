@@ -2147,4 +2147,33 @@ assert(
   "an unreadable start leaves the end alone",
 );
 
+
+// A streak counts calendar days, and a day around a daylight-saving change is
+// 23 or 25 hours long. Three sessions on the three days around the spring
+// change (Europe: 2026-03-29) must still read as a run of three.
+{
+  const dstDays = [
+    new Date(2026, 2, 28, 9, 0),
+    new Date(2026, 2, 29, 9, 0),
+    new Date(2026, 2, 30, 9, 0),
+  ];
+  const dstStreak = computeStreak(
+    dstDays.map((day) => ({
+      start_time: day.toISOString(),
+      end_time: new Date(day.getTime() + 30 * 60 * 1000).toISOString(),
+    })),
+    new Date(2026, 2, 30, 20, 0),
+  );
+  assert(dstStreak.current === 3 && dstStreak.longest === 3, "a streak spans the spring DST change");
+  // A session just after midnight belongs to the new day, whatever it did before.
+  const lateNight = computeStreak(
+    [
+      { start_time: new Date(2026, 5, 1, 23, 50).toISOString(), end_time: new Date(2026, 5, 2, 0, 20).toISOString() },
+      { start_time: new Date(2026, 5, 2, 0, 5).toISOString(), end_time: new Date(2026, 5, 2, 0, 40).toISOString() },
+    ],
+    new Date(2026, 5, 2, 8, 0),
+  );
+  assert(lateNight.current === 2, "a session that starts after midnight counts for the new day");
+}
+
 console.log(`Domain smoke tests passed: ${assertionCount} assertions.`);

@@ -931,9 +931,15 @@ Testgrenzen:
 - [x] Build `1.0.0 (36)` nicht mehr für Tester freigeben: Die native
   Live-Activity-Speicherreparatur und die anschließenden Island-Korrekturen
   liegen erst in Builds 38–41.
-- [ ] Nach der manuellen Sichtfreigabe von Build 41 den aktuellen Stand mit
-  einer freien App-Store-Buildnummer archivieren, validieren, hochladen und in
-  TestFlight für interne Tester freigeben.
+- [x] Build `1.0.0 (43)` am 2026-09-17 archiviert, validiert und hochgeladen.
+  Delivery UUID `3a19ad53-7342-48cc-aeeb-72fc370b0146`. Enthält den
+  Apple/Google-Login ohne E-Mail, die Insel-Progression und die automatische
+  Belohnungsauslieferung. Der Upload lief über einen App-Store-Connect-API-Key
+  (`Q9YLV5YZW6`, Issuer `f0f26376-…`) statt über ein Apple-ID-Passwort; der
+  Schlüssel erzeugt dabei auch die Distributions-Profile für App Groups und die
+  Widget-Erweiterung, an denen der Xcode-Organizer-Weg vorher gescheitert ist.
+- [ ] Build 43 in TestFlight für interne Tester freigeben, sobald Apple ihn
+  verarbeitet hat.
 - [x] Migration `place_search_proxy` über die Supabase Management API
   angewendet, Edge Function `place-search` deployt und
   `EXPO_PUBLIC_PLACE_SEARCH_ENDPOINT=supabase` für Preview/Production gesetzt.
@@ -1493,3 +1499,26 @@ zweite Bestätigung; keine Datenexport-Funktion; Android nie gebaut (kein
 `android/`, kein EAS-Profil, `versionCode` fehlt, Package-ID ≠ Bundle-ID); kein
 Crash-Reporting; CLAUDE.md §3 beschreibt weiter das blaue Neumorphismus-System,
 der Code ist das Paper-/Insel-Design.
+
+### Funktionaler QA-Durchgang 2026-09-17 (Simulator, adversarial)
+
+Die App wurde im iPhone-Simulator wirklich durchgespielt — Sessions starten,
+doppelt tippen, Hintergrund, App killen, Pause, Blockende, Belohnung, Check-in,
+Geofence-Ein-/Austritt per simuliertem Standort, Offline über eine unerreichbare
+Server-Adresse, Ziel aus/an — und jeder Schritt gegen Server-Zeilen und
+gespeicherten Zustand geprüft. Gefunden und behoben:
+
+| Fund | Schwere | Behoben in |
+|---|---|---|
+| Ein vom Server abgelehnter Eintrag (Endzeit vor Startzeit) blockierte die gesamte Offline-Warteschlange für immer | P1 | `sessionOutbox.ts`: Endzeit ≥ Start + Dauer, Retry gegen Server-Start, abgelehnte Einträge überspringen, Wiederholung nach laufendem Flush, Aufräumen verwaister Fokus-Zeilen |
+| Ohne Netz meldeten die Abfragen „keine Ziele" statt Fehler; Ziele verschwanden, Auto Check-In hätte sich abgeschaltet | P1 | `currentUser()` aus der lokalen Sitzung statt `auth.getUser()`; Ziele/Woche werden persistiert |
+| Nach Neustart mitten in der Session zeigte Home nichts an; die Karte bot den Start einer zweiten an | P2 | Home: „Running/Paused · tap to resume", direkter Wiedereinstieg |
+| Laufender Check-in war auf der Karte unsichtbar | P2 | Home: „Checked in · N min · tap to end" |
+| Manuell beendeter Check-in unter der Mindestdauer zählte trotzdem als Session | P2 | Nachfrage auf Home, Zeile wird entfernt statt geschlossen |
+| Abbrechen/Verwerfen ohne Netz schlug fehl; Timer lief wieder los | P2 | Verwerfen wird in die Warteschlange gestellt |
+| Check-in-Ereignisse im Vordergrund aktualisierten Home nicht | P3 | `sessionEvents.ts`, Home reagiert sofort |
+| Offline gestartete Session ließ sich nach dem Senden nicht bewerten | P3 | lokale ID → Server-ID gemerkt |
+
+Regressionstests: `consistentEndTime`, Streak über Sommerzeit/Mitternacht.
+Nur am echten Gerät prüfbar: Live Activity, Mitteilungen, Geofence bei
+gesperrtem Gerät, Apple-/Google-Anmeldung, Share-Sheet-Ziele.

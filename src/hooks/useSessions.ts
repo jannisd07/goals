@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import * as Location from "expo-location";
-import { supabase } from "../lib/supabase";
+import { currentUser, supabase } from "../lib/supabase";
 import { useAppStore } from "../store";
 import { clearPersistedGeofenceVisit } from "../services/geofencing";
 import { getWeekStart, getWeekEnd } from "../lib/time";
@@ -12,6 +12,7 @@ import {
   queueSession,
   rateQueuedSession,
   removeQueuedSession,
+  resolveSessionId,
 } from "../lib/sessionOutbox";
 import type {
   Session,
@@ -24,6 +25,33 @@ import type {
 const SESSIONS_KEY = ["sessions"];
 const WEEKLY_PROGRESS_KEY = ["weekly-progress"];
 const ACTIVE_CHECKIN_KEY = ["active-checkin"];
+
+/** Remembers that a row on the server is to be removed once there is a connection. */
+async function queueDiscard(session: {
+  id: string;
+  goal_id: string;
+  trigger: SessionTrigger;
+  start_time: string;
+}): Promise<void> {
+  await queueSession({
+    id: session.id,
+    serverId: session.id,
+    goalId: session.goal_id,
+    trigger: session.trigger,
+    startTime: session.start_time,
+    endTime: session.start_time,
+    durationSeconds: 0,
+    pomodoroCycles: 0,
+    growthStage: 0,
+    ambientSound: null,
+    startLatitude: null,
+    startLongitude: null,
+    rating: null,
+    notes: null,
+    queuedAt: new Date().toISOString(),
+    discard: true,
+  });
+}
 
 /**
  * Whether a failed write is worth keeping for a later attempt.
@@ -45,7 +73,7 @@ export function useWeeklyProgress() {
   return useQuery({
     queryKey: WEEKLY_PROGRESS_KEY,
     queryFn: async (): Promise<Record<string, WeeklyProgress>> => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await currentUser();
       if (!user) return {};
 
       const weekStart = getWeekStart().toISOString();
@@ -125,7 +153,7 @@ export function useCreateSession() {
 
   return useMutation({
     mutationFn: async (input: CreateSessionInput): Promise<Session> => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await currentUser();
       if (!user) throw new Error("Not authenticated");
 
       const coords = await getStartCoordinates();
@@ -162,7 +190,7 @@ export function useActiveCheckIn(goalId: string | null | undefined) {
     enabled: Boolean(goalId),
     queryFn: async (): Promise<Session | null> => {
       if (!goalId) return null;
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await currentUser();
       if (!user) return null;
 
       const { data, error } = await supabase
@@ -189,7 +217,7 @@ export function useStartManualCheckIn() {
       if (goal.type !== "physical") {
         throw new Error("Manual check-in requires a physical goal.");
       }
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await currentUser();
       if (!user) throw new Error("Not authenticated");
 
       const { data: existing, error: existingError } = await supabase
@@ -266,13 +294,22 @@ export function useEndActiveCheckIn() {
       if (durationSeconds < minVisitSeconds) {
         await removeQueuedSession(session.id);
         if (!isLocalSessionId(session.id)) {
-          const { error } = await supabase
-            .from("sessions")
-            .delete()
-            .eq("id", session.id)
-            .is("end_time", null);
-          // Offline the open row stays; the next Enter for this goal discards it.
-          if (error && !isRetryable(error)) throw error;
+          let failed: unknown = null;
+          try {
+            const { error } = await supabase
+              .from("sessions")
+              .delete()
+              .eq("id", session.id)
+              .is("end_time", null);
+            failed = error;
+          } catch (error) {
+            failed = error;
+          }
+          if (failed && !isRetryable(failed)) throw failed;
+          // Offline: the removal waits in the queue. Without it the open row
+          // would come back on the next refetch and be reused by the next
+          // check-in, with this visit's start time.
+          if (failed) await queueDiscard(session);
         }
         await clearPersistedGeofenceVisit(session.goal_id).catch(() => undefined);
         return null;
@@ -375,15 +412,27 @@ export function useEndSession() {
           await removeQueuedSession(input.session_id);
           return null;
         }
-        const { data, error } = await supabase
-          .from("sessions")
-          .delete()
-          .eq("id", input.session_id)
-          .select()
-          .single();
-
-        if (error) throw error;
-        return data as Session;
+        try {
+          const { data, error } = await supabase
+            .from("sessions")
+            .delete()
+            .eq("id", input.session_id)
+            .select()
+            .maybeSingle();
+          if (error) throw error;
+          return (data as Session | null) ?? null;
+        } catch (error) {
+          if (!isRetryable(error)) throw error;
+          // Offline: cancelling must still work — the timer used to spring
+          // back to life because the delete could not be sent.
+          await queueDiscard({
+            id: input.session_id,
+            goal_id: input.goal_id,
+            trigger: "manual_pomodoro",
+            start_time: input.start_time,
+          });
+          return null;
+        }
       }
 
       const endedAt = new Date().toISOString();
@@ -509,7 +558,10 @@ export function useRateSession() {
         return null;
       };
 
-      if (isLocalSessionId(input.session_id)) return keepForLater();
+      // A session started offline may have reached the server since; then it
+      // is rated there under the id the server gave it.
+      const sessionId = await resolveSessionId(input.session_id);
+      if (isLocalSessionId(sessionId)) return keepForLater();
 
       try {
         const { data, error } = await supabase
@@ -518,7 +570,7 @@ export function useRateSession() {
             rating: input.rating,
             notes: input.notes,
           })
-          .eq("id", input.session_id)
+          .eq("id", sessionId)
           .select()
           .single();
 
@@ -542,7 +594,7 @@ export function useMonthSessions(year: number, month: number) {
   return useQuery({
     queryKey: [...SESSIONS_KEY, "month", year, month],
     queryFn: async (): Promise<Session[]> => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await currentUser();
       if (!user) return [];
 
       // Include the complete Monday–Sunday weeks touching this month. The

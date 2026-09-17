@@ -8,6 +8,7 @@ import { sendStudySpotNudge } from "../lib/notifications";
 import { MIN_GROW_SESSION_SECONDS } from "../lib/growRewards";
 import { addPendingGrow } from "../lib/pendingGrows";
 import { queueSession } from "../lib/sessionOutbox";
+import { emitSessionsChanged } from "../lib/sessionEvents";
 import { useAppStore } from "../store";
 import {
   STUDY_SPOT_RADIUS_METERS,
@@ -393,6 +394,7 @@ async function handleGeofenceEnter(goalId: string): Promise<void> {
       lastEventAt: now,
       minVisitMinutes,
     });
+    emitSessionsChanged();
 
     if (await notificationPrefEnabled("checkinAlerts")) {
       await Notifications.scheduleNotificationAsync({
@@ -436,6 +438,7 @@ async function handleGeofenceExit(goalId: string): Promise<void> {
         }
       }
       await removePersistedSession(goalId);
+      emitSessionsChanged();
     };
 
     if (disposition === "discard_stale") {
@@ -502,6 +505,8 @@ async function handleGeofenceExit(goalId: string): Promise<void> {
     }
 
     await removePersistedSession(goalId);
+    // Home may be open right now: let it re-read the week and the waiting rewards.
+    emitSessionsChanged();
 
     // Build exit notification with weekly progress
     const minutes = Math.floor(durationSeconds / 60);
@@ -556,6 +561,8 @@ async function handleGeofenceExit(goalId: string): Promise<void> {
       }).catch((growError) => {
         console.warn("Could not keep the grown object for later:", growError);
       });
+      // The reward exists now; Home in the foreground should offer it.
+      emitSessionsChanged();
     }
 
     if (await notificationPrefEnabled("checkinAlerts")) {

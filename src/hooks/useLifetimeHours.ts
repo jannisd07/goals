@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "../lib/supabase";
+import { currentUser, supabase } from "../lib/supabase";
 import { totalTrackedHours } from "../lib/rewards";
 
 const PAGE_SIZE = 1000;
@@ -15,9 +15,7 @@ export function useLifetimeHours() {
   return useQuery({
     queryKey: ["sessions", "lifetime-hours"],
     queryFn: async (): Promise<number> => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const user = await currentUser();
       if (!user) return 0;
 
       const rows: Array<{ duration_seconds: number | null; end_time: string | null }> = [];

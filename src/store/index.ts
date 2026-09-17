@@ -26,6 +26,14 @@ export const useAppStore = create<AppStore>()(
       partialize: (state) => ({
         fixedCommitments: state.fixedCommitments,
         disposableTimeHours: state.disposableTimeHours,
+        // Goals and the week are read from the server, but the app must open
+        // without one: a launch offline showed "Tap to set up" on both cards and
+        // nothing could be started, although the outbox exists exactly for
+        // that. The last known values are shown until the fetch succeeds; a
+        // failed fetch is still reported on Home.
+        goals: state.goals,
+        weeklyProgress: state.weeklyProgress,
+        usedTimeThisWeekSeconds: state.usedTimeThisWeekSeconds,
         preferredAmbientSound: state.preferredAmbientSound,
         ambientVolume: state.ambientVolume,
         breakDuration: state.breakDuration,

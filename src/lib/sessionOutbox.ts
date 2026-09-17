@@ -27,7 +27,7 @@
  */
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { supabase } from "./supabase";
+import { currentUser, supabase } from "./supabase";
 import { consistentEndTime } from "./sessionTimes";
 import type { AmbientSoundKey, SessionTrigger } from "../types";
 
@@ -70,9 +70,56 @@ export interface QueuedSession {
   queuedAt: string;
   /** How often the server has rejected this entry so far (not: how often it was offline). */
   rejections?: number;
+  /**
+   * The session is to be removed, not closed: cancelled with no focus, or a
+   * visit ended below the minimum stay. Only meaningful with a `serverId`; a
+   * local session that never reached the server simply leaves nothing behind.
+   */
+  discard?: boolean;
 }
 
 const LOCAL_ID_PREFIX = "local-";
+
+/**
+ * Which server row a session that was started offline became.
+ *
+ * The app keeps using the local id — the reveal, the applied-rewards list and
+ * the rating sheet all hold it — while the server knows the row by its own id.
+ * Once the row is inserted the two are remembered together, so a rating given
+ * after the flush still reaches the right row. Bounded and oldest-first.
+ */
+const SESSION_ID_MAP_KEY = "goals-session-id-map";
+const MAX_MAPPED_IDS = 100;
+let idMapCache: Record<string, string> | null = null;
+
+async function readIdMap(): Promise<Record<string, string>> {
+  if (idMapCache) return idMapCache;
+  try {
+    const raw = await AsyncStorage.getItem(SESSION_ID_MAP_KEY);
+    const parsed = raw ? (JSON.parse(raw) as unknown) : {};
+    idMapCache =
+      parsed && typeof parsed === "object" && !Array.isArray(parsed)
+        ? (parsed as Record<string, string>)
+        : {};
+  } catch {
+    idMapCache = {};
+  }
+  return idMapCache;
+}
+
+async function rememberServerId(localId: string, serverId: string): Promise<void> {
+  const map = await readIdMap();
+  const entries = Object.entries(map).filter(([key]) => key !== localId);
+  entries.push([localId, serverId]);
+  idMapCache = Object.fromEntries(entries.slice(-MAX_MAPPED_IDS));
+  await AsyncStorage.setItem(SESSION_ID_MAP_KEY, JSON.stringify(idMapCache)).catch(() => undefined);
+}
+
+/** The id the server knows this session by — the same id when it was never local. */
+export async function resolveSessionId(id: string): Promise<string> {
+  if (!isLocalSessionId(id)) return id;
+  return (await readIdMap())[id] ?? id;
+}
 
 /** An id for a session that was started without a connection. */
 export function localSessionId(): string {
@@ -124,6 +171,7 @@ function toQueuedSession(value: unknown): QueuedSession | null {
     notes: typeof entry.notes === "string" ? entry.notes : null,
     queuedAt: typeof entry.queuedAt === "string" ? entry.queuedAt : new Date().toISOString(),
     rejections: number(entry.rejections, 0),
+    discard: entry.discard === true,
   };
 }
 
@@ -209,7 +257,11 @@ export async function removeQueuedSession(sessionId: string): Promise<void> {
 
 /** Queued sessions belong to the signed-in account and never survive a sign-out. */
 export async function clearSessionOutbox(): Promise<void> {
-  await AsyncStorage.removeItem(SESSION_OUTBOX_KEY);
+  idMapCache = null;
+  await Promise.all([
+    AsyncStorage.removeItem(SESSION_OUTBOX_KEY),
+    AsyncStorage.removeItem(SESSION_ID_MAP_KEY),
+  ]);
 }
 
 type SendOutcome = "sent" | "offline" | "rejected";
@@ -241,6 +293,18 @@ async function sendQueuedSession(
     ambient_sound: entry.ambientSound,
     ...(entry.rating !== null ? { rating: entry.rating, notes: entry.notes } : {}),
   };
+
+  if (entry.discard) {
+    if (!entry.serverId) return "sent";
+    const { error } = await supabase
+      .from("sessions")
+      .delete()
+      .eq("id", entry.serverId)
+      // A row somebody else finished in the meantime is theirs to keep.
+      .is("end_time", null);
+    if (error) return isConnectionProblem(error) ? "offline" : "rejected";
+    return "sent";
+  }
 
   if (entry.serverId) {
     const close = (end: string) =>
@@ -287,18 +351,29 @@ async function sendQueuedSession(
     .limit(1)
     .maybeSingle();
   if (existingError) return isConnectionProblem(existingError) ? "offline" : "rejected";
-  if (existing) return "sent";
+  if (existing) {
+    await rememberServerId(entry.id, (existing as { id: string }).id);
+    return "sent";
+  }
 
-  const { error } = await supabase.from("sessions").insert({
-    user_id: userId,
-    goal_id: entry.goalId,
-    trigger: entry.trigger,
-    start_time: entry.startTime,
-    start_latitude: entry.startLatitude,
-    start_longitude: entry.startLongitude,
-    ...closing,
-  });
-  if (!error) return "sent";
+  const { data: inserted, error } = await supabase
+    .from("sessions")
+    .insert({
+      user_id: userId,
+      goal_id: entry.goalId,
+      trigger: entry.trigger,
+      start_time: entry.startTime,
+      start_latitude: entry.startLatitude,
+      start_longitude: entry.startLongitude,
+      ...closing,
+    })
+    .select("id")
+    .maybeSingle();
+  if (!error) {
+    const serverId = (inserted as { id?: string } | null)?.id;
+    if (serverId) await rememberServerId(entry.id, serverId);
+    return "sent";
+  }
   if (isConnectionProblem(error)) return "offline";
   // A goal that no longer exists can never be sent; keeping the entry would
   // only make it fail again on every flush.
@@ -355,9 +430,9 @@ export function flushSessionOutbox(activeSessionId: string | null = null): Promi
 
   const run = (async () => {
     const entries = await readSessionOutbox();
-    const { data, error } = await supabase.auth.getUser();
-    if (error || !data.user) return 0; // no connection or no session: try later
-    const userId = data.user.id;
+    const user = await currentUser();
+    if (!user) return 0; // nobody signed in: nothing can be sent
+    const userId = user.id;
 
     if (sweptForUser !== userId) {
       sweptForUser = userId;

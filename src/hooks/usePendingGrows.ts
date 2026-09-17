@@ -9,6 +9,7 @@
 
 import { useEffect, useState } from "react";
 import { readPendingGrows, type PendingGrow } from "../lib/pendingGrows";
+import { onSessionsChanged } from "../lib/sessionEvents";
 
 /** Stable, so an empty result never restarts an effect that depends on it. */
 const NONE: PendingGrow[] = [];
@@ -18,13 +19,19 @@ export function usePendingGrows(refreshKey: number): PendingGrow[] {
 
   useEffect(() => {
     let cancelled = false;
-    void readPendingGrows()
-      .then((list) => {
-        if (!cancelled) setGrows(list.length > 0 ? list : NONE);
-      })
-      .catch(() => undefined);
+    const read = () => {
+      void readPendingGrows()
+        .then((list) => {
+          if (!cancelled) setGrows(list.length > 0 ? list : NONE);
+        })
+        .catch(() => undefined);
+    };
+    read();
+    // A visit that ends while Home is open earns its reward right now.
+    const stop = onSessionsChanged(read);
     return () => {
       cancelled = true;
+      stop();
     };
   }, [refreshKey]);
 

@@ -20,7 +20,7 @@ import MapView, {
 } from "react-native-maps";
 import type { RootStackParamList } from "../navigation/types";
 import { useAppStore } from "../store";
-import { supabase } from "../lib/supabase";
+import { currentUser, supabase } from "../lib/supabase";
 import {
   GEOFENCE_RADIUS_OPTIONS,
   getUserPlaceSearchContext,
@@ -247,9 +247,7 @@ export function SetupGeofenceScreen() {
     let requestUserId: string | null = null;
 
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const user = await currentUser();
       if (!user) throw new Error("Not authenticated. Please sign in again.");
       requestUserId = user.id;
 

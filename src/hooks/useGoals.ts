@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "../lib/supabase";
+import { currentUser, supabase } from "../lib/supabase";
 import { useAppStore } from "../store";
 import { clearPersistedGeofenceVisit } from "../services/geofencing";
 import { MAX_GEOFENCE_SESSION_MS } from "../lib/geofenceSessions";
@@ -13,7 +13,7 @@ export function useGoals() {
   return useQuery({
     queryKey: GOALS_KEY,
     queryFn: async (): Promise<Goal[]> => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await currentUser();
       if (!user) return [];
 
       const { data, error } = await supabase

@@ -6,7 +6,7 @@ import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useQueryClient } from "@tanstack/react-query";
 import type { RootStackParamList } from "../navigation/types";
 import { useAppStore } from "../store";
-import { supabase } from "../lib/supabase";
+import { currentUser, supabase } from "../lib/supabase";
 import { hapticMedium } from "../lib/haptics";
 import { CategoryCards, ValueStepper } from "../components/CategoryCards";
 import { PrimaryButton } from "../components/ui/PrimaryButton";
@@ -50,9 +50,7 @@ export function SetupStudyingScreen() {
     let requestUserId: string | null = null;
 
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const user = await currentUser();
       if (!user) throw new Error("Not authenticated. Please sign in again.");
       requestUserId = user.id;
 
