@@ -341,7 +341,19 @@ function AppContent() {
               action as FocusLiveActivityAction,
             );
           }
-          if (goalId) {
+          /**
+           * A visit has no timer to open.
+           *
+           * Both kinds of Live Activity carry the same link, so tapping the
+           * Auto Check-In banner asked to start a focus timer — named after the
+           * check-in goal, which is not something that can be focused at all.
+           * Tapping it should simply bring the app up, and it already has by
+           * the time this runs.
+           */
+          const goal = goalId
+            ? useAppStore.getState().goals.find((entry) => entry.id === goalId)
+            : undefined;
+          if (goalId && goal?.type !== "physical") {
             openNotificationDestination({
               type: "focus_session",
               goalId,
