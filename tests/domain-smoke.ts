@@ -140,6 +140,7 @@ import {
 import { computeDisposableTime, formatTimer } from "../src/lib/time";
 import { BEACH_SPRITES } from "../src/components/grow/beachSprites";
 import { describeSetupSaveError } from "../src/lib/setupSaveError";
+import { goalPayload } from "../src/lib/onboardingPlan";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { islandSprite, spriteReach } from "../src/components/island/islandSprites";
@@ -1382,6 +1383,29 @@ for (const stage of [1, 2, 3, 4, 5] as const) {
   assert(
     kinds.size === GROW_OBJECTS.water.length,
     `island ${stage} shows every kind of water object the player owns`,
+  );
+}
+
+// --- two goals go up in one insert, so they must have the same shape ---------
+{
+  // PostgREST builds one column list out of the rows it is handed. A key on one
+  // row and missing on the other is sent as NULL for the other — not as the
+  // column default. `min_visit_minutes` was only on the check-in row, so the
+  // focus row went up with NULL against a NOT NULL column and the whole setup
+  // failed: a fresh account with Auto Check-In could never finish onboarding.
+  const focus = goalPayload({ name: "Focus Time", target_hours_per_week: 10 });
+  const checkin = goalPayload({ name: "Gym", location: { latitude: 1 }, min_visit_minutes: 30 });
+  assert(
+    Object.keys(focus).sort().join() === Object.keys(checkin).sort().join(),
+    "every goal row carries every column, whatever the caller left out",
+  );
+  assert(
+    typeof focus.min_visit_minutes === "number" && focus.min_visit_minutes > 0,
+    "a focus goal still has a visit length, because the column cannot be null",
+  );
+  assert(
+    checkin.min_visit_minutes === 30 && focus.target_hours_per_week === 10,
+    "what the caller does pass survives",
   );
 }
 

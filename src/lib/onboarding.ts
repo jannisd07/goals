@@ -1,4 +1,5 @@
 import { supabase } from "./supabase";
+import { goalPayload } from "./onboardingPlan";
 import {
   CHECKIN_CATEGORIES,
   DEFAULT_MIN_VISIT_MINUTES,
@@ -55,33 +56,24 @@ export async function completePendingOnboarding(
   const existing = (existingRows ?? []) as ExistingOnboardingGoal[];
   const now = new Date().toISOString();
 
-  const focusValues = {
+  const focusValues = goalPayload({
     name: focusLabel,
     category: pending.focus_category,
-    target_sessions_per_week: 0,
     target_hours_per_week: pending.focus_hours,
-    color: "blue",
-    location: null,
-    pomodoro_duration_minutes: 25,
-    is_active: true,
     updated_at: now,
-  };
+  });
   const checkinValues =
     pending.checkin_category && pending.checkin_location
-      ? {
+      ? goalPayload({
           name: checkinLabel,
           category: pending.checkin_category,
           target_sessions_per_week: pending.checkin_target_sessions,
-          target_hours_per_week: 0,
-          color: "blue",
           location: pending.checkin_location,
           min_visit_minutes: normalizeMinVisitMinutes(
             pending.checkin_min_visit_minutes ?? DEFAULT_MIN_VISIT_MINUTES,
           ),
-          pomodoro_duration_minutes: 25,
-          is_active: true,
           updated_at: now,
-        }
+        })
       : null;
   const plan = planOnboardingGoals(existing, Boolean(checkinValues), options);
 

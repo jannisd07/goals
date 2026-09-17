@@ -249,10 +249,23 @@ export function HomeScreen() {
     void activeCheckIn.refetch();
   }, [activeCheckIn.refetch, checkInGoal, refreshKey]);
 
+  /**
+   * The week, counted up (Jannis, 2026-09-18).
+   *
+   * This used to show the free time still left — a budget nobody had set, that
+   * fell as you worked. Two things at once, and neither of them a question
+   * anybody asks in the morning. It read as a number going the wrong way: do
+   * the right thing, watch it shrink.
+   *
+   * So it counts what has been put in instead. The ring fills as the week
+   * fills, which is the direction everything else on this screen already moves.
+   * The free time is still the frame it is measured against, just no longer the
+   * headline.
+   */
   const totalSeconds = disposableTimeHours * 3600;
-  const remainingSeconds = Math.max(0, totalSeconds - usedTimeThisWeekSeconds);
-  // The ring fills with what is still available, so a fresh week reads as full.
-  const remainingRatio = totalSeconds > 0 ? remainingSeconds / totalSeconds : 0;
+  const investedSeconds = Math.max(0, usedTimeThisWeekSeconds);
+  const investedRatio =
+    totalSeconds > 0 ? Math.min(1, investedSeconds / totalSeconds) : 0;
 
   // Without a connection the query has nothing; the last known week from the
   // store is the same source the balance ring already draws from, so the cards
@@ -409,12 +422,10 @@ export function HomeScreen() {
         {/* Balance pill */}
         <View style={styles.balance}>
           <View style={{ flex: 1 }}>
-            <Text style={styles.balanceValue}>{fmtHours(remainingSeconds)}</Text>
-            <Text style={styles.balanceLabel}>
-              of {Math.round(disposableTimeHours)} hrs this week
-            </Text>
+            <Text style={styles.balanceValue}>{fmtHours(investedSeconds)}</Text>
+            <Text style={styles.balanceLabel}>invested this week</Text>
           </View>
-          <BalanceRing progress={remainingRatio} size={48} />
+          <BalanceRing progress={investedRatio} size={48} />
         </View>
 
         {/* A failed load must not look like an empty week. */}
