@@ -26,6 +26,7 @@ import { settleAbandonedSession } from "../lib/abandonedSession";
 import { supabase } from "../lib/supabase";
 import { NEU } from "../theme/neumorphism";
 import { NEU_FONTS } from "../theme/neumorphism";
+import { describeSetupSaveError, type SetupSaveFailure } from "../lib/setupSaveError";
 import type { RootStackParamList } from "./types";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -66,7 +67,7 @@ export function RootNavigator() {
   const setPendingOnboarding = useAppStore((s) => s.setPendingOnboarding);
   const setUserConfig = useAppStore((s) => s.setUserConfig);
   const [flushingOnboarding, setFlushingOnboarding] = useState(false);
-  const [onboardingFlushError, setOnboardingFlushError] = useState<string | null>(null);
+  const [onboardingFlushError, setOnboardingFlushError] = useState<SetupSaveFailure | null>(null);
   const [onboardingFlushAttempt, setOnboardingFlushAttempt] = useState(0);
   const flushingOnboardingRef = useRef(false);
 
@@ -118,9 +119,7 @@ export function RootNavigator() {
         const current = useAppStore.getState();
         if (!current.isAuthenticated || current.userConfig?.id !== userId) return;
         console.error("Failed to flush onboarding setup:", error);
-        setOnboardingFlushError(
-          "Your setup could not be saved. Check your connection and try again.",
-        );
+        setOnboardingFlushError(describeSetupSaveError(error));
       })
       .finally(() => {
         flushingOnboardingRef.current = false;
@@ -265,8 +264,14 @@ export function RootNavigator() {
               marginBottom: 24,
             }}
           >
-            {onboardingFlushError}
+            {onboardingFlushError.message}
           </Text>
+          {/*
+            Only where trying again can actually work. A permission failure
+            repeats for ever, and a button that does nothing is how somebody
+            ends up pressing it for three days.
+          */}
+          {onboardingFlushError.canRetry ? (
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Retry saving setup"
@@ -293,6 +298,7 @@ export function RootNavigator() {
               Try Again
             </Text>
           </Pressable>
+          ) : null}
           {userConfig.onboarding_complete ? (
             // An account that already has goals must never be locked out by a
             // setup it can simply ignore.

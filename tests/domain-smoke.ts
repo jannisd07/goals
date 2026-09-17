@@ -139,6 +139,7 @@ import {
 } from "../supabase/functions/_shared/placeSearch";
 import { computeDisposableTime, formatTimer } from "../src/lib/time";
 import { BEACH_SPRITES } from "../src/components/grow/beachSprites";
+import { describeSetupSaveError } from "../src/lib/setupSaveError";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { islandSprite, spriteReach } from "../src/components/island/islandSprites";
@@ -1382,6 +1383,30 @@ for (const stage of [1, 2, 3, 4, 5] as const) {
     kinds.size === GROW_OBJECTS.water.length,
     `island ${stage} shows every kind of water object the player owns`,
   );
+}
+
+// --- a failure has to name its own reason ------------------------------------
+{
+  // "Check your connection" for a permission error cost a real user days: he
+  // checked his connection, reinstalled, and checked again, while the app was
+  // being refused by the database. A wrong reason is worse than no reason.
+  const denied = describeSetupSaveError({ code: "42501", message: "permission denied" });
+  assert(!denied.canRetry, "a refusal does not offer a button that repeats it");
+  assert(
+    !denied.message.includes("connection"),
+    "a refusal is never explained as a connection problem",
+  );
+  const missing = describeSetupSaveError(new Error("Your account profile is missing."));
+  assert(
+    !missing.canRetry && missing.message.includes("Sign out"),
+    "a missing profile says what actually helps",
+  );
+  const offline = describeSetupSaveError({ message: "Network request failed" });
+  assert(
+    offline.canRetry && offline.message.includes("connection"),
+    "a real connection problem still says so, and still offers another try",
+  );
+  assert(describeSetupSaveError(null).canRetry, "an unknown failure is worth one more try");
 }
 
 // --- a reward nobody came back for is still placed ---------------------------
