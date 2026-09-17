@@ -58,3 +58,11 @@ __pycache__/
 /tmp/
 /.superpowers/
 /.claude/worktrees/
+
+# Vom Insel-Generator erzeugt: Vorschaubilder entstehen neu mit
+#   python3 island/pixel/export_layout.py --preview
+island/pixel/previews/
+# Gelöschte Dateien, die auf Jannis' Entscheidung warten, nicht Teil des Projekts
+.trash-grove/
+# Lokale Agenten-Einstellungen
+.claude/settings.local.json

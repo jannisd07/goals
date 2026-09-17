@@ -1,5 +1,5 @@
-import { useEffect, useRef, useCallback } from "react";
-import { useAudioPlayer, setAudioModeAsync } from "expo-audio";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useAudioPlayer, useAudioPlayerStatus, setAudioModeAsync } from "expo-audio";
 import { useAppStore } from "../store";
 import { persistUserPreferences } from "../lib/userPreferences";
 import type { AmbientSoundKey } from "../types";
@@ -26,20 +26,53 @@ export function useAmbientSound() {
   const player = useAudioPlayer(
     currentSound ? SOUND_FILES[currentSound] : null
   );
-
-  // Configure audio mode once
+  const status = useAudioPlayerStatus(player);
+  /**
+   * When the file is actually playable.
+   *
+   * Not `status.isLoaded`: in expo-audio 55 that stays `false` on iOS even after
+   * the player reports `playbackState: "readyToPlay"` and a real duration. Going
+   * by it would keep the music switched off for good — measured on 2026-09-15,
+   * where the player sat at `readyToPlay`, `duration: 97.32`, `isLoaded: false`.
+   */
+  const isReady =
+    Boolean(status?.isLoaded) ||
+    status?.playbackState === "readyToPlay" ||
+    (status?.duration ?? 0) > 0;
+  /**
+   * The audio session has to be configured before anything is played.
+   *
+   * `setAudioModeAsync` is a promise, and the play effect below used to fire
+   * while it was still in flight — measured at 19 ms ahead of it on 2026-09-15.
+   * iOS then leaves the player sitting at `timeControlStatus: "paused"`: play()
+   * was accepted, nothing came out, and nothing tried again. That is the whole
+   * "the music does not work" bug, and it depended on timing, which is why it
+   * was not always reproducible.
+   *
+   * A failure still flips the flag: playing without the preferred mode is worth
+   * more than never playing at all.
+   */
+  const [audioReady, setAudioReady] = useState(false);
   useEffect(() => {
-    if (!audioModeSet.current) {
-      void setAudioModeAsync({
-        playsInSilentMode: true,
-        shouldPlayInBackground: true,
-        interruptionMode: "doNotMix",
-      }).catch(() => {
-        // Playback controls remain usable in the foreground if the native
-        // background audio session cannot be configured.
+    if (audioModeSet.current) return;
+    audioModeSet.current = true;
+    let cancelled = false;
+    const done = () => {
+      if (!cancelled) setAudioReady(true);
+    };
+    void setAudioModeAsync({
+      playsInSilentMode: true,
+      shouldPlayInBackground: true,
+      interruptionMode: "doNotMix",
+    })
+      .then(done)
+      .catch((error) => {
+        console.warn("Could not set the audio mode; playing anyway:", error);
+        done();
       });
-      audioModeSet.current = true;
-    }
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   // Set loop and volume
@@ -48,16 +81,23 @@ export function useAmbientSound() {
     player.volume = ambientVolume;
   }, [player, ambientVolume]);
 
-  // Play/pause based on session state
+  // Play/pause with the session, once the file and the audio session are ready.
+  const shouldPlay = Boolean(currentSound) && Boolean(activeSession?.pomodoro?.is_running);
+  const isPlaying = Boolean(status?.playing);
   useEffect(() => {
-    if (currentSound && activeSession?.pomodoro?.is_running) {
-      player.volume = ambientVolume;
-      player.loop = true;
-      player.play();
-    } else {
-      player.pause();
+    if (!shouldPlay) {
+      if (isPlaying) player.pause();
+      return;
     }
-  }, [currentSound, activeSession?.pomodoro?.is_running, player]);
+    if (!audioReady || !isReady || isPlaying) return;
+    player.volume = ambientVolume;
+    player.loop = true;
+    player.muted = false;
+    player.play();
+    // `ambientVolume` is deliberately not a dependency: turning the volume down
+    // must not restart playback. Its own effect below keeps the player in step.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [audioReady, shouldPlay, isReady, isPlaying, player]);
 
   // Update volume when it changes
   useEffect(() => {

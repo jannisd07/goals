@@ -38,7 +38,7 @@ need their documented physical-device tests.
 `@/*` maps to `src/*` (configured in tsconfig.json)
 
 ### State Management
-Zustand store in `src/store/index.ts` combines 4 slices:
+Zustand store in `src/store/index.ts` combines 5 slices:
 - **configSlice** — auth state, user config, permission warnings, onboarding status
 - **goalsSlice** — goal CRUD, weekly progress
 - **sessionSlice** — active focus session, pomodoro state, ambient sound prefs
@@ -95,6 +95,15 @@ Required in `.env` (see `.env.example`):
 - `EXPO_PUBLIC_SUPABASE_ANON_KEY`
 
 # VERBINDLICHES DESIGN-SYSTEM — FINALER STAND 2026-07-28
+
+> **Aktueller Home-Override vom 2026-09-10 (Jannis):** Home verwendet exklusiv
+> `assets/home/island-ocean-1.png` als vollflächigen `ImageBackground` mit
+> `resizeMode="cover"`. Das Asset ist das von Jannis gelieferte Pixel-Ozeanbild
+> mit kleiner Insel und viel freier Wasser-/Himmelsfläche. Es darf nicht durch
+> einen Verlauf, eine Farbfläche oder ein anderes Inselbild ersetzt werden.
+> Formulare, Onboarding, Focus, Stats, Friends, Settings und weitere sekundäre
+> Screens bleiben auf ihrer opaken Paper-Fläche. Dieser Absatz überschreibt für
+> Home die älteren Verbote von Hintergrundbildern in diesem Dokument.
 
 Diese Spezifikation ist für jede weitere visuelle Arbeit verbindlich. Sie fasst die
 Recherche, alle Nutzerkorrekturen und die im iPhone-Simulator visuell abgestimmten
@@ -596,6 +605,12 @@ Für echte interaktive Slider:
 
 ### 9.1 Flacher Pomodoro-Dial
 
+> **Stand 2026-09-10 (Jannis):** Der Fokus-Screen verwendet den Paper-Look
+> (`src/theme/paper.ts`, Variante B): weiße Scheibe mit `PAPER.sunken`-Track und
+> `PAPER.accent`-Ring, in der Mitte wächst das gewählte Insel-Objekt. Timer,
+> Status und Wachstumszeile stehen unter der Scheibe. Ring-Geometrie,
+> Flowtime-Drag und die Aktionsregeln unten gelten weiter.
+
 Der Focus-Timer wurde auf den ruhigen Zustand vor dem 3D-Experiment
 zurückgesetzt:
 
@@ -617,11 +632,47 @@ Track und der blaue Fortschritt bleiben vollständig flach. Der Play/Pause-Kreis
 verwendet wie die Home-Start-Pill eine statische innere Akzentfläche innerhalb
 der Touch-Pressable, damit der Fill zuverlässig rendert.
 
+### 9.1a Flowtime-Ziel: am Ring gesetzt, nicht vorher eingegeben (2026-09-15)
+
+> **Jannis:** „machs bei flowtime so dass man nicht ne zeit davor eingibt, sondern
+> dass wenn man auf der timer page ist, man das rad dragged … es sollen bis zu 16h
+> möglich sein, nicht lineare skala."
+
+- Der Start-Sheet zeigt bei Flowtime **keine SESSION LENGTH** mehr, sondern den
+  Hinweis, dass das Ziel am Ring gesetzt wird. Der CTA heißt `Set your target`.
+- Der Timer-Screen öffnet bei Flowtime zuerst im **Einstellzustand**: großer
+  Zielwert statt Uhrzeit, Skala am Ring, `Start focus` darunter. Erst der Tap
+  startet die Session. Während der Session dreht derselbe Ring weiter.
+- **Skala (`src/lib/flowTarget.ts`), verbindlich:** geteilt, nicht logarithmisch.
+  Log verteilt 5 min bis 16 h gleichmäßig, trifft aber nur krumme Werte
+  (37 min, 2 h 14). Geteilt bleiben es runde Zahlen:
+
+  | Bereich | Schritt | Positionen |
+  |---|---|---:|
+  | 5 min – 1 h | 5 min | 11 |
+  | 1 h – 2 h | 10 min | 6 |
+  | 2 h – 4 h | 30 min | 4 |
+  | 4 h – 8 h | 1 h | 4 |
+  | 8 h – 16 h | 2 h | 4 |
+
+- **16 h ist eine volle Umdrehung** (`FLOW_TARGET_SWEEP = 1`, Jannis 2026-09-15).
+  Damit liegt die obere Marke auf beiden Enden der Skala zugleich. Sie ist
+  deshalb **nicht** mit dem Minimum beschriftet: die Marke liest „16 h", und
+  5 min ist schlicht die Stelle, an der der Bogen noch leer ist. Die Zahl unter
+  dem Ring sagt immer, auf welchem der beiden man steht — der Ring muss das nie
+  allein tragen.
+- **Zwei Dinge auf einem Kreis, klar getrennt:** der Akzentbogen ist immer
+  Fortschritt und bewegt sich nie durchs Drehen; das Ziel ist eine kurze Kerbe
+  auf der Rail. Teilstriche und Beschriftungen erscheinen nur, **während** gedreht
+  wird (und im Einstellzustand) — sonst bleibt der Ring der ruhige
+  Fortschrittsring aus §9.1.
+- Werte werden als `45 min`, `1 h 30`, `16 h` geschrieben, nie als `90 min`.
+
 Nur im laufenden Flowtime-Fokus ist die Ring-Rail außerdem ein kreisförmiger
 Slider:
 
 - Drehung startet oben bei zwölf Uhr und läuft im Uhrzeigersinn;
-- Zielzeit wird in 5-Minuten-Schritten gesetzt, regulär zwischen 5 und 240 Minuten;
+- Zielzeit folgt der geteilten Skala oben, von 5 Minuten bis 16 Stunden;
 - das Ziel darf auch kürzer als die bereits verstrichene Zeit gesetzt werden;
   dann bleibt der Progress-Stroke einfach voll. Drehen darf niemals `elapsed_seconds` oder
   `focused_seconds` manipulieren;
@@ -638,13 +689,16 @@ Slider:
 Für die Timer-Aktionen gelten zusätzlich:
 
 - Die Modusauswahl verwendet überall dieselbe flache Zweizeilen-Komponente:
-  `Intervals` + `Countdown` sowie `Flowtime` + `Count up`. Das zweite Label ist
-  auch im inaktiven Zustand sichtbar; Farbe allein darf die Bedeutung nicht
-  tragen.
+  `Intervals` + `Set time` sowie `Flowtime` + `No limit` (Setup, Settings,
+  Start-Popup). `Countdown`/`Count up` wurden am 2026-09-10 auf Nutzerwunsch
+  ersetzt: Die Flowtime-Karte nannte „Count up" und im Text „without a
+  countdown" und damit beide Mechanismen gleichzeitig. Auswahltexte beschreiben,
+  was passiert, nicht die Uhrrichtung. Das zweite Label ist auch im inaktiven
+  Zustand sichtbar; Farbe allein darf die Bedeutung nicht tragen.
 - Settings zeigt abhängig vom Modus nur relevante Werte. Für Intervals:
-  Fokusblock und Basis-Pausenlänge. Für Flowtime: ausschließlich das visuelle
-  Startziel; direkt darunter muss stehen, dass dieses Ziel den Timer niemals
-  beendet und Break manuell ausgelöst wird.
+  Fokusblock und Basis-Pausenlänge. Für Flowtime **keine Zeitangabe** mehr — das
+  Ziel gehört an den Ring (§9.1a); stattdessen der Satz, dass das Ziel den Timer
+  niemals beendet und Break manuell ausgelöst wird.
 - Home nennt am Focus-Goal den tatsächlich verwendeten Modus (`Intervals` oder
   `Flowtime`) statt des unspezifischen Typlabels `Focus`. Bei einer offenen
   Session stammt das Label aus der Session, nicht aus einer nachträglich
@@ -742,7 +796,15 @@ Social Sign-in steht unter einem ruhigen Divider. Apple und Google sind zwei
 - Die Headergruppe ist bewusst filled; Metadaten innerhalb der Goal-Karten bleiben
   outline und sekundär.
 
-## 12. Grove-/Garden-Vorschau
+## 12. Grove-/Garden-Vorschau — entfernt (2026-09-14)
+
+> **Grove gibt es nicht mehr.** Jannis hat den eigenen Screen ersatzlos gestrichen:
+> die Insel lebt ausschließlich als Hintergrund des Homescreens. `GardenScreen`
+> und `GardenPreview` sind gelöscht, `MainTabs` rendert Home direkt. Der Abschnitt
+> unten bleibt nur als Beleg für die konzentrische Radiusregel stehen; die
+> Grove-Karte selbst nicht wieder einführen.
+
+## 12b. Frühere Grove-Karte (historisch)
 
 Die Grove-Karte ist der visuelle Abschluss des Homescreens:
 
@@ -771,8 +833,8 @@ keine reservierten 88pt und keine Home/Grove-Labels am unteren Rand.
 - `MainTabs.tsx` darf intern als Home-/Grove-Routencontainer bestehen bleiben,
   rendert aber `tabBar={() => null}` und reserviert keinen Bottom-Abstand.
 - Home ist der Hauptscreen.
-- Grove wird ausschließlich über `Your Grove → View` auf Home geöffnet.
-- Grove besitzt oben eine sichtbare `TextAction` „Back", die sicher zu Home navigiert.
+- Einen Grove-Screen gibt es nicht mehr (2026-09-14). Die Insel ist der
+  Home-Hintergrund; keine zweite Seite dafür anlegen.
 - Analytics wird ausschließlich über den runden Stats-Headerbutton geöffnet.
 - Analytics und AnalyticsWeek bleiben Root-Stack-Screens mit sichtbarer Back-Aktion.
 - Settings und Friends bleiben ebenfalls Home-Headeraktionen.
@@ -923,6 +985,71 @@ React Native hat kein Web-`:focus-visible`. Auf nativen Screens den Focus-State 
 - Auf Android und kleineren iPhones Screenshots separat prüfen; feste 31pt nur
   verwenden, solange 24pt Inset und vergleichbare iPhone-Geometrie bestehen.
 
+## 16.1 Das Inselwachstum ist ein Ereignis (2026-09-15)
+
+Die Insel wächst über fünf Stufen, und das ist der Zielpunkt der ganzen
+Sammelmechanik. Zwei Regeln, verbindlich:
+
+- **Der Wechsel wird angekündigt, nicht getauscht.** `IslandGrewOverlay` blendet
+  das alte Inselbild über 900 ms aus und nennt danach die erreichte Größe. Genau
+  einmal je Stufe (`islandStageSeenByUser`), nie blockierend, bei reduziertem
+  Bewegungsumfang ohne Überblendung.
+- **Der Abstand zur nächsten Größe ist immer sichtbar.** `islandGrowth()` liefert
+  ihn; die `IslandProgressPill` zeigt ihn dauerhaft auf Home, und jede Sperre
+  („Island too small") nennt ihn statt nur abzulehnen. Eine Grenze ohne
+  Entfernungsangabe ist die frustrierende Hälfte der Mechanik.
+- **Nach der größten Insel ist nicht Schluss.** Die letzte Inselgröße kommt bei
+  240 Stufen, der Katalog hat 583 — es bleibt also mehr als die Hälfte übrig.
+  Ab Insel V misst die Pille deshalb nicht mehr die nächste Größe, sondern die
+  Sammlung: „Island V · 181 to finish". Erst wenn wirklich jede Kopie jedes
+  Objekts ausgewachsen ist, steht dort „complete".
+- **Eine fertige Insel ist ein Abschluss, kein Verfall.** Wenn eine Belohnung
+  nirgends mehr hin kann, darf der Reveal das nie als Verlust formulieren: die
+  Sammlung ist vollständig, und die Session zählt weiter für Stunden, Streak und
+  Statistik. Nur eine *zu kleine* Insel hebt die Belohnung auf und liefert sie
+  beim nächsten Wachstum nach.
+
+## 16.2 Was Freunde voneinander sehen (2026-09-16)
+
+Die Freundeszeile zeigt drei Zahlen in immer denselben Spalten — Check-ins,
+Focus, All time — und links die Insel. Regeln:
+
+- **Drei Zahlen, feste Plätze.** Wie oft jemand diese Woche da war, wie lange er
+  gearbeitet hat, und wie viel beides je zusammen ergeben hat. Eine Zeile, die
+  sich nicht verschiebt, liest man im Vorbeigehen; ein Satz aus gemischten
+  Einheiten nicht. Keine vierte Zahl ohne guten Grund.
+- **Die Insel ist antippbar und führt auf `FriendIsland`.** Dort steht die Insel
+  formatfüllend mit allem, was daraufsteht, plus Zurück und Name. Sonst nichts —
+  keine Statistik, keine Aktionen, nichts Veränderbares.
+- **Was den Account verlässt:** Größe und Stufen wandern mit jeder Speicherung
+  mit (`island_state.stage`, `island_state.levels`) und stehen in der Liste. Was
+  *auf* der Insel steht, holt `get_friend_island` erst beim Besuch und nur für
+  jemanden, der als Freund eingetragen ist. Sessions, Ziele und Zeiten sind nie
+  dabei.
+- **Der Text neben dem Freundescode muss das benennen.** Er ist das Versprechen,
+  was geteilt wird; wenn dort etwas fehlt, ist es ein Datenschutzfehler, kein
+  Textfehler.
+- **Die Bildgröße trägt die Inselgröße.** Alle fünf Inselbilder zeigen die Insel
+  gleich breit — die Kamera geht mit. Im `IslandBadge` wächst deshalb der Rahmen
+  mit den echten Metern (`ISLAND_STAGE_METRES`), sonst sähen Insel I und Insel V
+  identisch aus und das Abzeichen wäre reine Dekoration.
+
+## 16.3 Objekte anfassen und Inseln laden (2026-09-17)
+
+- **Man greift, was man sieht.** Welches Objekt eine Berührung meint, entscheidet
+  das **Bild**, nicht die Bodenzelle (`spriteReach` in
+  `src/components/island/islandSprites.ts`). Ein Haus wird hoch und nach oben von
+  seiner Zelle weg gezeichnet; die Zellenprüfung zwang dazu, es an der Türschwelle
+  anzufassen. Ein getroffener Bildpunkt gewinnt sofort, vorderstes Objekt zuerst;
+  trifft nichts, zählt das nächste Bild im Umkreis einer Fingerkuppe (6 Bildpixel).
+  Reihenfolge ist die Zeichenreihenfolge rückwärts: was zuletzt gemalt wird, liegt
+  vorn, und was vorn liegt, ist gemeint.
+- **Ein Screen zeigt nie eine falsche Insel, während er lädt.** Welche Insel
+  gezeichnet wird, hängt an der Größe, und die kommt erst mit den Daten. Also
+  bleibt bis dahin alles aus, es läuft eine Ladeanzeige auf offener See, und dann
+  blendet die ganze Szene auf einmal ein — Hintergrund und Objekte zusammen, nie
+  nacheinander. Zurück funktioniert ab dem ersten Bild.
+
 ## 17. Animationsregeln
 
 - Animationen ruhig und funktional.
@@ -1012,7 +1139,6 @@ Vor Abschluss jede Frage mit Ja beantworten:
 - Werden serverseitig fehlgeschlagene optimistische Änderungen zurückgerollt?
 - Ist Analytics nur über Home-Stats erreichbar und besitzt die Seite eine Back-Aktion?
 - Ist keine sichtbare oder platzreservierende Bottom-Bar vorhanden?
-- Ist Grove über Home erreichbar und besitzt eine sichtbare Back-Aktion?
 - Verwenden alle Texteingaben `MinimalTextInput` ohne Schatten?
 - Hat Onboarding unten höchstens eine Textaktion links und rechts?
 - Läuft `npx tsc --noEmit -p .` ohne Fehler?
@@ -1094,19 +1220,47 @@ Vor einer visuellen Migration gezielt diese Dateien lesen:
 - `src/components/BalanceCard.tsx` — große Statuskarte
 - `src/components/GoalCard.tsx` — kompakte Karte + Start-Pill
 - `src/components/GardenPreview.tsx` — terminale Karte + iPhone-Radius
-- `src/navigation/MainTabs.tsx` — unsichtbarer Home-/Grove-Routencontainer
+- `src/navigation/MainTabs.tsx` — Routencontainer, rendert nur noch Home
 
 Keine zweite Komponentenfamilie parallel anlegen. Wenn ein Rezept fehlt, die
 bestehende primitive Komponente gezielt erweitern.
 
 # Kommunikationsstil
 
-Während laufender Arbeit (Builds, Installationen, Tests, lange Befehle) immer kurz
-sagen, was gerade passiert und wie lange es dauert — z.B. "Starte jetzt den
-Simulator, dauert ca. 2 Minuten." Kein Drumherumreden, keine unnötigen Erklärungen.
-Am Ende nur eine kurze Zusammenfassung: was wurde gemacht, was ist als nächstes
-wichtig. Zeiten/Dauer immer mit angeben, wenn ein Schritt länger als ein paar
-Sekunden dauert.
+**So wenig Text wie möglich.** Jannis will Zusammenfassungen, keine Berichte.
+
+- Während der Arbeit: ein kurzer Satz, woran gerade gearbeitet wird. Bei
+  Schritten über ein paar Sekunden die Dauer nennen.
+- Am Ende: eine knappe Zusammenfassung, was gemacht wurde und was als Nächstes
+  wichtig ist. Wenige Sätze, gern Stichpunkte.
+- **Nichts Technisches**, solange nicht danach gefragt wird: keine Dateinamen,
+  Funktionsnamen, Codeausschnitte, Zeilennummern, Testzahlen, Farbwerte,
+  Migrationen, Fehlermeldungen oder Erklärungen der Umsetzung.
+- Keine Tabellen mit Zwischenergebnissen, keine Aufzählung jedes Einzelschritts,
+  kein Drumherumreden.
+- Wichtige Entscheidungen, Risiken und offene Punkte trotzdem nennen — aber in
+  einem Satz, in normaler Sprache.
+
+Ausnahme: Wenn Jannis ausdrücklich nach Details, Code oder Ursachen fragt.
+
+# Small design and logic changes: fast path
+
+Small design / logic changes should not be overcomplicated. Read the relevant
+files, change the code, review the diff, and rebuild on the simulator — without
+testing. No typecheck runs, no domain tests, no screenshot rounds. Jannis does
+not want to wait 10 minutes for a color change.
+
+Rebuild = JS bundle only, straight into the installed simulator app (~7 s):
+
+```bash
+.claude/skills/run-goals/sim.sh bundle
+```
+
+Everything else (screenshots, logs, persisted state, GPS, tests, native build
+status) lives in the `run-goals` skill: `.claude/skills/run-goals/SKILL.md`.
+
+Full verification (typecheck, tests, simulator walkthrough) is only for real
+features, data/auth/sync logic, or when Jannis asks for it.
 
 # Lokaler Modell-Server — Betriebsanweisung
 

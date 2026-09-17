@@ -1,0 +1,2348 @@
+[
+  {
+    "key": "house",
+    "label": "House",
+    "level": 1,
+    "stages": 10,
+    "file": "house_01.png",
+    "size": [
+      20,
+      15
+    ],
+    "anchorPx": [
+      10,
+      12
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 0.12,
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 7
+  },
+  {
+    "key": "house",
+    "label": "House",
+    "level": 2,
+    "stages": 10,
+    "file": "house_02.png",
+    "size": [
+      18,
+      17
+    ],
+    "anchorPx": [
+      9,
+      16
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 0.82,
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 10
+  },
+  {
+    "key": "house",
+    "label": "House",
+    "level": 3,
+    "stages": 10,
+    "file": "house_03.png",
+    "size": [
+      20,
+      20
+    ],
+    "anchorPx": [
+      10,
+      18
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 0.93,
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 10
+  },
+  {
+    "key": "house",
+    "label": "House",
+    "level": 4,
+    "stages": 10,
+    "file": "house_04.png",
+    "size": [
+      20,
+      22
+    ],
+    "anchorPx": [
+      10,
+      20
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 1.07,
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 11
+  },
+  {
+    "key": "house",
+    "label": "House",
+    "level": 5,
+    "stages": 10,
+    "file": "house_05.png",
+    "size": [
+      24,
+      25
+    ],
+    "anchorPx": [
+      12,
+      22
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 1.22,
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 11
+  },
+  {
+    "key": "house",
+    "label": "House",
+    "level": 6,
+    "stages": 10,
+    "file": "house_06.png",
+    "size": [
+      26,
+      28
+    ],
+    "anchorPx": [
+      13,
+      25
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 1.4,
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 12
+  },
+  {
+    "key": "house",
+    "label": "House",
+    "level": 7,
+    "stages": 10,
+    "file": "house_07.png",
+    "size": [
+      28,
+      32
+    ],
+    "anchorPx": [
+      14,
+      28
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 1.6,
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 13
+  },
+  {
+    "key": "house",
+    "label": "House",
+    "level": 8,
+    "stages": 10,
+    "file": "house_08.png",
+    "size": [
+      32,
+      37
+    ],
+    "anchorPx": [
+      16,
+      34
+    ],
+    "footprint": [
+      2,
+      2
+    ],
+    "heightM": 1.83,
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 13
+  },
+  {
+    "key": "house",
+    "label": "House",
+    "level": 9,
+    "stages": 10,
+    "file": "house_09.png",
+    "size": [
+      36,
+      42
+    ],
+    "anchorPx": [
+      18,
+      38
+    ],
+    "footprint": [
+      2,
+      2
+    ],
+    "heightM": 2.1,
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 14
+  },
+  {
+    "key": "house",
+    "label": "House",
+    "level": 10,
+    "stages": 10,
+    "file": "house_10.png",
+    "size": [
+      40,
+      47
+    ],
+    "anchorPx": [
+      20,
+      42
+    ],
+    "footprint": [
+      2,
+      2
+    ],
+    "heightM": 2.4,
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 15
+  },
+  {
+    "key": "windmill",
+    "label": "Windmill",
+    "level": 1,
+    "stages": 11,
+    "file": "windmill_01.png",
+    "size": [
+      18,
+      14
+    ],
+    "anchorPx": [
+      9,
+      11
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 0.12,
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 7
+  },
+  {
+    "key": "windmill",
+    "label": "Windmill",
+    "level": 2,
+    "stages": 11,
+    "file": "windmill_02.png",
+    "size": [
+      18,
+      19
+    ],
+    "anchorPx": [
+      9,
+      18
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 1.16,
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 11
+  },
+  {
+    "key": "windmill",
+    "label": "Windmill",
+    "level": 3,
+    "stages": 11,
+    "file": "windmill_03.png",
+    "size": [
+      18,
+      22
+    ],
+    "anchorPx": [
+      9,
+      20
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 1.3,
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 11
+  },
+  {
+    "key": "windmill",
+    "label": "Windmill",
+    "level": 4,
+    "stages": 11,
+    "file": "windmill_04.png",
+    "size": [
+      25,
+      24
+    ],
+    "anchorPx": [
+      10,
+      22
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 1.47,
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 13
+  },
+  {
+    "key": "windmill",
+    "label": "Windmill",
+    "level": 5,
+    "stages": 11,
+    "file": "windmill_05.png",
+    "size": [
+      27,
+      27
+    ],
+    "anchorPx": [
+      11,
+      25
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 1.66,
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 13
+  },
+  {
+    "key": "windmill",
+    "label": "Windmill",
+    "level": 6,
+    "stages": 11,
+    "file": "windmill_06.png",
+    "size": [
+      28,
+      31
+    ],
+    "anchorPx": [
+      11,
+      28
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 1.87,
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 14
+  },
+  {
+    "key": "windmill",
+    "label": "Windmill",
+    "level": 7,
+    "stages": 11,
+    "file": "windmill_07.png",
+    "size": [
+      30,
+      34
+    ],
+    "anchorPx": [
+      12,
+      31
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 2.1,
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 14
+  },
+  {
+    "key": "windmill",
+    "label": "Windmill",
+    "level": 8,
+    "stages": 11,
+    "file": "windmill_08.png",
+    "size": [
+      33,
+      38
+    ],
+    "anchorPx": [
+      13,
+      34
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 2.37,
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 14
+  },
+  {
+    "key": "windmill",
+    "label": "Windmill",
+    "level": 9,
+    "stages": 11,
+    "file": "windmill_09.png",
+    "size": [
+      37,
+      43
+    ],
+    "anchorPx": [
+      15,
+      39
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 2.68,
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 14
+  },
+  {
+    "key": "windmill",
+    "label": "Windmill",
+    "level": 10,
+    "stages": 11,
+    "file": "windmill_10.png",
+    "size": [
+      39,
+      48
+    ],
+    "anchorPx": [
+      16,
+      45
+    ],
+    "footprint": [
+      2,
+      2
+    ],
+    "heightM": 3.02,
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 14
+  },
+  {
+    "key": "windmill",
+    "label": "Windmill",
+    "level": 11,
+    "stages": 11,
+    "file": "windmill_11.png",
+    "size": [
+      44,
+      54
+    ],
+    "anchorPx": [
+      18,
+      50
+    ],
+    "footprint": [
+      2,
+      2
+    ],
+    "heightM": 3.4,
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 14
+  },
+  {
+    "key": "cafe",
+    "label": "Caf\u00e9",
+    "level": 1,
+    "stages": 10,
+    "file": "cafe_01.png",
+    "size": [
+      24,
+      17
+    ],
+    "anchorPx": [
+      14,
+      14
+    ],
+    "footprint": [
+      2,
+      1
+    ],
+    "heightM": 0.12,
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 7
+  },
+  {
+    "key": "cafe",
+    "label": "Caf\u00e9",
+    "level": 2,
+    "stages": 10,
+    "file": "cafe_02.png",
+    "size": [
+      16,
+      18
+    ],
+    "anchorPx": [
+      8,
+      16
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 0.75,
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 9
+  },
+  {
+    "key": "cafe",
+    "label": "Caf\u00e9",
+    "level": 3,
+    "stages": 10,
+    "file": "cafe_03.png",
+    "size": [
+      16,
+      21
+    ],
+    "anchorPx": [
+      8,
+      18
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 0.86,
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 9
+  },
+  {
+    "key": "cafe",
+    "label": "Caf\u00e9",
+    "level": 4,
+    "stages": 10,
+    "file": "cafe_04.png",
+    "size": [
+      20,
+      23
+    ],
+    "anchorPx": [
+      10,
+      20
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 0.98,
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 9
+  },
+  {
+    "key": "cafe",
+    "label": "Caf\u00e9",
+    "level": 5,
+    "stages": 10,
+    "file": "cafe_05.png",
+    "size": [
+      22,
+      26
+    ],
+    "anchorPx": [
+      11,
+      22
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 1.12,
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 9
+  },
+  {
+    "key": "cafe",
+    "label": "Caf\u00e9",
+    "level": 6,
+    "stages": 10,
+    "file": "cafe_06.png",
+    "size": [
+      28,
+      28
+    ],
+    "anchorPx": [
+      14,
+      25
+    ],
+    "footprint": [
+      2,
+      1
+    ],
+    "heightM": 1.28,
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 10
+  },
+  {
+    "key": "cafe",
+    "label": "Caf\u00e9",
+    "level": 7,
+    "stages": 10,
+    "file": "cafe_07.png",
+    "size": [
+      31,
+      32
+    ],
+    "anchorPx": [
+      16,
+      28
+    ],
+    "footprint": [
+      2,
+      1
+    ],
+    "heightM": 1.47,
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 10
+  },
+  {
+    "key": "cafe",
+    "label": "Caf\u00e9",
+    "level": 8,
+    "stages": 10,
+    "file": "cafe_08.png",
+    "size": [
+      35,
+      36
+    ],
+    "anchorPx": [
+      16,
+      32
+    ],
+    "footprint": [
+      2,
+      2
+    ],
+    "heightM": 1.68,
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 14
+  },
+  {
+    "key": "cafe",
+    "label": "Caf\u00e9",
+    "level": 9,
+    "stages": 10,
+    "file": "cafe_09.png",
+    "size": [
+      40,
+      40
+    ],
+    "anchorPx": [
+      18,
+      35
+    ],
+    "footprint": [
+      2,
+      2
+    ],
+    "heightM": 1.92,
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 14
+  },
+  {
+    "key": "cafe",
+    "label": "Caf\u00e9",
+    "level": 10,
+    "stages": 10,
+    "file": "cafe_10.png",
+    "size": [
+      44,
+      45
+    ],
+    "anchorPx": [
+      22,
+      40
+    ],
+    "footprint": [
+      3,
+      2
+    ],
+    "heightM": 2.2,
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 14
+  },
+  {
+    "key": "library",
+    "label": "Library",
+    "level": 1,
+    "stages": 12,
+    "file": "library_01.png",
+    "size": [
+      26,
+      18
+    ],
+    "anchorPx": [
+      15,
+      14
+    ],
+    "footprint": [
+      2,
+      1
+    ],
+    "heightM": 0.12,
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 7
+  },
+  {
+    "key": "library",
+    "label": "Library",
+    "level": 2,
+    "stages": 12,
+    "file": "library_02.png",
+    "size": [
+      22,
+      23
+    ],
+    "anchorPx": [
+      11,
+      20
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 0.95,
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 10
+  },
+  {
+    "key": "library",
+    "label": "Library",
+    "level": 3,
+    "stages": 12,
+    "file": "library_03.png",
+    "size": [
+      24,
+      25
+    ],
+    "anchorPx": [
+      12,
+      22
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 1.06,
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 9
+  },
+  {
+    "key": "library",
+    "label": "Library",
+    "level": 4,
+    "stages": 12,
+    "file": "library_04.png",
+    "size": [
+      25,
+      27
+    ],
+    "anchorPx": [
+      12,
+      23
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 1.18,
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 10
+  },
+  {
+    "key": "library",
+    "label": "Library",
+    "level": 5,
+    "stages": 12,
+    "file": "library_05.png",
+    "size": [
+      28,
+      29
+    ],
+    "anchorPx": [
+      14,
+      25
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 1.32,
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 11
+  },
+  {
+    "key": "library",
+    "label": "Library",
+    "level": 6,
+    "stages": 12,
+    "file": "library_06.png",
+    "size": [
+      31,
+      32
+    ],
+    "anchorPx": [
+      17,
+      28
+    ],
+    "footprint": [
+      2,
+      1
+    ],
+    "heightM": 1.47,
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 12
+  },
+  {
+    "key": "library",
+    "label": "Library",
+    "level": 7,
+    "stages": 12,
+    "file": "library_07.png",
+    "size": [
+      34,
+      35
+    ],
+    "anchorPx": [
+      17,
+      32
+    ],
+    "footprint": [
+      2,
+      2
+    ],
+    "heightM": 1.63,
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 15
+  },
+  {
+    "key": "library",
+    "label": "Library",
+    "level": 8,
+    "stages": 12,
+    "file": "library_08.png",
+    "size": [
+      36,
+      39
+    ],
+    "anchorPx": [
+      18,
+      34
+    ],
+    "footprint": [
+      2,
+      2
+    ],
+    "heightM": 1.82,
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 15
+  },
+  {
+    "key": "library",
+    "label": "Library",
+    "level": 9,
+    "stages": 12,
+    "file": "library_09.png",
+    "size": [
+      40,
+      43
+    ],
+    "anchorPx": [
+      20,
+      37
+    ],
+    "footprint": [
+      2,
+      2
+    ],
+    "heightM": 2.03,
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 19
+  },
+  {
+    "key": "library",
+    "label": "Library",
+    "level": 10,
+    "stages": 12,
+    "file": "library_10.png",
+    "size": [
+      43,
+      48
+    ],
+    "anchorPx": [
+      22,
+      41
+    ],
+    "footprint": [
+      2,
+      2
+    ],
+    "heightM": 2.26,
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 18
+  },
+  {
+    "key": "library",
+    "label": "Library",
+    "level": 11,
+    "stages": 12,
+    "file": "library_11.png",
+    "size": [
+      47,
+      52
+    ],
+    "anchorPx": [
+      25,
+      45
+    ],
+    "footprint": [
+      3,
+      2
+    ],
+    "heightM": 2.51,
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 19
+  },
+  {
+    "key": "library",
+    "label": "Library",
+    "level": 12,
+    "stages": 12,
+    "file": "library_12.png",
+    "size": [
+      52,
+      57
+    ],
+    "anchorPx": [
+      26,
+      50
+    ],
+    "footprint": [
+      3,
+      3
+    ],
+    "heightM": 2.8,
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 20
+  },
+  {
+    "key": "workshop",
+    "label": "Workshop",
+    "level": 1,
+    "stages": 10,
+    "file": "workshop_01.png",
+    "size": [
+      24,
+      17
+    ],
+    "anchorPx": [
+      14,
+      14
+    ],
+    "footprint": [
+      2,
+      1
+    ],
+    "heightM": 0.12,
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 7
+  },
+  {
+    "key": "workshop",
+    "label": "Workshop",
+    "level": 2,
+    "stages": 10,
+    "file": "workshop_02.png",
+    "size": [
+      16,
+      19
+    ],
+    "anchorPx": [
+      8,
+      16
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 0.88,
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 7
+  },
+  {
+    "key": "workshop",
+    "label": "Workshop",
+    "level": 3,
+    "stages": 10,
+    "file": "workshop_03.png",
+    "size": [
+      18,
+      20
+    ],
+    "anchorPx": [
+      9,
+      17
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 0.95,
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 8
+  },
+  {
+    "key": "workshop",
+    "label": "Workshop",
+    "level": 4,
+    "stages": 10,
+    "file": "workshop_04.png",
+    "size": [
+      20,
+      21
+    ],
+    "anchorPx": [
+      10,
+      18
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 1.02,
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 8
+  },
+  {
+    "key": "workshop",
+    "label": "Workshop",
+    "level": 5,
+    "stages": 10,
+    "file": "workshop_05.png",
+    "size": [
+      22,
+      24
+    ],
+    "anchorPx": [
+      11,
+      20
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 1.17,
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 9
+  },
+  {
+    "key": "workshop",
+    "label": "Workshop",
+    "level": 6,
+    "stages": 10,
+    "file": "workshop_06.png",
+    "size": [
+      24,
+      25
+    ],
+    "anchorPx": [
+      14,
+      22
+    ],
+    "footprint": [
+      2,
+      1
+    ],
+    "heightM": 1.34,
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 12
+  },
+  {
+    "key": "workshop",
+    "label": "Workshop",
+    "level": 7,
+    "stages": 10,
+    "file": "workshop_07.png",
+    "size": [
+      32,
+      29
+    ],
+    "anchorPx": [
+      16,
+      25
+    ],
+    "footprint": [
+      2,
+      1
+    ],
+    "heightM": 1.53,
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 15
+  },
+  {
+    "key": "workshop",
+    "label": "Workshop",
+    "level": 8,
+    "stages": 10,
+    "file": "workshop_08.png",
+    "size": [
+      36,
+      40
+    ],
+    "anchorPx": [
+      16,
+      36
+    ],
+    "footprint": [
+      2,
+      2
+    ],
+    "heightM": 1.76,
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 19
+  },
+  {
+    "key": "workshop",
+    "label": "Workshop",
+    "level": 9,
+    "stages": 10,
+    "file": "workshop_09.png",
+    "size": [
+      40,
+      45
+    ],
+    "anchorPx": [
+      18,
+      40
+    ],
+    "footprint": [
+      2,
+      2
+    ],
+    "heightM": 2.01,
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 21
+  },
+  {
+    "key": "workshop",
+    "label": "Workshop",
+    "level": 10,
+    "stages": 10,
+    "file": "workshop_10.png",
+    "size": [
+      44,
+      50
+    ],
+    "anchorPx": [
+      22,
+      45
+    ],
+    "footprint": [
+      3,
+      2
+    ],
+    "heightM": 2.3,
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 21
+  },
+  {
+    "key": "greenhouse",
+    "label": "Greenhouse",
+    "level": 1,
+    "stages": 9,
+    "file": "greenhouse_01.png",
+    "size": [
+      24,
+      17
+    ],
+    "anchorPx": [
+      14,
+      14
+    ],
+    "footprint": [
+      2,
+      1
+    ],
+    "heightM": 0.12,
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 7
+  },
+  {
+    "key": "greenhouse",
+    "label": "Greenhouse",
+    "level": 2,
+    "stages": 9,
+    "file": "greenhouse_02.png",
+    "size": [
+      20,
+      18
+    ],
+    "anchorPx": [
+      10,
+      16
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 0.75,
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 6
+  },
+  {
+    "key": "greenhouse",
+    "label": "Greenhouse",
+    "level": 3,
+    "stages": 9,
+    "file": "greenhouse_03.png",
+    "size": [
+      22,
+      21
+    ],
+    "anchorPx": [
+      11,
+      18
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 0.87,
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 6
+  },
+  {
+    "key": "greenhouse",
+    "label": "Greenhouse",
+    "level": 4,
+    "stages": 9,
+    "file": "greenhouse_04.png",
+    "size": [
+      24,
+      23
+    ],
+    "anchorPx": [
+      12,
+      20
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 1.02,
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 6
+  },
+  {
+    "key": "greenhouse",
+    "label": "Greenhouse",
+    "level": 5,
+    "stages": 9,
+    "file": "greenhouse_05.png",
+    "size": [
+      28,
+      27
+    ],
+    "anchorPx": [
+      16,
+      24
+    ],
+    "footprint": [
+      2,
+      1
+    ],
+    "heightM": 1.19,
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 9
+  },
+  {
+    "key": "greenhouse",
+    "label": "Greenhouse",
+    "level": 6,
+    "stages": 9,
+    "file": "greenhouse_06.png",
+    "size": [
+      30,
+      30
+    ],
+    "anchorPx": [
+      17,
+      26
+    ],
+    "footprint": [
+      2,
+      1
+    ],
+    "heightM": 1.39,
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 14
+  },
+  {
+    "key": "greenhouse",
+    "label": "Greenhouse",
+    "level": 7,
+    "stages": 9,
+    "file": "greenhouse_07.png",
+    "size": [
+      36,
+      35
+    ],
+    "anchorPx": [
+      20,
+      30
+    ],
+    "footprint": [
+      2,
+      1
+    ],
+    "heightM": 1.62,
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 14
+  },
+  {
+    "key": "greenhouse",
+    "label": "Greenhouse",
+    "level": 8,
+    "stages": 9,
+    "file": "greenhouse_08.png",
+    "size": [
+      40,
+      40
+    ],
+    "anchorPx": [
+      20,
+      35
+    ],
+    "footprint": [
+      2,
+      2
+    ],
+    "heightM": 1.89,
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 14
+  },
+  {
+    "key": "greenhouse",
+    "label": "Greenhouse",
+    "level": 9,
+    "stages": 9,
+    "file": "greenhouse_09.png",
+    "size": [
+      44,
+      45
+    ],
+    "anchorPx": [
+      24,
+      40
+    ],
+    "footprint": [
+      3,
+      2
+    ],
+    "heightM": 2.2,
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 14
+  },
+  {
+    "key": "training_ground",
+    "label": "Training ground",
+    "level": 1,
+    "stages": 8,
+    "file": "training_ground_01.png",
+    "size": [
+      28,
+      19
+    ],
+    "anchorPx": [
+      14,
+      16
+    ],
+    "footprint": [
+      2,
+      2
+    ],
+    "heightM": 0.12,
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 7
+  },
+  {
+    "key": "training_ground",
+    "label": "Training ground",
+    "level": 2,
+    "stages": 8,
+    "file": "training_ground_02.png",
+    "size": [
+      26,
+      16
+    ],
+    "anchorPx": [
+      13,
+      11
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 0.53,
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 10
+  },
+  {
+    "key": "training_ground",
+    "label": "Training ground",
+    "level": 3,
+    "stages": 8,
+    "file": "training_ground_03.png",
+    "size": [
+      30,
+      17
+    ],
+    "anchorPx": [
+      15,
+      13
+    ],
+    "footprint": [
+      2,
+      2
+    ],
+    "heightM": 0.64,
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 10
+  },
+  {
+    "key": "training_ground",
+    "label": "Training ground",
+    "level": 4,
+    "stages": 8,
+    "file": "training_ground_04.png",
+    "size": [
+      32,
+      18
+    ],
+    "anchorPx": [
+      16,
+      14
+    ],
+    "footprint": [
+      2,
+      2
+    ],
+    "heightM": 0.68,
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 10
+  },
+  {
+    "key": "training_ground",
+    "label": "Training ground",
+    "level": 5,
+    "stages": 8,
+    "file": "training_ground_05.png",
+    "size": [
+      32,
+      19
+    ],
+    "anchorPx": [
+      16,
+      15
+    ],
+    "footprint": [
+      2,
+      2
+    ],
+    "heightM": 0.68,
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 9
+  },
+  {
+    "key": "training_ground",
+    "label": "Training ground",
+    "level": 6,
+    "stages": 8,
+    "file": "training_ground_06.png",
+    "size": [
+      36,
+      20
+    ],
+    "anchorPx": [
+      18,
+      15
+    ],
+    "footprint": [
+      2,
+      2
+    ],
+    "heightM": 0.77,
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 10
+  },
+  {
+    "key": "training_ground",
+    "label": "Training ground",
+    "level": 7,
+    "stages": 8,
+    "file": "training_ground_07.png",
+    "size": [
+      42,
+      23
+    ],
+    "anchorPx": [
+      21,
+      18
+    ],
+    "footprint": [
+      3,
+      3
+    ],
+    "heightM": 0.92,
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 11
+  },
+  {
+    "key": "training_ground",
+    "label": "Training ground",
+    "level": 8,
+    "stages": 8,
+    "file": "training_ground_08.png",
+    "size": [
+      50,
+      27
+    ],
+    "anchorPx": [
+      25,
+      20
+    ],
+    "footprint": [
+      3,
+      3
+    ],
+    "heightM": 1.1,
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 11
+  },
+  {
+    "key": "yoga_pavilion",
+    "label": "Yoga pavilion",
+    "level": 1,
+    "stages": 9,
+    "file": "yoga_pavilion_01.png",
+    "size": [
+      24,
+      17
+    ],
+    "anchorPx": [
+      12,
+      13
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 0.12,
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 7
+  },
+  {
+    "key": "yoga_pavilion",
+    "label": "Yoga pavilion",
+    "level": 2,
+    "stages": 9,
+    "file": "yoga_pavilion_02.png",
+    "size": [
+      20,
+      18
+    ],
+    "anchorPx": [
+      10,
+      16
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 0.79,
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 10
+  },
+  {
+    "key": "yoga_pavilion",
+    "label": "Yoga pavilion",
+    "level": 3,
+    "stages": 9,
+    "file": "yoga_pavilion_03.png",
+    "size": [
+      22,
+      20
+    ],
+    "anchorPx": [
+      11,
+      17
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 0.87,
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 10
+  },
+  {
+    "key": "yoga_pavilion",
+    "label": "Yoga pavilion",
+    "level": 4,
+    "stages": 9,
+    "file": "yoga_pavilion_04.png",
+    "size": [
+      26,
+      23
+    ],
+    "anchorPx": [
+      13,
+      19
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 1.02,
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 10
+  },
+  {
+    "key": "yoga_pavilion",
+    "label": "Yoga pavilion",
+    "level": 5,
+    "stages": 9,
+    "file": "yoga_pavilion_05.png",
+    "size": [
+      28,
+      27
+    ],
+    "anchorPx": [
+      14,
+      22
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 1.19,
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 10
+  },
+  {
+    "key": "yoga_pavilion",
+    "label": "Yoga pavilion",
+    "level": 6,
+    "stages": 9,
+    "file": "yoga_pavilion_06.png",
+    "size": [
+      32,
+      30
+    ],
+    "anchorPx": [
+      16,
+      26
+    ],
+    "footprint": [
+      2,
+      2
+    ],
+    "heightM": 1.39,
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 11
+  },
+  {
+    "key": "yoga_pavilion",
+    "label": "Yoga pavilion",
+    "level": 7,
+    "stages": 9,
+    "file": "yoga_pavilion_07.png",
+    "size": [
+      36,
+      35
+    ],
+    "anchorPx": [
+      18,
+      30
+    ],
+    "footprint": [
+      2,
+      2
+    ],
+    "heightM": 1.62,
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 14
+  },
+  {
+    "key": "yoga_pavilion",
+    "label": "Yoga pavilion",
+    "level": 8,
+    "stages": 9,
+    "file": "yoga_pavilion_08.png",
+    "size": [
+      42,
+      41
+    ],
+    "anchorPx": [
+      21,
+      34
+    ],
+    "footprint": [
+      2,
+      2
+    ],
+    "heightM": 1.89,
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 15
+  },
+  {
+    "key": "yoga_pavilion",
+    "label": "Yoga pavilion",
+    "level": 9,
+    "stages": 9,
+    "file": "yoga_pavilion_09.png",
+    "size": [
+      46,
+      46
+    ],
+    "anchorPx": [
+      23,
+      40
+    ],
+    "footprint": [
+      3,
+      3
+    ],
+    "heightM": 2.2,
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 15
+  },
+  {
+    "key": "observatory",
+    "label": "Observatory",
+    "level": 1,
+    "stages": 12,
+    "file": "observatory_01.png",
+    "size": [
+      18,
+      14
+    ],
+    "anchorPx": [
+      9,
+      11
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 0.12,
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 7
+  },
+  {
+    "key": "observatory",
+    "label": "Observatory",
+    "level": 2,
+    "stages": 12,
+    "file": "observatory_02.png",
+    "size": [
+      14,
+      19
+    ],
+    "anchorPx": [
+      7,
+      17
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 1.02,
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 6
+  },
+  {
+    "key": "observatory",
+    "label": "Observatory",
+    "level": 3,
+    "stages": 12,
+    "file": "observatory_03.png",
+    "size": [
+      16,
+      20
+    ],
+    "anchorPx": [
+      8,
+      18
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 1.14,
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 6
+  },
+  {
+    "key": "observatory",
+    "label": "Observatory",
+    "level": 4,
+    "stages": 12,
+    "file": "observatory_04.png",
+    "size": [
+      18,
+      23
+    ],
+    "anchorPx": [
+      9,
+      20
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 1.27,
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 6
+  },
+  {
+    "key": "observatory",
+    "label": "Observatory",
+    "level": 5,
+    "stages": 12,
+    "file": "observatory_05.png",
+    "size": [
+      20,
+      25
+    ],
+    "anchorPx": [
+      10,
+      22
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 1.41,
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 6
+  },
+  {
+    "key": "observatory",
+    "label": "Observatory",
+    "level": 6,
+    "stages": 12,
+    "file": "observatory_06.png",
+    "size": [
+      20,
+      27
+    ],
+    "anchorPx": [
+      10,
+      24
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 1.57,
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 9
+  },
+  {
+    "key": "observatory",
+    "label": "Observatory",
+    "level": 7,
+    "stages": 12,
+    "file": "observatory_07.png",
+    "size": [
+      24,
+      30
+    ],
+    "anchorPx": [
+      12,
+      26
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 1.75,
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 12
+  },
+  {
+    "key": "observatory",
+    "label": "Observatory",
+    "level": 8,
+    "stages": 12,
+    "file": "observatory_08.png",
+    "size": [
+      26,
+      34
+    ],
+    "anchorPx": [
+      13,
+      29
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 1.95,
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 11
+  },
+  {
+    "key": "observatory",
+    "label": "Observatory",
+    "level": 9,
+    "stages": 12,
+    "file": "observatory_09.png",
+    "size": [
+      28,
+      37
+    ],
+    "anchorPx": [
+      14,
+      32
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 2.17,
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 14
+  },
+  {
+    "key": "observatory",
+    "label": "Observatory",
+    "level": 10,
+    "stages": 12,
+    "file": "observatory_10.png",
+    "size": [
+      32,
+      41
+    ],
+    "anchorPx": [
+      16,
+      35
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 2.42,
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 14
+  },
+  {
+    "key": "observatory",
+    "label": "Observatory",
+    "level": 11,
+    "stages": 12,
+    "file": "observatory_11.png",
+    "size": [
+      34,
+      53
+    ],
+    "anchorPx": [
+      17,
+      48
+    ],
+    "footprint": [
+      2,
+      2
+    ],
+    "heightM": 2.69,
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 16
+  },
+  {
+    "key": "observatory",
+    "label": "Observatory",
+    "level": 12,
+    "stages": 12,
+    "file": "observatory_12.png",
+    "size": [
+      38,
+      59
+    ],
+    "anchorPx": [
+      19,
+      53
+    ],
+    "footprint": [
+      2,
+      2
+    ],
+    "heightM": 3.0,
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 17
+  },
+  {
+    "key": "boathouse",
+    "label": "Boathouse",
+    "level": 1,
+    "stages": 11,
+    "file": "boathouse_01.png",
+    "size": [
+      24,
+      17
+    ],
+    "anchorPx": [
+      14,
+      14
+    ],
+    "footprint": [
+      2,
+      1
+    ],
+    "heightM": 0.12,
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 7
+  },
+  {
+    "key": "boathouse",
+    "label": "Boathouse",
+    "level": 2,
+    "stages": 11,
+    "file": "boathouse_02.png",
+    "size": [
+      21,
+      18
+    ],
+    "anchorPx": [
+      10,
+      16
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 0.78,
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 8
+  },
+  {
+    "key": "boathouse",
+    "label": "Boathouse",
+    "level": 3,
+    "stages": 11,
+    "file": "boathouse_03.png",
+    "size": [
+      22,
+      20
+    ],
+    "anchorPx": [
+      11,
+      17
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 0.88,
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 8
+  },
+  {
+    "key": "boathouse",
+    "label": "Boathouse",
+    "level": 4,
+    "stages": 11,
+    "file": "boathouse_04.png",
+    "size": [
+      26,
+      31
+    ],
+    "anchorPx": [
+      14,
+      18
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 0.99,
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 10
+  },
+  {
+    "key": "boathouse",
+    "label": "Boathouse",
+    "level": 5,
+    "stages": 11,
+    "file": "boathouse_05.png",
+    "size": [
+      30,
+      34
+    ],
+    "anchorPx": [
+      14,
+      20
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 1.12,
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 10
+  },
+  {
+    "key": "boathouse",
+    "label": "Boathouse",
+    "level": 6,
+    "stages": 11,
+    "file": "boathouse_06.png",
+    "size": [
+      45,
+      37
+    ],
+    "anchorPx": [
+      17,
+      23
+    ],
+    "footprint": [
+      2,
+      1
+    ],
+    "heightM": 1.26,
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 12
+  },
+  {
+    "key": "boathouse",
+    "label": "Boathouse",
+    "level": 7,
+    "stages": 11,
+    "file": "boathouse_07.png",
+    "size": [
+      47,
+      39
+    ],
+    "anchorPx": [
+      18,
+      25
+    ],
+    "footprint": [
+      2,
+      1
+    ],
+    "heightM": 1.42,
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 12
+  },
+  {
+    "key": "boathouse",
+    "label": "Boathouse",
+    "level": 8,
+    "stages": 11,
+    "file": "boathouse_08.png",
+    "size": [
+      49,
+      42
+    ],
+    "anchorPx": [
+      17,
+      28
+    ],
+    "footprint": [
+      2,
+      2
+    ],
+    "heightM": 1.61,
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 14
+  },
+  {
+    "key": "boathouse",
+    "label": "Boathouse",
+    "level": 9,
+    "stages": 11,
+    "file": "boathouse_09.png",
+    "size": [
+      52,
+      46
+    ],
+    "anchorPx": [
+      19,
+      31
+    ],
+    "footprint": [
+      2,
+      2
+    ],
+    "heightM": 1.81,
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 15
+  },
+  {
+    "key": "boathouse",
+    "label": "Boathouse",
+    "level": 10,
+    "stages": 11,
+    "file": "boathouse_10.png",
+    "size": [
+      56,
+      50
+    ],
+    "anchorPx": [
+      21,
+      34
+    ],
+    "footprint": [
+      2,
+      2
+    ],
+    "heightM": 2.04,
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 15
+  },
+  {
+    "key": "boathouse",
+    "label": "Boathouse",
+    "level": 11,
+    "stages": 11,
+    "file": "boathouse_11.png",
+    "size": [
+      59,
+      55
+    ],
+    "anchorPx": [
+      25,
+      39
+    ],
+    "footprint": [
+      3,
+      2
+    ],
+    "heightM": 2.3,
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 15
+  }
+]

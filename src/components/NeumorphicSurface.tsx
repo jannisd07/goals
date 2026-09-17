@@ -68,58 +68,6 @@ function splitStyle(style: ViewStyle | undefined) {
   return { outer, inner };
 }
 
-function RaisedShadows({
-  radius,
-  bottomRadius = radius,
-  lightShadowOpacity = 1,
-  darkShadowOpacity = 1,
-  fill,
-  soft = false,
-  surfaceColor = NEU.bg,
-}: {
-  radius: number;
-  bottomRadius?: number;
-  lightShadowOpacity?: number;
-  darkShadowOpacity?: number;
-  fill: boolean;
-  soft?: boolean;
-  surfaceColor?: string;
-}) {
-  const cornerRadii = {
-    borderTopLeftRadius: radius,
-    borderTopRightRadius: radius,
-    borderBottomLeftRadius: bottomRadius,
-    borderBottomRightRadius: bottomRadius,
-  };
-
-  return (
-    <>
-      <View
-        pointerEvents="none"
-        style={[
-          styles.shadowLayer,
-          styles.darkShadow,
-          soft && styles.softDarkShadow,
-          cornerRadii,
-          { backgroundColor: surfaceColor, shadowOpacity: darkShadowOpacity },
-          fill && styles.fill,
-        ]}
-      />
-      <View
-        pointerEvents="none"
-        style={[
-          styles.shadowLayer,
-          styles.lightShadow,
-          soft && styles.softLightShadow,
-          cornerRadii,
-          { backgroundColor: surfaceColor, shadowOpacity: lightShadowOpacity },
-          fill && styles.fill,
-        ]}
-      />
-    </>
-  );
-}
-
 export function NeumorphicInsetOverlay({
   radius = NEU.radius,
   strength = 1,
@@ -196,16 +144,14 @@ export function NeumorphicSurface({
     borderBottomRightRadius: bottomRadius,
   };
 
+  // Island look: a plain white card. The former dual neumorphic shadows are
+  // gone; the shadow-opacity props stay in the signature so the 13 call sites
+  // keep working untouched.
+  void lightShadowOpacity;
+  void darkShadowOpacity;
+
   return (
     <View style={[styles.layoutWrap, cornerRadii, outer]}>
-      <RaisedShadows
-        radius={radius}
-        bottomRadius={bottomRadius}
-        lightShadowOpacity={lightShadowOpacity}
-        darkShadowOpacity={darkShadowOpacity}
-        fill={shouldFill}
-        surfaceColor={NEU.card}
-      />
       <View
         style={[
           styles.surface,
@@ -251,7 +197,7 @@ const styles = StyleSheet.create({
   },
   surface: {
     overflow: "hidden",
-    backgroundColor: NEU.bg,
+    backgroundColor: NEU.card,
   },
   fill: {
     flex: 1,

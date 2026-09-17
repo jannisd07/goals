@@ -1,6 +1,7 @@
 import React from "react";
 import { Pressable, Text, View } from "react-native";
 import { NEU, NEU_FONTS } from "../theme/neumorphism";
+import { PAPER } from "../theme/paper";
 import type { GoalCategory } from "../types";
 
 interface CategoryCardsProps {
@@ -29,8 +30,8 @@ export function CategoryCards({ categories, selectedKey, onSelect }: CategoryCar
                 minHeight: 56,
                 borderRadius: 16,
                 borderWidth: 1,
-                borderColor: selected ? NEU.accent : NEU.track,
-                backgroundColor: selected ? NEU.accent : NEU.card,
+                borderColor: selected ? PAPER.accent : PAPER.line,
+                backgroundColor: selected ? PAPER.accentWash : PAPER.surface,
                 alignItems: "center",
                 justifyContent: "center",
                 paddingHorizontal: 12,
@@ -40,7 +41,7 @@ export function CategoryCards({ categories, selectedKey, onSelect }: CategoryCar
             >
               <Text
                 style={{
-                  color: selected ? "#FFFFFF" : NEU.textPrimary,
+                  color: selected ? PAPER.accentInk : PAPER.ink,
                   fontSize: 16,
                   fontFamily: NEU_FONTS.label,
                   textAlign: "center",
@@ -80,7 +81,22 @@ export function ValueStepper({ value, onChange, min, max, unit, accessibilityLab
         const delta = event.nativeEvent.actionName === "increment" ? 1 : -1;
         onChange(Math.min(max, Math.max(min, value + delta)));
       }}
-      style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 20 }}
+      // The stepper sits on the ocean artwork on every setup page. Without its
+      // own white body the value and the green +/- read as invisible marks on
+      // the water, which is why it looked like the control was dead.
+      style={{
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 20,
+        alignSelf: "center",
+        paddingHorizontal: 10,
+        paddingVertical: 8,
+        borderRadius: PAPER.radiusLg,
+        backgroundColor: PAPER.surface,
+        borderWidth: 1,
+        borderColor: PAPER.line,
+      }}
     >
       <Pressable
         onPress={() => onChange(Math.max(min, value - 1))}
@@ -96,14 +112,14 @@ export function ValueStepper({ value, onChange, min, max, unit, accessibilityLab
           opacity: value <= min ? 0.35 : pressed ? 0.5 : 1,
         })}
       >
-        <Text style={{ color: NEU.accent, fontSize: 26, fontFamily: NEU_FONTS.label }}>{"−"}</Text>
+        <Text style={{ color: PAPER.accentInk, fontSize: 26, fontFamily: NEU_FONTS.label }}>{"−"}</Text>
       </Pressable>
 
       <View style={{ alignItems: "center", minWidth: 96 }}>
-        <Text style={{ color: NEU.textPrimary, fontSize: 34, lineHeight: 38, fontFamily: NEU_FONTS.heading }}>
+        <Text style={{ color: PAPER.ink, fontSize: 34, lineHeight: 38, fontFamily: NEU_FONTS.heading }}>
           {value}
         </Text>
-        <Text style={{ color: NEU.textSecondary, fontSize: 13, fontFamily: NEU_FONTS.body }}>{unit}</Text>
+        <Text style={{ color: PAPER.inkMuted, fontSize: 13, fontFamily: NEU_FONTS.body }}>{unit}</Text>
       </View>
 
       <Pressable
@@ -120,7 +136,7 @@ export function ValueStepper({ value, onChange, min, max, unit, accessibilityLab
           opacity: value >= max ? 0.35 : pressed ? 0.5 : 1,
         })}
       >
-        <Text style={{ color: NEU.accent, fontSize: 26, fontFamily: NEU_FONTS.label }}>+</Text>
+        <Text style={{ color: PAPER.accentInk, fontSize: 26, fontFamily: NEU_FONTS.label }}>+</Text>
       </Pressable>
     </View>
   );

@@ -44,6 +44,66 @@ export function computeAdaptiveBreakMinutes(
   };
 }
 
+/**
+ * A focus session may keep running while the app is in the background, but not
+ * for days. Anything longer than this means the app was closed and the session
+ * was forgotten, so it is dropped instead of collecting the whole gap
+ * (Jannis, 2026-09-14: a four day old session showed thousands of hours).
+ */
+export const SESSION_ABANDONED_AFTER_SECONDS = 8 * 60 * 60;
+
+/** Even a plausible gap only counts up to this, so a night never lands in a session. */
+export const MAX_CATCH_UP_SECONDS = 4 * 60 * 60;
+
+export interface CatchUp {
+  /** Seconds that may be added to the session. */
+  seconds: number;
+  /** The gap was so long that the session counts as abandoned. */
+  abandoned: boolean;
+}
+
+/** How much of the time since the last tick a session may still count. */
+export function catchUpAfterGap(gapSeconds: number): CatchUp {
+  const gap = Math.max(0, Math.floor(gapSeconds));
+  if (gap > SESSION_ABANDONED_AFTER_SECONDS) return { seconds: 0, abandoned: true };
+  return { seconds: Math.min(gap, MAX_CATCH_UP_SECONDS), abandoned: false };
+}
+
+/** Nobody focuses for half a day in one session; beyond this the number is broken. */
+export const MAX_PLAUSIBLE_FOCUS_SECONDS = 12 * 60 * 60;
+
+/** A session older than this was forgotten, whatever its counter says. */
+export const MAX_SESSION_AGE_SECONDS = 24 * 60 * 60;
+
+export interface StaleSessionInput {
+  /** Start of the session in ms, or null when it is unknown. */
+  startTimeMs: number | null;
+  focusedSeconds: number;
+  lastTickMs: number | null;
+  nowMs: number;
+}
+
+/**
+ * Whether a restored session should be dropped instead of continued.
+ *
+ * Three ways a session goes bad: the app was closed for hours (gap), the
+ * session was started a day or more ago, or its counter already holds more
+ * focus time than a person can sit through. The last two matter because an
+ * earlier version of the catch-up wrote the gap into the counter and moved the
+ * tick to now, which hides the gap (Jannis, 2026-09-14).
+ */
+export function isStaleSession({
+  startTimeMs,
+  focusedSeconds,
+  lastTickMs,
+  nowMs,
+}: StaleSessionInput): boolean {
+  if (focusedSeconds > MAX_PLAUSIBLE_FOCUS_SECONDS) return true;
+  if (startTimeMs !== null && nowMs - startTimeMs > MAX_SESSION_AGE_SECONDS * 1000) return true;
+  if (lastTickMs !== null && catchUpAfterGap((nowMs - lastTickMs) / 1000).abandoned) return true;
+  return false;
+}
+
 export interface PomodoroAdvanceResult {
   pomodoro: PomodoroState;
   focusedSecondsAdded: number;

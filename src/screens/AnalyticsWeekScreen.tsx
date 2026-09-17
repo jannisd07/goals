@@ -1,15 +1,17 @@
-import React, { useMemo } from "react";
-import { View, Text, ScrollView, StyleSheet } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import React, { useCallback, useMemo } from "react";
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useRoute, useNavigation, RouteProp } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "../lib/supabase";
 import { useAppStore } from "../store";
-import { NeumorphicSurface } from "../components/NeumorphicSurface";
+import { PaperCard, PaperHeader, PaperScreen } from "../components/paper/PaperUI";
+import { TrashIcon } from "../components/TabIcons";
+import { useDeleteSession } from "../hooks/useSessions";
 import { TextAction } from "../components/ui/TextAction";
 import type { RootStackParamList } from "../navigation/types";
-import { NEU, NEU_FONTS } from "../theme/neumorphism";
+import { NEU_FONTS } from "../theme/neumorphism";
+import { PAPER } from "../theme/paper";
 
 type AnalyticsWeekRoute = RouteProp<RootStackParamList, "AnalyticsWeek">;
 type Nav = NativeStackNavigationProp<RootStackParamList>;
@@ -62,6 +64,40 @@ export function AnalyticsWeekScreen() {
     }
     return map;
   }, [goals]);
+
+  const deleteSession = useDeleteSession();
+
+  /** Wrong check-ins happen (driving past the gym), so every session can be removed. */
+  const confirmDelete = useCallback(
+    (session: SessionRow) => {
+      const goalName = goalNameById[session.goal_id] ?? "Session";
+      Alert.alert(
+        "Delete this session?",
+        `${goalName} · ${formatTimeLabel(session.start_time)} · ${formatDuration(session.duration_seconds)}` +
+          "\n\nIt is removed from your stats, weekly progress and streak. This cannot be undone.",
+        [
+          { text: "Cancel", style: "cancel" },
+          {
+            text: "Delete",
+            style: "destructive",
+            onPress: () => {
+              deleteSession.mutate(session.id, {
+                onError: (error: unknown) => {
+                  Alert.alert(
+                    "Couldn’t delete the session",
+                    error instanceof Error
+                      ? error.message
+                      : "Check your connection and try again.",
+                  );
+                },
+              });
+            },
+          },
+        ],
+      );
+    },
+    [deleteSession, goalNameById],
+  );
 
   const { data: sessions = [], isLoading, isError, refetch } = useQuery({
     queryKey: ["analytics", "week", weekStartISO, weekEndISO, selectedGoalId ?? "all"],
@@ -125,45 +161,40 @@ export function AnalyticsWeekScreen() {
   const weekTotalSeconds = useMemo(() => days.reduce((sum, day) => sum + day.totalSeconds, 0), [days]);
 
   return (
-    <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
-      <View style={styles.headerRow}>
-        <TextAction label="Back" onPress={() => navigation.goBack()} />
+    <PaperScreen edges={["top"]}>
+      <PaperHeader title="Week" onClose={() => navigation.goBack()} closeLabel="Back" />
 
-        <View pointerEvents="none" style={styles.headerCenter}>
-          <Text style={styles.headerTitle}>Week</Text>
-          <Text style={styles.headerSubtitle}>{weekLabel}</Text>
-        </View>
-
-        <View style={{ width: 72 }} />
-      </View>
+      <Text style={styles.weekLabel}>{weekLabel}</Text>
 
       {!isLoading && !isError ? (
-        <NeumorphicSurface style={styles.summaryCard} contentPadding={16}>
+        <PaperCard style={styles.summaryCard} padding={16}>
           <Text style={styles.summaryValue}>
             {isPhysical ? `${sessions.length} ${sessions.length === 1 ? "visit" : "visits"}` : formatDuration(weekTotalSeconds)}
           </Text>
           <Text style={styles.summaryLabel}>
             {isPhysical ? "Check-ins this week" : "Focus time this week"}
           </Text>
-        </NeumorphicSurface>
+        </PaperCard>
       ) : null}
 
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.scrollContent}>
+      <ScrollView
+          bounces={false}
+          alwaysBounceVertical={false} style={{ flex: 1 }} contentContainerStyle={styles.scrollContent}>
         {isLoading ? (
           <Text style={styles.loadingText}>Loading sessions...</Text>
         ) : isError ? (
-          <NeumorphicSurface style={styles.dayCard} contentPadding={16}>
+          <PaperCard style={styles.dayCard} padding={16}>
             <Text style={styles.dayTitle}>This week could not be loaded</Text>
             <Text style={styles.emptyText}>Check your connection and try again.</Text>
-            <TextAction label="Try Again" onPress={() => void refetch()} />
-          </NeumorphicSurface>
+            <TextAction
+              label="Try Again"
+              onPress={() => void refetch()}
+              textStyle={styles.linkText}
+            />
+          </PaperCard>
         ) : (
           days.map((day) => (
-            <NeumorphicSurface
-              key={day.date.toISOString()}
-              style={styles.dayCard}
-              contentPadding={14}
-            >
+            <PaperCard key={day.date.toISOString()} style={styles.dayCard} padding={14}>
               <View style={styles.dayHeader}>
                 <Text style={styles.dayTitle}>{formatDayLabel(day.date)}</Text>
                 <Text style={styles.dayTotal}>
@@ -192,126 +223,136 @@ export function AnalyticsWeekScreen() {
                       </Text>
                     </View>
                     <Text style={styles.sessionDuration}>{formatDuration(session.duration_seconds)}</Text>
+                    <Pressable
+                      onPress={() => confirmDelete(session)}
+                      disabled={deleteSession.isPending}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Delete ${goalNameById[session.goal_id] ?? "session"} at ${formatTimeLabel(session.start_time)}`}
+                      accessibilityState={{ disabled: deleteSession.isPending }}
+                      style={({ pressed }) => [
+                        styles.deleteTouch,
+                        { opacity: deleteSession.isPending ? 0.4 : pressed ? 0.6 : 1 },
+                      ]}
+                    >
+                      <TrashIcon size={18} color={PAPER.danger} />
+                    </Pressable>
                   </View>
                 ))
               )}
-            </NeumorphicSurface>
+            </PaperCard>
           ))
         )}
       </ScrollView>
-    </SafeAreaView>
+    </PaperScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: NEU.bg,
-  },
-  headerRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 22,
-    paddingTop: 12,
-    paddingBottom: 8,
-  },
-  headerCenter: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    alignItems: "center",
-  },
-  headerTitle: {
-    color: NEU.textPrimary,
-    fontSize: 17,
-    fontFamily: NEU_FONTS.label,
-  },
-  headerSubtitle: {
-    color: NEU.textSecondary,
-    fontSize: 12,
-    fontFamily: NEU_FONTS.body,
-    marginTop: 2,
+  weekLabel: {
+    color: PAPER.ink,
+    fontSize: 24,
+    lineHeight: 30,
+    fontFamily: NEU_FONTS.heading,
+    letterSpacing: -0.3,
+    paddingHorizontal: PAPER.gutter + 4,
+    paddingTop: 4,
+    paddingBottom: 14,
   },
   summaryCard: {
-    marginHorizontal: 24,
-    marginTop: 8,
     marginBottom: 16,
   },
   summaryValue: {
-    color: NEU.textPrimary,
-    fontSize: 24,
+    color: PAPER.ink,
+    fontSize: 28,
+    lineHeight: 34,
     fontFamily: NEU_FONTS.heading,
+    fontVariant: ["tabular-nums"],
   },
   summaryLabel: {
-    color: NEU.textSecondary,
+    color: PAPER.inkMuted,
     fontSize: 13,
     fontFamily: NEU_FONTS.body,
     marginTop: 2,
   },
   scrollContent: {
-    paddingHorizontal: 24,
-    paddingBottom: 24,
-  },
-  loadingText: {
-    color: NEU.textSecondary,
-    fontSize: 14,
-    fontFamily: NEU_FONTS.body,
-    textAlign: "center",
-    marginTop: 12,
+    paddingBottom: 48,
   },
   dayCard: {
-    marginBottom: 16,
+    marginBottom: 10,
   },
   dayHeader: {
     flexDirection: "row",
+    alignItems: "baseline",
     justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 8,
+    marginBottom: 6,
   },
   dayTitle: {
-    color: NEU.textPrimary,
-    fontSize: 16,
+    color: PAPER.ink,
+    fontSize: 15,
     fontFamily: NEU_FONTS.label,
   },
   dayTotal: {
-    color: NEU.textSecondary,
-    fontSize: 13,
-    fontFamily: NEU_FONTS.body,
-  },
-  emptyText: {
-    color: NEU.textSecondary,
-    fontSize: 13,
-    fontFamily: NEU_FONTS.body,
-    paddingVertical: 6,
+    color: PAPER.inkMuted,
+    fontSize: 14,
+    fontFamily: NEU_FONTS.label,
+    fontVariant: ["tabular-nums"],
   },
   sessionRow: {
     flexDirection: "row",
     alignItems: "center",
     paddingVertical: 8,
     borderTopWidth: 1,
-    borderTopColor: "rgba(197, 205, 216, 0.6)",
+    borderTopColor: PAPER.line,
   },
   sessionTime: {
-    color: NEU.textSecondary,
-    fontSize: 12,
+    color: PAPER.inkMuted,
+    fontSize: 13,
     fontFamily: NEU_FONTS.body,
-    width: 58,
+    fontVariant: ["tabular-nums"],
+    minWidth: 62,
   },
   sessionGoal: {
-    color: NEU.textPrimary,
-    fontSize: 14,
-    fontFamily: NEU_FONTS.label,
+    color: PAPER.ink,
+    fontSize: 15,
+    fontFamily: NEU_FONTS.body,
   },
   sessionTrigger: {
-    color: NEU.textSecondary,
-    fontSize: 11,
+    color: PAPER.inkFaint,
+    fontSize: 12,
     fontFamily: NEU_FONTS.body,
     marginTop: 1,
   },
   sessionDuration: {
-    color: NEU.textPrimary,
-    fontSize: 12,
+    color: PAPER.ink,
+    fontSize: 14,
+    fontFamily: NEU_FONTS.label,
+    fontVariant: ["tabular-nums"],
+  },
+  // 44pt touch target without making the compact rows taller.
+  deleteTouch: {
+    width: 44,
+    height: 44,
+    alignItems: "center",
+    justifyContent: "center",
+    marginVertical: -10,
+    marginLeft: 2,
+    marginRight: -12,
+  },
+  emptyText: {
+    color: PAPER.inkFaint,
+    fontSize: 14,
     fontFamily: NEU_FONTS.body,
+    paddingVertical: 4,
+  },
+  loadingText: {
+    color: PAPER.inkMuted,
+    fontSize: 15,
+    fontFamily: NEU_FONTS.body,
+    textAlign: "center",
+    marginTop: 24,
+  },
+  linkText: {
+    color: PAPER.accentInk,
+    fontSize: 15,
   },
 });

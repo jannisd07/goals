@@ -42,6 +42,10 @@ const corsHeaders = {
 
 /** Cached wording stays valid this long while the patterns are unchanged. */
 const CACHE_TTL_DAYS = 14;
+// How long a fallback answer stands before another model attempt is worth it.
+// The daily quota is spent before the model replies, so without this a single
+// upstream failure would re-spend it and rewrite the same fallback all day.
+const FALLBACK_RETRY_COOLDOWN_MS = 60 * 60 * 1000;
 /** Model calls one user may cause per UTC day, however often the app opens. */
 const DAILY_MODEL_CALL_LIMIT = 1;
 /** Upper bound on history read per user. Years of use stay well below this. */
@@ -160,12 +164,19 @@ serve(async (req: Request) => {
     const writable = hasWritablePatterns(patterns);
 
     // --- 3. Reuse cached wording while the stable advice is unchanged ---------
+    let cachedFallbackIsFresh = false;
     if (writable) {
-      const { data: cached } = await admin
+      const { data: cached, error: cacheReadError } = await admin
         .from("coach_nudge_cache")
         .select("fingerprint, nudges, model_written, generated_at")
         .eq("user_id", user.id)
         .maybeSingle();
+
+      if (cacheReadError) {
+        // A cache outage must stay visible: silently treating it as a miss sends
+        // every user straight to the model and hides the failure completely.
+        console.warn("coach-nudges cache read failed:", cacheReadError.message);
+      }
 
       if (cached) {
         const row = cached as {
@@ -176,8 +187,9 @@ serve(async (req: Request) => {
         };
         const ageMs = Date.now() - Date.parse(row.generated_at);
         const fresh = Number.isFinite(ageMs) && ageMs < CACHE_TTL_DAYS * 86_400_000;
+        const matches = row.fingerprint === fingerprint && Array.isArray(row.nudges);
         // Fallback copy is worth upgrading later; model-written copy is not.
-        if (row.fingerprint === fingerprint && fresh && row.model_written && Array.isArray(row.nudges)) {
+        if (matches && fresh && row.model_written) {
           return jsonResponse({
             status: "ready",
             // Volatile nudges are rebuilt from today's numbers on every call.
@@ -187,6 +199,13 @@ serve(async (req: Request) => {
             sessions_analyzed: sessions.length,
           });
         }
+        // A fallback row that is only minutes old means the last model attempt
+        // just failed or the budget is gone. Rewriting it on every call costs a
+        // wasted quota slot and a wasted write without changing the answer.
+        cachedFallbackIsFresh = matches &&
+          Number.isFinite(ageMs) &&
+          ageMs < FALLBACK_RETRY_COOLDOWN_MS &&
+          !row.model_written;
       }
     }
 
@@ -198,8 +217,9 @@ serve(async (req: Request) => {
     let usedModel = false;
     let source = "fallback";
 
-    if (!apiKey || !writable) {
+    if (!apiKey || !writable || cachedFallbackIsFresh) {
       nudges = fallbackNudges(patterns);
+      if (cachedFallbackIsFresh) source = "fallback_cooldown";
     } else {
       const { data: quota, error: quotaError } = await admin.rpc(
         "consume_coach_nudge_quota",
@@ -221,7 +241,7 @@ serve(async (req: Request) => {
     }
 
     const generatedAt = new Date().toISOString();
-    if (writable) {
+    if (writable && !cachedFallbackIsFresh) {
       const { error: cacheError } = await admin.from("coach_nudge_cache").upsert(
         {
           user_id: user.id,

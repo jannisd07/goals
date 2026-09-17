@@ -1070,6 +1070,109 @@ die fünf Props der Master-Szene.
 **Nutzeraktion:** Vor jeder Insel-Arbeitssitzung Blender öffnen, `N`, Tab
 „MCP for Blender", „Start MCP Server".
 
+## 2026-09-08 — Redesign-Nachzieharbeiten (Setup, Auth, Stats, Onboarding)
+
+- **Ursache für „weekly target ding geht nicht":** Der `ValueStepper` lag nach dem
+  Redesign nackt auf dem Ozeanbild. Die Werte waren dunkel und die grünen +/− fast
+  unsichtbar auf dem Wasser, deshalb wirkte das Control tot. Es hatte immer
+  funktioniert. Der Stepper hat jetzt einen eigenen weißen Körper
+  (`src/components/CategoryCards.tsx`) und wurde im Simulator verifiziert
+  (10 → 12 Stunden per Tap).
+- **Weiß-auf-Weiß behoben:** Radius-Pillen und Suchfeld in `SetupGeofenceScreen`
+  sowie Fehler- und Hinweisbox in `AuthScreen` hatten `NEU.onImage`-Text auf
+  `NEU.card`. Alle auf `NEU.textPrimary`/`NEU.textSecondary` umgestellt.
+- **Stats-Segmente:** Ein ausgewähltes Goal ist nicht mehr vollflächig grün,
+  sondern weiß mit grüner Schrift und grüner 2pt-Kontur.
+- **Auth:** Die Primäraktion („Create account" / „Sign In") ist jetzt weiß mit
+  dunklem Label statt dunkel mit weißem Label.
+- **Onboarding:** Die weißen Karten um Focus-Ring und Standort-Pin auf den beiden
+  Feature-Seiten sind entfernt; die Animationen stehen frei auf der Seite.
+- Nicht visuell geprüft: Auth- und Onboarding-Seiten, weil man dafür ausloggen
+  müsste. Reine Farb-/Wrapper-Änderungen, Typecheck grün.
+
+## 2026-09-08 — Paper Light Mode für Stats, Friends, Settings
+
+Diese drei Seiten sind Lese- und Konfigurationsflächen, kein Teil der
+Insel-Fiktion. Sie verlassen den Ozean-Hintergrund komplett.
+
+- Neue Tokens in `src/theme/paper.ts`, neue Primitive in
+  `src/components/paper/PaperUI.tsx` (`PaperScreen`, `PaperHeader`,
+  `PaperLabel`, `PaperCard`, `PaperRow`).
+- Seite ist ein warmes Off-White `#F5F5F2` statt des üblichen kalten Blaugraus.
+  Karten sind weiß mit 1pt-Haarlinie und **ohne Schatten**; schwebende
+  Schattenkarten sind das, was eine Seite generiert aussehen lässt.
+- Zwei Grün: `accent #2E9E4F` für Flächen, Ringe und Balken, `accentInk #1F7A3C`
+  für grüne **Schrift** auf Weiß. Das Fill-Grün erreicht auf Weiß nur 3,4:1,
+  das Ink-Grün 5,4:1.
+- Ausgewählte Zustände sind weiß bzw. `accentWash` mit grüner Schrift und
+  grüner Kontur. Einzige vollflächig grüne Komponente bleibt der
+  `FocusModeSwitch` in Settings — bewusst als einziger Anker der Seite.
+- Stats: kein Footer mehr (`edges={["top"]}` wie Settings), Header ist jetzt
+  „Stats" + „Close" wie auf den anderen Seiten, Monat als eigene Zeile darunter.
+  Zwei KPI-Zahlen liegen in **einer** Karte mit Haarlinie dazwischen.
+  Heatmap nutzt vier feste Stufen statt eines Alpha-Verlaufs plus eine
+  Less/More-Legende. Zahlen laufen überall in `tabular-nums`.
+- Friends: gleicher Header, Freundesliste ist eine Gruppenkarte mit getrennten
+  Zeilen statt vieler Einzelkarten.
+- Settings: Sektionsnamen stehen als kleine Versallabels **über** den Karten,
+  nicht mehr darin. `ScrollBackdrop` entfernt.
+- `AnalyticsWeekScreen` mitgezogen, sonst wäre die Wochenansicht als einzige
+  Seite hinter Stats wieder auf dem Ozean gelandet.
+- Auth-Tabs („Sign Up / Sign In") waren grün bzw. grau auf hellem Himmel und
+  praktisch unlesbar; jetzt weiß mit weißer Unterlinie.
+
+**Offen:** Der Simulator hat sich ausgeloggt (Supabase-Session weg,
+`userConfig = null` in AsyncStorage). Die drei Seiten sind darum noch nicht
+visuell abgenommen — dafür muss Jannis sich im Simulator einmal anmelden.
+
+## 2026-09-10 — Flowtime-Texte im Setup
+
+- Problem: Die Flowtime-Karte im Onboarding hatte das Tag „Count up" und den Text
+  „Work without a countdown" — beide Mechanismen in einem Satz.
+- Neue Labels überall, wo der Modus gewählt wird (Onboarding, Settings-Switch,
+  Start-Popup auf Home): **Intervals · Set time** und **Flowtime · No limit**.
+- Onboarding: „Pick a length, like 25 minutes. When it's up, a short break starts
+  on its own." / „The clock runs until you stop it. The longer you focused, the
+  longer your break." Im Simulator geprüft.
+- Settings: Erklärung unter dem Switch beschreibt jetzt, was passiert; „Starting
+  ring target" heißt „Ring goal", der Text sagt, dass der Ring nur ein visuelles
+  Ziel ist. Wegen Logout nicht visuell geprüft.
+- Unverändert: das Statuslabel über dem laufenden Timer
+  (`FLOWTIME · COUNT UP`), weil es dort die sichtbare Uhr beschreibt.
+
+## 2026-09-10 — Wochenziel wurde beim Einloggen verworfen
+
+- **Ursache:** Wer ausgeloggt das Setup erneut durchläuft (Wochenziel wählen →
+  „Create Account" → mit bestehendem Konto einloggen), verlor alle Angaben.
+  `applyUserConfig` löschte `pendingOnboarding`, sobald `onboarding_complete`
+  true war, und `RootNavigator` speicherte ein Setup nur für Konten ohne
+  abgeschlossenes Onboarding. Belegt über die API-Logs vom 09-09: drei Logins,
+  Sessions wurden geschrieben, aber kein einziger PATCH/POST auf `goals`.
+  Datenbank-Grants und RLS waren in Ordnung.
+- **Fix:** Ein ausstehendes Setup wird jetzt für jedes eingeloggte Konto
+  gespeichert, danach wird die Goals-Query invalidiert und `focusStyle` im Store
+  gesetzt. Während des Speicherns zeigt die App Laden bzw. einen Fehler mit
+  „Try Again"; bestehende Konten haben zusätzlich „Keep my current goals".
+- `planOnboardingGoals` hat die Option `preserveExistingPhysicalGoal`: Überspringt
+  ein bestehendes Konto im Setup Auto Check-In, bleibt sein Check-In-Goal aktiv
+  (vorher wäre es deaktiviert worden). Vier neue Domain-Assertions.
+- Nebenbei: `checkinMinVisit` fehlte in den Deps von `buildPending` und
+  `renderPage` (Mindestaufenthalt konnte veraltet gespeichert werden).
+  Header-Aktionen der Setup-Editoren sind weiß; „Finish" im Auto-Check-In-Editor
+  heißt jetzt „Save".
+- **Offen:** End-to-End-Test braucht einen Login im Simulator.
+
+## 2026-09-10 — Mindestaufenthalt: 45 min und 2 h
+
+- `MIN_VISIT_MINUTES_OPTIONS` ist jetzt 10 / 20 / 30 / 45 / 60 min und 2 h.
+  Keine Migration nötig, der DB-Constraint erlaubt 1–240.
+- Onboarding: die sechs Pillen stehen in zwei Dreierreihen (31 % Breite), damit
+  auf einem 375pt-iPhone nichts abgeschnitten wird. Der Auto-Check-In-Editor
+  bricht ohnehin um und zeigt jetzt ebenfalls zwei Reihen.
+- Neuer Formatter `formatMinVisitDuration`: Texte sagen „2 hours" statt
+  „120 minutes" (Start-Popup und Editor).
+- Im Editor per Simulator geprüft; Onboarding-Raster nicht visuell geprüft.
+
 ## 2026-09-10 — Setup-Speichern scheiterte an `users`-Upsert
 
 - In den App-Logs (`sim.sh logs`) stand beim Login: `Failed to flush onboarding
@@ -1102,6 +1205,20 @@ die fünf Props der Master-Szene.
   Retry 1, fremde Zeile 0 (RLS), keine Reste. Typecheck, Domain-Suite und
   `sim.sh bundle` grün, App startet eingeloggt. Apple-Login selbst ist nicht
   Ende-zu-Ende getestet (im Simulator nicht möglich).
+
+## 2026-09-10 — Paper-Design überall, Hintergrundbild nur noch auf Home
+
+- `NEU.bg`, `bgSolid` und `pageSolid` sind jetzt das opake Paper-Weiß `#F5F5F2`.
+  Der globale Ozean-Hintergrund in `App.tsx` ist entfernt; nur `HomeScreen`
+  malt noch sein eigenes Inselbild. `ScreenBackdrop.tsx` ist ungenutzt.
+- Auf Paper-Tokens umgestellt: beide Goal-Editoren, `CategoryCards`,
+  `ValueStepper`, Start-Popup (`GoalStartSheet`), `RatingSheet`, `PopupCard`,
+  Sound-Pillen im Fokus-Timer, Grove-Header, Permission-Gate, Speicher- und
+  Fehlerscreen im `RootNavigator`, Auswahlkarten und Pillen im Onboarding.
+- Auswahl überall wie auf Stats: helle Fläche, grüne Kontur, grüne Schrift. Nur
+  primäre Aktionen (Start, Save, Play) bleiben voll grün.
+- Nebenbei behoben: Titel und Beschreibung der Zeilen im Permission-Gate waren
+  weiße Schrift auf weißer Karte.
 
 ## 2026-09-10 — Coach-Tipps und Stats-Insight: Mustererkennung neu
 
@@ -1145,3 +1262,211 @@ die fünf Props der Master-Szene.
   echten Daten. `coach-nudges` und `analyze-sessions` sind deployed.
 - Später aufräumen: `insight_cache`, `insight_refresh_limits` und
   `consume_insight_refresh_quota` sind ungenutzt.
+
+## 2026-09-10 — Anzeigename änderbar
+
+- Settings → Account → „Display name" ist jetzt tippbar („Edit") und öffnet ein
+  Popup mit Textfeld (`DisplayNameSheet`). Speichern schreibt nur
+  `users.display_name` über `useAuth().updateDisplayName` (nutzt den bereits
+  geprüften grant-kompatiblen Update-Pfad) und aktualisiert sofort Home-Gruß und
+  Settings; Freunde sehen den neuen Namen beim nächsten Laden.
+- Auth-Metadaten werden bewusst nicht mitgeändert: `updateUser` löst
+  `USER_UPDATED` aus und würde den Ladebildschirm aufblitzen lassen.
+- Leer speichern geht nicht (Hinweis unter dem Feld), unveränderter Name schließt
+  ohne Request, Fehler steht als Text unter dem Feld.
+- Nur im Arbeitsstand von main (Settings-Paper-Redesign ist dort noch nicht
+  committet). Typecheck grün, `sim.sh bundle` läuft; im Simulator nicht
+  durchgeklickt.
+
+## 2026-09-10 — Fokus-Screen neu und Objekte wachsen lassen
+
+- Fokus-Timer im Paper-Look (Variante B): weiße Scheibe mit grünem Ring, darin
+  wächst das gewählte Objekt mit der fokussierten Zeit (Pausen zählen nicht).
+  Darunter Timer, Status, Wachstumszeile („Plant · growing medium“), Aktionen
+  und Musik.
+- Start-Sheet: „WHAT TO GROW“ mit Pflanzen, Gebäuden, Wasser und Strand; die
+  letzte Wahl bleibt. Sonderobjekte gibt es nur über die Rewards-Roadmap.
+- Das Ende einer Session ab 5 min öffnet den Reveal-Screen: Größe (Tiny bis
+  Huge) mit Begründung („2h · 2× your usual“), alle Objekte der Kategorie mit
+  ihrem echten Ergebnis („New, stage 2“, „Stage 2 → 5“, ausgewachsene
+  ausgegraut), dann „Add to island“ bzw. „Grow on island“ mit Konfetti und
+  Mini-Insel. „Later“ behält die Belohnung. Danach folgt wie bisher das Rating.
+- Auto Check-In: Die Notification nach dem Besuch öffnet denselben Screen,
+  zuerst mit der Kategorie-Wahl. Nicht angetippte Belohnungen öffnen sich beim
+  nächsten Öffnen der App auf Home, nie über einer laufenden Session.
+- Größe: Median der früheren Sessions desselben Ziels (ab 5 min, neueste 50),
+  ohne Verlauf Medium, bis 8 Sessions zur Mitte gezogen. Schritte 1/1/2/3/4 für
+  Tiny bis Huge: Ein neues Objekt startet dort, ein vorhandenes wächst um so
+  viel. Jedes Objekt gibt es einmal, jede Session zählt nur einmal.
+- Keine Punkte mehr (Jannis): `island/ISLAND.md` §5 und `island/WACHSTUM.md`
+  §14.3 angepasst.
+- Speicher nur auf dem Gerät (`islandSlice` pro Konto; offene Belohnungen unter
+  `goals-pending-grows`, beim Abmelden gelöscht). Die Objekte sind
+  Platzhalter-Zeichnungen, bis die Pixel-Sprites existieren, und erscheinen
+  noch nicht auf der Insel.
+- Geprüft: Typecheck, Domain-Suite (189 Assertions), `sim.sh bundle`. Im
+  Simulator nicht durchgeklickt, nicht committet.
+
+## 2026-09-10 — Neues Home-Hintergrundbild
+
+- Das von Jannis gelieferte Pixel-Ozeanbild mit der kleineren, tiefer liegenden
+  Insel ersetzt `assets/home/island-ocean-1.png` exakt und wird von
+  `HomeScreen` weiter als vollflächiger `ImageBackground` mit `cover` gerendert.
+- Alle sekundären Screens behalten absichtlich ihre opake Paper-Fläche; das
+  detailreiche Bild liegt nicht hinter Formularen oder langen Leseseiten.
+- Cachefreier iOS-Metro-Export erfolgreich; das gebündelte PNG ist bitgenau
+  identisch mit dem gelieferten 887×1774-Asset.
+
+## 2026-09-10 — Pixel-Sprites: Pflanzen (Entwurf)
+
+- Alle 24 Pflanzenbilder aus Katalog v1 plus 2 Gras-Varianten als echte
+  Pixel-PNGs, gezeichnet per Skript `island/pixel/plants.py`, damit Stufen,
+  Palette und Licht einheitlich bleiben. Maß 16 px pro Meter (Tabelle
+  `WACHSTUM.md` §15.2): großer Laubbaum 26 × 34 px, Weltenbaum bis 60 × 67 px.
+- Spezifikation für alle weiteren Objekte: `island/SPRITES.md`. Vorschauen
+  (Insel-Szene in Handygröße, Übersicht, Dichtevergleich) in
+  `island/pixel/previews/`.
+- Noch nicht in der App: Reveal und Timer zeigen weiter die SVG-Platzhalter.
+  Beim Einbau PNGs ohne Glättung skalieren (vorab ×D oder SVG-Rechtecke).
+- Wartet auf Abnahme. Nicht committet.
+
+## 2026-09-14 — Pixel-Insel auf Home, echte Pflanzen im Fokus-Flow
+
+- Home zeigt den selbst gezeichneten Hintergrund `assets/home/pixel-island-1.png`
+  (aus `island/pixel/ocean.py`, 220 × 478 Kunstpixel, ×6 auf 1320 × 2868): Himmel,
+  Wolken, Meer mit Wellen, Insel mit Wiese, Geröllküsten, wechselnden Stränden,
+  Schaum und Flachwasser in einem Bild. Stufe 1 in `src/lib/homeIslandStages.ts`
+  braucht dadurch keine Insel-Ebene und keine Transformation mehr; Horizont (20 %)
+  und Insel (53 %) sitzen wie abgenommen. `island`/`islandRect` sind jetzt optional,
+  HomeScreen zeichnet die Ebene nur, wenn es sie gibt.
+- Pflanzen sind keine Platzhalter mehr: `GrowObjectArt` zeichnet für Pflanzen die
+  echten Pixel-Sprites als SVG-Rechtecke (`src/components/grow/plantSprites.ts`,
+  26 Bilder, 12 Farben, 24 KB, erzeugt von `island/pixel/export_sprites.py`). So
+  bleiben sie in jeder Größe scharf, auch während sie im Timer wachsen. Gebäude,
+  Wasser und Strand behalten die flachen Platzhalter, bis ihre Sprites existieren.
+- Neues optionales `level`-Prop an `GrowObjectArt`: ohne Angabe die höchste Stufe
+  (Auswahl im Start-Sheet), mit Angabe die passende Wachstumsstufe.
+- Farben danach auf eine Lagunen-Palette umgestellt (Türkis am Horizont, tiefes Blau
+  vorne, helles Wasser rund um die Insel), Wolken aus der oberen linken Ecke verbannt,
+  damit Begrüßung und Streak-Pille freien Himmel haben.
+- Küste kommt aus der Krümmung der Inselform: Buchten bekommen breiten Sand,
+  Landzungen Geröll, dazu eine Sandbank in der größten Bucht. Jannis hat aus vier
+  Varianten B gewählt (`seed` 23 in `island/pixel/ocean.py`, gilt für alle Inselstufen).
+- Geprüft: Typecheck, Domain-Suite (189 Assertions), `sim.sh bundle`, Home-Screenshot.
+  Start-Sheet und Reveal im Simulator nicht durchgeklickt (kein Tap-Zugriff).
+
+## 2026-09-14 — Fünf Inselgrößen
+
+- Eine Insel in fünf Größen, gleiche Küstenform: 12,2 / 16,3 / 19,5 / 24,4 / 32,5 m
+  (Landfläche 118 / 210 / 303 / 472 / 840 m², gemessen aus den fertigen Bildern).
+  Das abgenommene Bild ist Stufe 2. Die Insel füllt auf jeder Stufe denselben Anteil
+  der Bildschirmbreite (rund 84 %); gewachsen wird über die Kamera (D 8/6/5/4/3), also
+  werden die Objekte pro Stufe kleiner und die Insel bekommt mehr Platz.
+- Jede Stufe hat ihr eigenes Meer: Wellen, Dünung und Wolken werden pro Stufe neu
+  gewürfelt. Die Wolken liegen als Bank knapp über dem Horizont, weil der restliche
+  Himmel auf dem Handy vom Header verdeckt ist.
+- `island/pixel/capacity.py` prüft die Kapazität am fertigen Bild: Unterzellen nach
+  Farbe einstufen, dann den ganzen Katalog mit echten Footprints platzieren. Stufe 5
+  nimmt alle 84 Objekte auf (126 m² Grundfläche, 253 m² mit Abstand) und hat danach
+  noch 510 m² Wiese frei; Stufe 4 scheitert nur an der Strandbar, Stufe 3 zusätzlich
+  an der Hängematte — beide, weil der Strand dort zu schmal ist.
+- Korrektur: Die Meterangaben der Stufen waren zuerst um √2 zu klein. Ein Meter
+  entlang einer Bodenachse ist 8 px rechts und 4 px runter, also 11,31 px im
+  gestauchten Raum, nicht 16 px.
+- `src/lib/homeIslandStages.ts` führt jetzt die fünf Pixelstufen (`HOME_ISLAND_STAGE`
+  steht auf 2). Die früheren KI-Meere und Insel-Sprites sind nicht mehr eingebunden,
+  liegen aber weiter in `assets/ocean/` und `assets/island/stages/`.
+- Geprüft: Typecheck, `sim.sh bundle`, Home-Screenshot (unverändert, weil Stufe 2).
+
+## 2026-09-14 — Zonenkarte der Inseln
+
+- `island/pixel/zones.json` hält für jede der fünf Inselstufen fest, welche
+  0,5-m-Zelle Wiese, Strand, Fels, Flachwasser oder offenes Meer ist. Erzeugt von
+  `island/pixel/zones.py` aus den fertigen Bildern: 16 Pixel pro Zelle, Mehrheit
+  entscheidet, Gegenprobe gegen die Geometrie (98–99 % Übereinstimmung).
+- Enthalten sind außerdem Umrechnung Zelle → Pixel, Tiefensortierung, Küstenregel,
+  Flächen je Zone und die Prüfergebnisse. Format und Regeln: `island/SPRITES.md` §7.
+- `island/pixel/capacity.py` liest nur noch diese Karte und platziert damit den
+  Katalog — Stufe 5: 84 von 84 Objekten, 521 m² Wiese bleiben frei.
+- Wird gebraucht, sobald Objekte wirklich auf der Insel erscheinen; die App nutzt die
+  Datei noch nicht.
+
+## 2026-09-14 — Wasserobjekte: Stufen und feste Plätze
+
+- 75 Sprites für die sieben Wasserobjekte mit 8–14 Wachstumsstufen
+  (`island/pixel/water.py`), in der App über `waterSprites.ts` und `GrowObjectArt`.
+  `GROW_OBJECTS.water` hat die neuen Maxima.
+- Gruppen (Bojen, Felsen, Möwen, Kajaks, Delfine) bekommen feste Einzelplätze rund um
+  die Insel statt eines Klumpens: `island/pixel/water/slots.json`, erzeugt und geprüft
+  von `island/pixel/layout.py`. Plätze sind Winkel plus Band, also stufenunabhängig.
+- Beispiel mit allen Wasserobjekten auf der größten Insel:
+  `island/pixel/previews/water-layout-5.png`.
+- **Erledigt am 2026-09-14:** Die App zeichnet die Objekte auf die Insel.
+  `island/pixel/export_layout.py` löst die Wasserplätze je Inselgröße in Pixel auf
+  (`src/lib/islandSlots.ts`) und exportiert Zonenkarte und Landobjekte
+  (`islandZones.ts`, `islandLand.ts`); `src/lib/islandScene.ts` entscheidet, was
+  wo steht, `src/components/island/IslandObjectsLayer.tsx` zeichnet es über den
+  Home-Hintergrund. Die Inselgröße kommt aus den gesammelten Stufen
+  (0/25/70/145/240 von 333), jede Kategorie hat pro Inselgröße ein gemessenes
+  Limit (`ISLAND_CATEGORY_LIMITS`). Boot 14 Stufen, Delfine 12, Pflanzen 10.
+  Details und Zahlen in `island/SPRITES.md` §10–§11 und im Changelog von
+  `island/ISLAND.md`.
+- **Fokus-Session, 2026-09-14:** Das Objekt im Ring wächst nicht mehr nur linear —
+  es springt sichtbar eine Stufe hoch, sobald die Session eine verdient hat
+  (`src/components/grow/GrowingObject.tsx`), und ruht bei Pause und Pause.
+
+### Fehler aus dem Prüflauf 2026-09-14 behoben
+
+Drei Audits (Belohnungslogik, Timer-Fluss, Doku gegen Code) haben diese echten
+Fehler gefunden; alle sind behoben und, wo es ohne Gerät ging, im Domain-Test
+abgesichert.
+
+| Fehler | Wirkung | Behoben in |
+|---|---|---|
+| Live Activity holte die Zeit ohne Deckel nach | Ein Tap nach 6 h Schlaf buchte 6 h Fokus — genau der Phantomstunden-Bug, gegen den `catchUpAfterGap` geschrieben wurde | `src/lib/focusLiveActivityActions.ts` |
+| „End Session"-Dialog nannte eine andere Dauer, als gespeichert wurde | Dialog versprach 12 min, gespeichert wurden 15; bei 4:50 versprach er 5 min und es wuchs nichts | `FocusSessionScreen.tsx` (abgerundet, „weniger als eine Minute") |
+| Nach dem Beenden blitzte „Session could not start" auf | Falsche Fehlermeldung nach jeder erfolgreichen Session | `FocusSessionScreen.tsx` |
+| Start-Sheet mitten in der Session tauschte das belohnte Objekt | Man bekam ein anderes Objekt als das im Ring | `grow_object_key` auf der Session (`types`, `usePomodoro`) |
+| Zweimal auf „End session" stapelte zwei Dialoge | Der zweite lag über dem Reveal-Screen und war tot | `askingStopRef` |
+| `+5 min` verlängerte dauerhaft jeden weiteren Block | Aus 25 min wurden für den Rest des Tages 30 min mit längeren Pausen | `usePomodoro.extendFocus` verschiebt nur den laufenden Block |
+| Flowtime-Ring lief bei Pause auf null | Sah aus, als sei die Session zurückgesetzt — laut CLAUDE.md §9.1 verboten | `FocusSessionScreen.tsx` |
+| Timer zeigte `75:23` statt `1:15:23` | Widersprach der Live Activity auf dem Sperrbildschirm | `src/lib/time.ts` |
+| Reveal-Screen ohne Ausweg | Offline plus bereits hinzugefügte Belohnung ließ nur „Try again" übrig, ohne Header und ohne Zurückgeste | `GrowRevealScreen.tsx` |
+| Objektwahl ging beim Wiederöffnen verloren | Eine zurückgestellte Belohnung schlug das erste Objekt der Kategorie vor statt des gewachsenen | `App.tsx` reicht `objectKey` durch |
+| „Fully grown" bei bloß zu kleiner Insel | Kategorie war gesperrt und behauptete, fertig zu sein | `categoryRoom` liefert jetzt `locked` |
+| Gleichzeitige Schreibzugriffe auf die offenen Belohnungen | Ein Geofence-Ende während des Reveals konnte eine Belohnung verschlucken | `pendingGrows.ts` serialisiert die Änderungen |
+| Gespeicherte Stufe über dem Maximum | Ein gesenktes `maxLevel` hätte das Objekt unsichtbar gemacht | Deckel in `islandSlice` und `islandScene` |
+
+Offen und bewusst nicht allein entschieden: die Tokentabelle in CLAUDE.md §3
+beschreibt noch das blaue Neumorphismus-System, der Code ist längst das grüne
+Paper-Theme; Flowtime hat kein Pause/Resume, obwohl §9.1 es verlangt; der Timer
+läuft nur, solange der Fokus-Screen montiert ist, weshalb beim Verlassen keine
+Phasen-Notification geplant wird; und `BalanceCard`, `GoalCard`, `GardenPreview`
+sowie der Grove-Screen sind unerreichbar.
+
+### Prüflauf 2026-09-16: Offline, Hinweise, Ziele, Wasser
+
+Fünf gesuchte Lücken, vier davon behoben. Alles im Domain-Test abgesichert,
+soweit es ohne Gerät ging.
+
+| Lücke | Wirkung | Behoben in |
+|---|---|---|
+| Sessions gingen ohne Netz verloren | Eine beendete Fokus-Session und ein Auto-Check-In wurden direkt an den Server geschrieben und bei Fehlschlag nur geloggt — die Zeit war weg | `src/lib/sessionOutbox.ts` (neu), `useSessions`, `usePomodoro`, `geofencing` |
+| Timer ließ sich offline nicht starten | „Start" tat nichts, wenn die Session-Zeile nicht angelegt werden konnte | lokale Session-ID in `usePomodoro`, vollständige Zeile später aus der Warteschlange |
+| Insel-Speicherung ohne zweiten Versuch | Ein fehlgeschlagener Schreibvorgang wurde erst durch die *nächste* Belohnung wiederholt | `useIslandSync` mit Wiederholung |
+| Wartende Belohnungen ab der 21. verworfen | `slice(-20)` warf die ältesten still weg | Deckel auf 200, Verwerfen wird geloggt |
+| Berechtigungswarnungen wurden nie angezeigt | Auto Check-In konnte aufhören zu arbeiten, die App zeigte weiter 0 Besuche | `src/components/PermissionWarningPill.tsx` (neu) auf Home |
+| Ziele ließen sich nicht abschalten | Es gab keinen Weg, ein Ziel oder den Check-In-Ort loszuwerden | `useDeactivateGoal`, Aktionen in `SettingsScreen` |
+| Leere Home-Karte ohne Ziel | Wer Auto Check-In übersprang, hatte eine tote Karte ohne Einrichtungsweg | Karten führen zur Einrichtung |
+| Wasser-Belohnung ins Leere | „Selbst platzieren" öffnete einen Bildschirm, auf dem nichts gegriffen werden konnte | `canPlaceByHand` schließt Wasser aus |
+
+Serverseitig behoben und deployed: Cache-Header der Ortssuche (verriet fremde
+Suchen), Nutzerlimit über der globalen Kapazität, Größenprüfung erst nach dem
+Puffern, roher Datenbankfehler aus `delete-account`, verbranntes Tageskontingent
+nach einem fehlgeschlagenen Modellaufruf, verschluckter Cache-Lesefehler,
+23:30-Gewohnheit als „12am", und `analyze-sessions` ganz ohne Begrenzung
+(Migration `insight_rate_limit`, 10 Anfragen pro Minute).
+
+Weiterhin offen, bewusst nicht allein entschieden: Kontolöschung braucht nur
+einen gültigen Login, ohne erneute Bestätigung; die Belohnungsschleife endet bei
+der größten Insel ohne weiteres Ziel; Freunde sehen die Insel nicht.

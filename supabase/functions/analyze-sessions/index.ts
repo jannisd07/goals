@@ -24,6 +24,9 @@ const corsHeaders = {
 /** Upper bound on history read per user. Years of use stay well below this. */
 const MAX_SESSIONS = 2000;
 
+/** Abuse ceiling, not a product limit: normal refreshes stay far below this. */
+const REQUESTS_PER_MINUTE = 10;
+
 function jsonResponse(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
     status,
@@ -110,6 +113,25 @@ serve(async (req: Request) => {
     const supabase = createClient(supabaseUrl, supabaseServiceRoleKey, {
       auth: { persistSession: false },
     });
+
+    // Every call reads up to MAX_SESSIONS rows and clusters them, so a valid
+    // token must not be able to loop it. The client refetches at most every few
+    // minutes; this ceiling is far above normal use and only catches abuse.
+    const { data: quota, error: quotaError } = await supabase.rpc(
+      "consume_insight_rate_slot",
+      { p_user_id: userId, p_limit: REQUESTS_PER_MINUTE, p_window_seconds: 60 },
+    );
+    if (quotaError) {
+      console.error("Insight rate limit check failed:", quotaError.message);
+      return jsonResponse({ error: "Unable to generate insights at this time." }, 503);
+    }
+    const quotaRow = Array.isArray(quota) ? quota[0] : quota;
+    if (quotaRow?.allowed !== true) {
+      return jsonResponse(
+        { error: "Too many insight requests. Please try again shortly." },
+        429,
+      );
+    }
 
     const [goalsResult, sessionsResult] = await Promise.all([
       supabase

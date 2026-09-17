@@ -1,0 +1,1682 @@
+[
+  {
+    "key": "leafy_tree",
+    "level": 1,
+    "file": "leafy_tree_01.png",
+    "size": [
+      6,
+      4
+    ],
+    "anchorPx": [
+      3,
+      4
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 0.4,
+    "scale": 1.0,
+    "layer": "object",
+    "colors": 4
+  },
+  {
+    "key": "leafy_tree",
+    "level": 2,
+    "file": "leafy_tree_02.png",
+    "size": [
+      8,
+      6
+    ],
+    "anchorPx": [
+      4,
+      6
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 0.6,
+    "scale": 0.67,
+    "layer": "object",
+    "colors": 6
+  },
+  {
+    "key": "leafy_tree",
+    "level": 3,
+    "file": "leafy_tree_03.png",
+    "size": [
+      10,
+      8
+    ],
+    "anchorPx": [
+      5,
+      8
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 0.8,
+    "scale": 1.06,
+    "layer": "object",
+    "colors": 5
+  },
+  {
+    "key": "leafy_tree",
+    "level": 4,
+    "file": "leafy_tree_04.png",
+    "size": [
+      8,
+      10
+    ],
+    "anchorPx": [
+      4,
+      10
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 1.0,
+    "scale": 0.71,
+    "layer": "object",
+    "colors": 7
+  },
+  {
+    "key": "leafy_tree",
+    "level": 5,
+    "file": "leafy_tree_05.png",
+    "size": [
+      8,
+      12
+    ],
+    "anchorPx": [
+      4,
+      12
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 1.2,
+    "scale": 0.88,
+    "layer": "object",
+    "colors": 7
+  },
+  {
+    "key": "leafy_tree",
+    "level": 6,
+    "file": "leafy_tree_06.png",
+    "size": [
+      10,
+      14
+    ],
+    "anchorPx": [
+      5,
+      14
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 1.4,
+    "scale": 1.1,
+    "layer": "object",
+    "colors": 7
+  },
+  {
+    "key": "leafy_tree",
+    "level": 7,
+    "file": "leafy_tree_07.png",
+    "size": [
+      12,
+      17
+    ],
+    "anchorPx": [
+      6,
+      17
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 1.7,
+    "scale": 1.36,
+    "layer": "object",
+    "colors": 7
+  },
+  {
+    "key": "leafy_tree",
+    "level": 8,
+    "file": "leafy_tree_08.png",
+    "size": [
+      16,
+      22
+    ],
+    "anchorPx": [
+      8,
+      22
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 2.2,
+    "scale": 1.1,
+    "layer": "object",
+    "colors": 8
+  },
+  {
+    "key": "leafy_tree",
+    "level": 9,
+    "file": "leafy_tree_09.png",
+    "size": [
+      20,
+      28
+    ],
+    "anchorPx": [
+      10,
+      27
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 2.8,
+    "scale": 1.01,
+    "layer": "object",
+    "colors": 8
+  },
+  {
+    "key": "leafy_tree",
+    "level": 10,
+    "file": "leafy_tree_10.png",
+    "size": [
+      26,
+      34
+    ],
+    "anchorPx": [
+      13,
+      32
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 3.4,
+    "scale": 1.0,
+    "layer": "object",
+    "colors": 8
+  },
+  {
+    "key": "bush",
+    "level": 1,
+    "file": "bush_01.png",
+    "size": [
+      6,
+      4
+    ],
+    "anchorPx": [
+      3,
+      4
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 0.4,
+    "scale": 1.0,
+    "layer": "object",
+    "colors": 4
+  },
+  {
+    "key": "bush",
+    "level": 2,
+    "file": "bush_02.png",
+    "size": [
+      8,
+      6
+    ],
+    "anchorPx": [
+      4,
+      6
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 0.6,
+    "scale": 0.67,
+    "layer": "object",
+    "colors": 6
+  },
+  {
+    "key": "bush",
+    "level": 3,
+    "file": "bush_03.png",
+    "size": [
+      8,
+      7
+    ],
+    "anchorPx": [
+      4,
+      7
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 0.7,
+    "scale": 0.74,
+    "layer": "object",
+    "colors": 6
+  },
+  {
+    "key": "bush",
+    "level": 4,
+    "file": "bush_04.png",
+    "size": [
+      8,
+      8
+    ],
+    "anchorPx": [
+      4,
+      8
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 0.8,
+    "scale": 0.82,
+    "layer": "object",
+    "colors": 7
+  },
+  {
+    "key": "bush",
+    "level": 5,
+    "file": "bush_05.png",
+    "size": [
+      10,
+      9
+    ],
+    "anchorPx": [
+      5,
+      9
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 0.9,
+    "scale": 0.99,
+    "layer": "object",
+    "colors": 7
+  },
+  {
+    "key": "bush",
+    "level": 6,
+    "file": "bush_06.png",
+    "size": [
+      12,
+      10
+    ],
+    "anchorPx": [
+      6,
+      10
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 1.0,
+    "scale": 1.1,
+    "layer": "object",
+    "colors": 5
+  },
+  {
+    "key": "bush",
+    "level": 7,
+    "file": "bush_07.png",
+    "size": [
+      14,
+      11
+    ],
+    "anchorPx": [
+      7,
+      11
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 1.1,
+    "scale": 1.22,
+    "layer": "object",
+    "colors": 5
+  },
+  {
+    "key": "bush",
+    "level": 8,
+    "file": "bush_08.png",
+    "size": [
+      16,
+      12
+    ],
+    "anchorPx": [
+      8,
+      12
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 1.2,
+    "scale": 1.36,
+    "layer": "object",
+    "colors": 5
+  },
+  {
+    "key": "bush",
+    "level": 9,
+    "file": "bush_09.png",
+    "size": [
+      16,
+      13
+    ],
+    "anchorPx": [
+      8,
+      13
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 1.3,
+    "scale": 1.51,
+    "layer": "object",
+    "colors": 5
+  },
+  {
+    "key": "bush",
+    "level": 10,
+    "file": "bush_10.png",
+    "size": [
+      18,
+      14
+    ],
+    "anchorPx": [
+      9,
+      14
+    ],
+    "footprint": [
+      2,
+      2
+    ],
+    "heightM": 1.4,
+    "scale": 1.0,
+    "layer": "object",
+    "colors": 7
+  },
+  {
+    "key": "fruit_tree",
+    "level": 1,
+    "file": "fruit_tree_01.png",
+    "size": [
+      6,
+      4
+    ],
+    "anchorPx": [
+      3,
+      4
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 0.4,
+    "scale": 1.0,
+    "layer": "object",
+    "colors": 4
+  },
+  {
+    "key": "fruit_tree",
+    "level": 2,
+    "file": "fruit_tree_02.png",
+    "size": [
+      8,
+      6
+    ],
+    "anchorPx": [
+      4,
+      6
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 0.6,
+    "scale": 0.67,
+    "layer": "object",
+    "colors": 6
+  },
+  {
+    "key": "fruit_tree",
+    "level": 3,
+    "file": "fruit_tree_03.png",
+    "size": [
+      8,
+      7
+    ],
+    "anchorPx": [
+      4,
+      7
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 0.7,
+    "scale": 0.8,
+    "layer": "object",
+    "colors": 7
+  },
+  {
+    "key": "fruit_tree",
+    "level": 4,
+    "file": "fruit_tree_04.png",
+    "size": [
+      10,
+      9
+    ],
+    "anchorPx": [
+      5,
+      9
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 0.9,
+    "scale": 0.96,
+    "layer": "object",
+    "colors": 7
+  },
+  {
+    "key": "fruit_tree",
+    "level": 5,
+    "file": "fruit_tree_05.png",
+    "size": [
+      12,
+      10
+    ],
+    "anchorPx": [
+      6,
+      10
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 1.0,
+    "scale": 1.16,
+    "layer": "object",
+    "colors": 7
+  },
+  {
+    "key": "fruit_tree",
+    "level": 6,
+    "file": "fruit_tree_06.png",
+    "size": [
+      14,
+      12
+    ],
+    "anchorPx": [
+      7,
+      12
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 1.2,
+    "scale": 1.39,
+    "layer": "object",
+    "colors": 7
+  },
+  {
+    "key": "fruit_tree",
+    "level": 7,
+    "file": "fruit_tree_07.png",
+    "size": [
+      16,
+      15
+    ],
+    "anchorPx": [
+      8,
+      15
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 1.5,
+    "scale": 1.67,
+    "layer": "object",
+    "colors": 8
+  },
+  {
+    "key": "fruit_tree",
+    "level": 8,
+    "file": "fruit_tree_08.png",
+    "size": [
+      14,
+      18
+    ],
+    "anchorPx": [
+      7,
+      18
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 1.8,
+    "scale": 1.0,
+    "layer": "object",
+    "colors": 9
+  },
+  {
+    "key": "fruit_tree",
+    "level": 9,
+    "file": "fruit_tree_09.png",
+    "size": [
+      16,
+      22
+    ],
+    "anchorPx": [
+      8,
+      22
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 2.2,
+    "scale": 1.2,
+    "layer": "object",
+    "colors": 9
+  },
+  {
+    "key": "fruit_tree",
+    "level": 10,
+    "file": "fruit_tree_10.png",
+    "size": [
+      20,
+      26
+    ],
+    "anchorPx": [
+      10,
+      25
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 2.6,
+    "scale": 1.0,
+    "layer": "object",
+    "colors": 10
+  },
+  {
+    "key": "fir_tree",
+    "level": 1,
+    "file": "fir_tree_01.png",
+    "size": [
+      6,
+      4
+    ],
+    "anchorPx": [
+      3,
+      4
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 0.4,
+    "scale": 1.0,
+    "layer": "object",
+    "colors": 4
+  },
+  {
+    "key": "fir_tree",
+    "level": 2,
+    "file": "fir_tree_02.png",
+    "size": [
+      8,
+      6
+    ],
+    "anchorPx": [
+      4,
+      6
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 0.6,
+    "scale": 0.67,
+    "layer": "object",
+    "colors": 5
+  },
+  {
+    "key": "fir_tree",
+    "level": 3,
+    "file": "fir_tree_03.png",
+    "size": [
+      8,
+      8
+    ],
+    "anchorPx": [
+      4,
+      8
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 0.8,
+    "scale": 0.83,
+    "layer": "object",
+    "colors": 6
+  },
+  {
+    "key": "fir_tree",
+    "level": 4,
+    "file": "fir_tree_04.png",
+    "size": [
+      10,
+      9
+    ],
+    "anchorPx": [
+      5,
+      9
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 0.9,
+    "scale": 1.02,
+    "layer": "object",
+    "colors": 6
+  },
+  {
+    "key": "fir_tree",
+    "level": 5,
+    "file": "fir_tree_05.png",
+    "size": [
+      12,
+      11
+    ],
+    "anchorPx": [
+      6,
+      11
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 1.1,
+    "scale": 1.26,
+    "layer": "object",
+    "colors": 6
+  },
+  {
+    "key": "fir_tree",
+    "level": 6,
+    "file": "fir_tree_06.png",
+    "size": [
+      10,
+      14
+    ],
+    "anchorPx": [
+      5,
+      14
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 1.4,
+    "scale": 1.17,
+    "layer": "object",
+    "colors": 6
+  },
+  {
+    "key": "fir_tree",
+    "level": 7,
+    "file": "fir_tree_07.png",
+    "size": [
+      12,
+      17
+    ],
+    "anchorPx": [
+      6,
+      17
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 1.7,
+    "scale": 1.45,
+    "layer": "object",
+    "colors": 6
+  },
+  {
+    "key": "fir_tree",
+    "level": 8,
+    "file": "fir_tree_08.png",
+    "size": [
+      16,
+      22
+    ],
+    "anchorPx": [
+      8,
+      22
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 2.2,
+    "scale": 1.8,
+    "layer": "object",
+    "colors": 7
+  },
+  {
+    "key": "fir_tree",
+    "level": 9,
+    "file": "fir_tree_09.png",
+    "size": [
+      14,
+      26
+    ],
+    "anchorPx": [
+      7,
+      25
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 2.6,
+    "scale": 1.16,
+    "layer": "object",
+    "colors": 7
+  },
+  {
+    "key": "fir_tree",
+    "level": 10,
+    "file": "fir_tree_10.png",
+    "size": [
+      18,
+      33
+    ],
+    "anchorPx": [
+      9,
+      32
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 3.3,
+    "scale": 1.0,
+    "layer": "object",
+    "colors": 7
+  },
+  {
+    "key": "palm_tree",
+    "level": 1,
+    "file": "palm_tree_01.png",
+    "size": [
+      6,
+      4
+    ],
+    "anchorPx": [
+      3,
+      4
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 0.4,
+    "scale": 1.0,
+    "layer": "object",
+    "colors": 4
+  },
+  {
+    "key": "palm_tree",
+    "level": 2,
+    "file": "palm_tree_02.png",
+    "size": [
+      8,
+      6
+    ],
+    "anchorPx": [
+      4,
+      6
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 0.6,
+    "scale": 0.67,
+    "layer": "object",
+    "colors": 6
+  },
+  {
+    "key": "palm_tree",
+    "level": 3,
+    "file": "palm_tree_03.png",
+    "size": [
+      8,
+      8
+    ],
+    "anchorPx": [
+      4,
+      8
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 0.8,
+    "scale": 0.84,
+    "layer": "object",
+    "colors": 7
+  },
+  {
+    "key": "palm_tree",
+    "level": 4,
+    "file": "palm_tree_04.png",
+    "size": [
+      10,
+      10
+    ],
+    "anchorPx": [
+      5,
+      10
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 1.0,
+    "scale": 1.06,
+    "layer": "object",
+    "colors": 7
+  },
+  {
+    "key": "palm_tree",
+    "level": 5,
+    "file": "palm_tree_05.png",
+    "size": [
+      12,
+      12
+    ],
+    "anchorPx": [
+      6,
+      12
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 1.2,
+    "scale": 1.33,
+    "layer": "object",
+    "colors": 7
+  },
+  {
+    "key": "palm_tree",
+    "level": 6,
+    "file": "palm_tree_06.png",
+    "size": [
+      14,
+      15
+    ],
+    "anchorPx": [
+      6,
+      14
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 1.5,
+    "scale": 1.01,
+    "layer": "object",
+    "colors": 8
+  },
+  {
+    "key": "palm_tree",
+    "level": 7,
+    "file": "palm_tree_07.png",
+    "size": [
+      17,
+      18
+    ],
+    "anchorPx": [
+      7,
+      17
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 1.8,
+    "scale": 1.27,
+    "layer": "object",
+    "colors": 8
+  },
+  {
+    "key": "palm_tree",
+    "level": 8,
+    "file": "palm_tree_08.png",
+    "size": [
+      21,
+      21
+    ],
+    "anchorPx": [
+      9,
+      21
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 2.1,
+    "scale": 1.6,
+    "layer": "object",
+    "colors": 8
+  },
+  {
+    "key": "palm_tree",
+    "level": 9,
+    "file": "palm_tree_09.png",
+    "size": [
+      24,
+      30
+    ],
+    "anchorPx": [
+      9,
+      29
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 3.0,
+    "scale": 1.16,
+    "layer": "object",
+    "colors": 8
+  },
+  {
+    "key": "palm_tree",
+    "level": 10,
+    "file": "palm_tree_10.png",
+    "size": [
+      26,
+      38
+    ],
+    "anchorPx": [
+      9,
+      36
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 3.8,
+    "scale": 1.0,
+    "layer": "object",
+    "colors": 8
+  },
+  {
+    "key": "world_tree",
+    "level": 1,
+    "file": "world_tree_01.png",
+    "size": [
+      6,
+      4
+    ],
+    "anchorPx": [
+      3,
+      4
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 0.4,
+    "scale": 1.0,
+    "layer": "object",
+    "colors": 4
+  },
+  {
+    "key": "world_tree",
+    "level": 2,
+    "file": "world_tree_02.png",
+    "size": [
+      10,
+      9
+    ],
+    "anchorPx": [
+      5,
+      9
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 0.9,
+    "scale": 0.93,
+    "layer": "object",
+    "colors": 7
+  },
+  {
+    "key": "world_tree",
+    "level": 3,
+    "file": "world_tree_03.png",
+    "size": [
+      12,
+      11
+    ],
+    "anchorPx": [
+      6,
+      11
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 1.1,
+    "scale": 1.21,
+    "layer": "object",
+    "colors": 7
+  },
+  {
+    "key": "world_tree",
+    "level": 4,
+    "file": "world_tree_04.png",
+    "size": [
+      10,
+      14
+    ],
+    "anchorPx": [
+      5,
+      14
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 1.4,
+    "scale": 1.08,
+    "layer": "object",
+    "colors": 7
+  },
+  {
+    "key": "world_tree",
+    "level": 5,
+    "file": "world_tree_05.png",
+    "size": [
+      12,
+      18
+    ],
+    "anchorPx": [
+      6,
+      18
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 1.8,
+    "scale": 1.41,
+    "layer": "object",
+    "colors": 7
+  },
+  {
+    "key": "world_tree",
+    "level": 6,
+    "file": "world_tree_06.png",
+    "size": [
+      18,
+      25
+    ],
+    "anchorPx": [
+      9,
+      24
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 2.5,
+    "scale": 1.18,
+    "layer": "object",
+    "colors": 8
+  },
+  {
+    "key": "world_tree",
+    "level": 7,
+    "file": "world_tree_07.png",
+    "size": [
+      22,
+      31
+    ],
+    "anchorPx": [
+      11,
+      30
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 3.1,
+    "scale": 1.14,
+    "layer": "object",
+    "colors": 8
+  },
+  {
+    "key": "world_tree",
+    "level": 8,
+    "file": "world_tree_08.png",
+    "size": [
+      39,
+      39
+    ],
+    "anchorPx": [
+      20,
+      37
+    ],
+    "footprint": [
+      2,
+      2
+    ],
+    "heightM": 3.9,
+    "scale": 1.0,
+    "layer": "object",
+    "colors": 8
+  },
+  {
+    "key": "world_tree",
+    "level": 9,
+    "file": "world_tree_09.png",
+    "size": [
+      51,
+      52
+    ],
+    "anchorPx": [
+      25,
+      51
+    ],
+    "footprint": [
+      3,
+      3
+    ],
+    "heightM": 5.2,
+    "scale": 1.03,
+    "layer": "object",
+    "colors": 10
+  },
+  {
+    "key": "world_tree",
+    "level": 10,
+    "file": "world_tree_10.png",
+    "size": [
+      60,
+      67
+    ],
+    "anchorPx": [
+      30,
+      67
+    ],
+    "footprint": [
+      4,
+      4
+    ],
+    "heightM": 6.7,
+    "scale": 1.0,
+    "layer": "object",
+    "colors": 10
+  },
+  {
+    "key": "flower_bed",
+    "level": 1,
+    "file": "flower_bed_01.png",
+    "size": [
+      6,
+      4
+    ],
+    "anchorPx": [
+      3,
+      4
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 0.4,
+    "scale": 1.0,
+    "layer": "ground",
+    "colors": 4
+  },
+  {
+    "key": "flower_bed",
+    "level": 2,
+    "file": "flower_bed_02.png",
+    "size": [
+      10,
+      6
+    ],
+    "anchorPx": [
+      5,
+      6
+    ],
+    "footprint": [
+      2,
+      2
+    ],
+    "heightM": 0.6,
+    "scale": 0.6,
+    "layer": "ground",
+    "colors": 8
+  },
+  {
+    "key": "flower_bed",
+    "level": 3,
+    "file": "flower_bed_03.png",
+    "size": [
+      12,
+      7
+    ],
+    "anchorPx": [
+      6,
+      7
+    ],
+    "footprint": [
+      2,
+      2
+    ],
+    "heightM": 0.7,
+    "scale": 0.8,
+    "layer": "ground",
+    "colors": 8
+  },
+  {
+    "key": "flower_bed",
+    "level": 4,
+    "file": "flower_bed_04.png",
+    "size": [
+      14,
+      8
+    ],
+    "anchorPx": [
+      7,
+      8
+    ],
+    "footprint": [
+      2,
+      2
+    ],
+    "heightM": 0.8,
+    "scale": 1.0,
+    "layer": "ground",
+    "colors": 8
+  },
+  {
+    "key": "flower_bed",
+    "level": 5,
+    "file": "flower_bed_05.png",
+    "size": [
+      18,
+      11
+    ],
+    "anchorPx": [
+      9,
+      11
+    ],
+    "footprint": [
+      3,
+      3
+    ],
+    "heightM": 1.1,
+    "scale": 0.85,
+    "layer": "ground",
+    "colors": 8
+  },
+  {
+    "key": "flower_bed",
+    "level": 6,
+    "file": "flower_bed_06.png",
+    "size": [
+      22,
+      12
+    ],
+    "anchorPx": [
+      11,
+      12
+    ],
+    "footprint": [
+      3,
+      3
+    ],
+    "heightM": 1.2,
+    "scale": 0.93,
+    "layer": "ground",
+    "colors": 8
+  },
+  {
+    "key": "flower_bed",
+    "level": 7,
+    "file": "flower_bed_07.png",
+    "size": [
+      22,
+      12
+    ],
+    "anchorPx": [
+      11,
+      12
+    ],
+    "footprint": [
+      3,
+      3
+    ],
+    "heightM": 1.2,
+    "scale": 1.0,
+    "layer": "ground",
+    "colors": 8
+  },
+  {
+    "key": "flower_bed",
+    "level": 8,
+    "file": "flower_bed_08.png",
+    "size": [
+      28,
+      16
+    ],
+    "anchorPx": [
+      14,
+      15
+    ],
+    "footprint": [
+      4,
+      4
+    ],
+    "heightM": 1.6,
+    "scale": 0.9,
+    "layer": "ground",
+    "colors": 9
+  },
+  {
+    "key": "flower_bed",
+    "level": 9,
+    "file": "flower_bed_09.png",
+    "size": [
+      30,
+      17
+    ],
+    "anchorPx": [
+      15,
+      16
+    ],
+    "footprint": [
+      4,
+      4
+    ],
+    "heightM": 1.7,
+    "scale": 0.95,
+    "layer": "ground",
+    "colors": 9
+  },
+  {
+    "key": "flower_bed",
+    "level": 10,
+    "file": "flower_bed_10.png",
+    "size": [
+      30,
+      17
+    ],
+    "anchorPx": [
+      15,
+      16
+    ],
+    "footprint": [
+      4,
+      4
+    ],
+    "heightM": 1.7,
+    "scale": 1.0,
+    "layer": "ground",
+    "colors": 9
+  },
+  {
+    "key": "grass_tufts",
+    "level": 1,
+    "file": "grass_tufts_01.png",
+    "size": [
+      6,
+      4
+    ],
+    "anchorPx": [
+      3,
+      4
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 0.4,
+    "scale": 1.0,
+    "layer": "ground",
+    "colors": 4
+  },
+  {
+    "key": "grass_tufts",
+    "level": 2,
+    "file": "grass_tufts_02.png",
+    "size": [
+      7,
+      5
+    ],
+    "anchorPx": [
+      3,
+      5
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 0.5,
+    "scale": 0.7,
+    "layer": "ground",
+    "colors": 3
+  },
+  {
+    "key": "grass_tufts",
+    "level": 3,
+    "file": "grass_tufts_03.png",
+    "size": [
+      9,
+      6
+    ],
+    "anchorPx": [
+      4,
+      6
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 0.6,
+    "scale": 0.85,
+    "layer": "ground",
+    "colors": 2
+  },
+  {
+    "key": "grass_tufts",
+    "level": 4,
+    "file": "grass_tufts_04.png",
+    "size": [
+      10,
+      7
+    ],
+    "anchorPx": [
+      5,
+      7
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 0.7,
+    "scale": 1.0,
+    "layer": "ground",
+    "colors": 3
+  },
+  {
+    "key": "grass_tufts",
+    "level": 5,
+    "file": "grass_tufts_05.png",
+    "size": [
+      17,
+      7
+    ],
+    "anchorPx": [
+      8,
+      7
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 0.7,
+    "scale": 1.0,
+    "layer": "ground",
+    "colors": 3
+  },
+  {
+    "key": "grass_tufts",
+    "level": 6,
+    "file": "grass_tufts_06.png",
+    "size": [
+      17,
+      7
+    ],
+    "anchorPx": [
+      8,
+      7
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 0.7,
+    "scale": 1.05,
+    "layer": "ground",
+    "colors": 3
+  },
+  {
+    "key": "grass_tufts",
+    "level": 7,
+    "file": "grass_tufts_07.png",
+    "size": [
+      19,
+      7
+    ],
+    "anchorPx": [
+      9,
+      7
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 0.7,
+    "scale": 1.1,
+    "layer": "ground",
+    "colors": 3
+  },
+  {
+    "key": "grass_tufts",
+    "level": 8,
+    "file": "grass_tufts_08.png",
+    "size": [
+      19,
+      8
+    ],
+    "anchorPx": [
+      10,
+      8
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 0.8,
+    "scale": 1.1,
+    "layer": "ground",
+    "colors": 3
+  },
+  {
+    "key": "grass_tufts",
+    "level": 9,
+    "file": "grass_tufts_09.png",
+    "size": [
+      20,
+      8
+    ],
+    "anchorPx": [
+      10,
+      8
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 0.8,
+    "scale": 1.15,
+    "layer": "ground",
+    "colors": 3
+  },
+  {
+    "key": "grass_tufts",
+    "level": 10,
+    "file": "grass_tufts_10.png",
+    "size": [
+      21,
+      9
+    ],
+    "anchorPx": [
+      11,
+      9
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 0.9,
+    "scale": 1.2,
+    "layer": "ground",
+    "colors": 3
+  }
+]

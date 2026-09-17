@@ -11,8 +11,8 @@ completed sessions into a personal Grove constellation.
 - **Auto Check-In:** one physical goal with a pinned place, iOS/Android
   background geofence, visible active-visit state and a manual fallback.
 - **Weekly budget:** 168 hours minus sleep, work and daily overhead.
-- **Stats:** monthly calendar heatmap, weekly drill-down, cached personal
-  server insight and an offline heuristic fallback.
+- **Stats:** monthly calendar heatmap, weekly drill-down, a personal server
+  insight computed per request and an offline heuristic fallback.
 - **Grove:** deterministic, interactive 3D constellation; every completed session
   becomes a star.
 - **Friends:** opt-in six-character codes and week-only aggregates—never raw
@@ -54,7 +54,7 @@ npx expo run:ios --no-bundler
 ```
 
 There is no separate linter or device-E2E runner. `npm run check` includes strict
-TypeScript, 74 deterministic domain assertions and Expo Doctor.
+TypeScript, 228 deterministic domain assertions and Expo Doctor.
 
 ## Supabase
 
@@ -94,14 +94,10 @@ stored in SQL.
 
 ## Design
 
-The app is light-only and uses a controlled monochrome neumorphic system:
-
-- page `#E0E5EC`, slightly lighter surfaces `#E9EDF2`
-- one accessible indigo accent `#415DCB`
-- top-left light source with paired light/dark shadows
-- flat accent pills for actions; no neumorphism on primary content buttons
-- flat minimal text fields with a visible accent focus ring
-- Outfit typography and minimum 44pt interaction targets
+The app is light-only. Home uses the bundled pixel-ocean and island artwork in
+`assets/home/island-ocean-1.png`; reading, setup and configuration screens use
+an opaque warm Paper surface so text and controls remain clear. Actions stay
+flat, inputs remain minimal, and interaction targets are at least 44pt.
 
 [`CLAUDE.md`](CLAUDE.md) is the complete, reproducible design contract.
 [`PROGRESS.md`](PROGRESS.md) is the authoritative feature/release status and

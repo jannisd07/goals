@@ -1,6 +1,7 @@
 import { useAppStore } from "../store";
 import type { PomodoroState } from "../types";
-import { advancePomodoro } from "./pomodoro";
+import { advancePomodoro, catchUpAfterGap } from "./pomodoro";
+import { rememberSessionReward } from "./pendingGrows";
 import { syncFocusPhaseBoundary } from "./notifications";
 
 export type FocusLiveActivityAction = "toggle-pause" | "toggle-break";
@@ -11,14 +12,27 @@ function advanceToActionTime(timestamp: number): PomodoroState | null {
   if (!pomodoro) return null;
   if (!pomodoro.is_running) return pomodoro;
 
+  // Same catch-up rule as in the app (usePomodoro.ts): a phone that was asleep
+  // for hours must not turn the whole gap into focus time, and a session that
+  // sat idle for most of a day is dropped instead of saved. Without this, a tap
+  // on the Live Activity after a long sleep books the entire gap.
   const cursor = pomodoro.last_tick_at_ms || timestamp;
-  const seconds = Math.max(0, Math.floor((timestamp - cursor) / 1_000));
+  const gap = Math.max(0, Math.floor((timestamp - cursor) / 1_000));
+  const catchUp = catchUpAfterGap(gap);
+  if (catchUp.abandoned) {
+    console.warn(`Dropping a focus session that sat idle for ${Math.round(gap / 3600)} h`);
+    void rememberSessionReward(store.activeSession);
+    store.endSession(false);
+    return null;
+  }
+  const seconds = catchUp.seconds;
   if (seconds === 0) return pomodoro;
 
   const result = advancePomodoro(pomodoro, seconds, store.breakDuration);
   store.updatePomodoro({
     ...result.pomodoro,
-    last_tick_at_ms: cursor + seconds * 1_000,
+    // When the gap was capped the rest must not come back on the next tick.
+    last_tick_at_ms: seconds === gap ? cursor + seconds * 1_000 : timestamp,
   });
   if (result.focusedSecondsAdded > 0) {
     store.incrementUsedTime(result.focusedSecondsAdded);

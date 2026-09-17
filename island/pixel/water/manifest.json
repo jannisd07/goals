@@ -1,0 +1,1127 @@
+[
+  {
+    "key": "boat",
+    "level": 1,
+    "file": "boat_1.png",
+    "size": [
+      14,
+      10
+    ],
+    "anchorPx": [
+      5,
+      10
+    ],
+    "zone": "shallow",
+    "layer": "object"
+  },
+  {
+    "key": "boat",
+    "level": 2,
+    "file": "boat_2.png",
+    "size": [
+      18,
+      11
+    ],
+    "anchorPx": [
+      5,
+      11
+    ],
+    "zone": "shallow",
+    "layer": "object"
+  },
+  {
+    "key": "boat",
+    "level": 3,
+    "file": "boat_3.png",
+    "size": [
+      20,
+      19
+    ],
+    "anchorPx": [
+      6,
+      19
+    ],
+    "zone": "shallow",
+    "layer": "object"
+  },
+  {
+    "key": "boat",
+    "level": 4,
+    "file": "boat_4.png",
+    "size": [
+      24,
+      23
+    ],
+    "anchorPx": [
+      8,
+      23
+    ],
+    "zone": "shallow",
+    "layer": "object"
+  },
+  {
+    "key": "boat",
+    "level": 5,
+    "file": "boat_5.png",
+    "size": [
+      26,
+      25
+    ],
+    "anchorPx": [
+      9,
+      25
+    ],
+    "zone": "shallow",
+    "layer": "object"
+  },
+  {
+    "key": "boat",
+    "level": 6,
+    "file": "boat_6.png",
+    "size": [
+      30,
+      28
+    ],
+    "anchorPx": [
+      9,
+      28
+    ],
+    "zone": "shallow",
+    "layer": "object"
+  },
+  {
+    "key": "boat",
+    "level": 7,
+    "file": "boat_7.png",
+    "size": [
+      34,
+      30
+    ],
+    "anchorPx": [
+      11,
+      30
+    ],
+    "zone": "shallow",
+    "layer": "object"
+  },
+  {
+    "key": "boat",
+    "level": 8,
+    "file": "boat_8.png",
+    "size": [
+      36,
+      33
+    ],
+    "anchorPx": [
+      12,
+      33
+    ],
+    "zone": "shallow",
+    "layer": "object"
+  },
+  {
+    "key": "boat",
+    "level": 9,
+    "file": "boat_9.png",
+    "size": [
+      40,
+      35
+    ],
+    "anchorPx": [
+      14,
+      35
+    ],
+    "zone": "shallow",
+    "layer": "object"
+  },
+  {
+    "key": "boat",
+    "level": 10,
+    "file": "boat_10.png",
+    "size": [
+      42,
+      38
+    ],
+    "anchorPx": [
+      13,
+      38
+    ],
+    "zone": "shallow",
+    "layer": "object"
+  },
+  {
+    "key": "boat",
+    "level": 11,
+    "file": "boat_11.png",
+    "size": [
+      73,
+      38
+    ],
+    "anchorPx": [
+      44,
+      38
+    ],
+    "zone": "shallow",
+    "layer": "object"
+  },
+  {
+    "key": "boat",
+    "level": 12,
+    "file": "boat_12.png",
+    "size": [
+      117,
+      39
+    ],
+    "anchorPx": [
+      44,
+      39
+    ],
+    "zone": "shallow",
+    "layer": "object"
+  },
+  {
+    "key": "boat",
+    "level": 13,
+    "file": "boat_13.png",
+    "size": [
+      117,
+      43
+    ],
+    "anchorPx": [
+      44,
+      39
+    ],
+    "zone": "shallow",
+    "layer": "object"
+  },
+  {
+    "key": "boat",
+    "level": 14,
+    "file": "boat_14.png",
+    "size": [
+      117,
+      51
+    ],
+    "anchorPx": [
+      44,
+      39
+    ],
+    "zone": "shallow",
+    "layer": "object"
+  },
+  {
+    "key": "dock",
+    "level": 1,
+    "file": "dock_1.png",
+    "size": [
+      24,
+      15
+    ],
+    "anchorPx": [
+      8,
+      14
+    ],
+    "zone": "coast",
+    "layer": "object"
+  },
+  {
+    "key": "dock",
+    "level": 2,
+    "file": "dock_2.png",
+    "size": [
+      28,
+      17
+    ],
+    "anchorPx": [
+      8,
+      16
+    ],
+    "zone": "coast",
+    "layer": "object"
+  },
+  {
+    "key": "dock",
+    "level": 3,
+    "file": "dock_3.png",
+    "size": [
+      32,
+      19
+    ],
+    "anchorPx": [
+      8,
+      18
+    ],
+    "zone": "coast",
+    "layer": "object"
+  },
+  {
+    "key": "dock",
+    "level": 4,
+    "file": "dock_4.png",
+    "size": [
+      36,
+      21
+    ],
+    "anchorPx": [
+      8,
+      20
+    ],
+    "zone": "coast",
+    "layer": "object"
+  },
+  {
+    "key": "dock",
+    "level": 5,
+    "file": "dock_5.png",
+    "size": [
+      40,
+      23
+    ],
+    "anchorPx": [
+      8,
+      22
+    ],
+    "zone": "coast",
+    "layer": "object"
+  },
+  {
+    "key": "dock",
+    "level": 6,
+    "file": "dock_6.png",
+    "size": [
+      48,
+      31
+    ],
+    "anchorPx": [
+      8,
+      30
+    ],
+    "zone": "coast",
+    "layer": "object"
+  },
+  {
+    "key": "dock",
+    "level": 7,
+    "file": "dock_7.png",
+    "size": [
+      52,
+      33
+    ],
+    "anchorPx": [
+      8,
+      32
+    ],
+    "zone": "coast",
+    "layer": "object"
+  },
+  {
+    "key": "dock",
+    "level": 8,
+    "file": "dock_8.png",
+    "size": [
+      56,
+      35
+    ],
+    "anchorPx": [
+      8,
+      34
+    ],
+    "zone": "coast",
+    "layer": "object"
+  },
+  {
+    "key": "dock",
+    "level": 9,
+    "file": "dock_9.png",
+    "size": [
+      60,
+      37
+    ],
+    "anchorPx": [
+      8,
+      36
+    ],
+    "zone": "coast",
+    "layer": "object"
+  },
+  {
+    "key": "dock",
+    "level": 10,
+    "file": "dock_10.png",
+    "size": [
+      64,
+      39
+    ],
+    "anchorPx": [
+      8,
+      38
+    ],
+    "zone": "coast",
+    "layer": "object"
+  },
+  {
+    "key": "buoys",
+    "level": 1,
+    "file": "buoys_1.png",
+    "size": [
+      10,
+      7
+    ],
+    "anchorPx": [
+      1,
+      7
+    ],
+    "zone": "shallow",
+    "layer": "object"
+  },
+  {
+    "key": "buoys",
+    "level": 2,
+    "file": "buoys_2.png",
+    "size": [
+      19,
+      7
+    ],
+    "anchorPx": [
+      11,
+      7
+    ],
+    "zone": "shallow",
+    "layer": "object"
+  },
+  {
+    "key": "buoys",
+    "level": 3,
+    "file": "buoys_3.png",
+    "size": [
+      19,
+      12
+    ],
+    "anchorPx": [
+      11,
+      12
+    ],
+    "zone": "shallow",
+    "layer": "object"
+  },
+  {
+    "key": "buoys",
+    "level": 4,
+    "file": "buoys_4.png",
+    "size": [
+      19,
+      17
+    ],
+    "anchorPx": [
+      11,
+      14
+    ],
+    "zone": "shallow",
+    "layer": "object"
+  },
+  {
+    "key": "buoys",
+    "level": 5,
+    "file": "buoys_5.png",
+    "size": [
+      22,
+      17
+    ],
+    "anchorPx": [
+      14,
+      14
+    ],
+    "zone": "shallow",
+    "layer": "object"
+  },
+  {
+    "key": "buoys",
+    "level": 6,
+    "file": "buoys_6.png",
+    "size": [
+      32,
+      17
+    ],
+    "anchorPx": [
+      14,
+      14
+    ],
+    "zone": "shallow",
+    "layer": "object"
+  },
+  {
+    "key": "buoys",
+    "level": 7,
+    "file": "buoys_7.png",
+    "size": [
+      32,
+      20
+    ],
+    "anchorPx": [
+      14,
+      14
+    ],
+    "zone": "shallow",
+    "layer": "object"
+  },
+  {
+    "key": "buoys",
+    "level": 8,
+    "file": "buoys_8.png",
+    "size": [
+      32,
+      25
+    ],
+    "anchorPx": [
+      14,
+      21
+    ],
+    "zone": "shallow",
+    "layer": "object"
+  },
+  {
+    "key": "buoys",
+    "level": 9,
+    "file": "buoys_9.png",
+    "size": [
+      35,
+      25
+    ],
+    "anchorPx": [
+      14,
+      21
+    ],
+    "zone": "shallow",
+    "layer": "object"
+  },
+  {
+    "key": "buoys",
+    "level": 10,
+    "file": "buoys_10.png",
+    "size": [
+      46,
+      27
+    ],
+    "anchorPx": [
+      25,
+      22
+    ],
+    "zone": "shallow",
+    "layer": "object"
+  },
+  {
+    "key": "kayaks",
+    "level": 1,
+    "file": "kayaks_1.png",
+    "size": [
+      19,
+      7
+    ],
+    "anchorPx": [
+      1,
+      6
+    ],
+    "zone": "shallow",
+    "layer": "object"
+  },
+  {
+    "key": "kayaks",
+    "level": 2,
+    "file": "kayaks_2.png",
+    "size": [
+      31,
+      8
+    ],
+    "anchorPx": [
+      12,
+      8
+    ],
+    "zone": "shallow",
+    "layer": "object"
+  },
+  {
+    "key": "kayaks",
+    "level": 3,
+    "file": "kayaks_3.png",
+    "size": [
+      30,
+      16
+    ],
+    "anchorPx": [
+      13,
+      16
+    ],
+    "zone": "shallow",
+    "layer": "object"
+  },
+  {
+    "key": "kayaks",
+    "level": 4,
+    "file": "kayaks_4.png",
+    "size": [
+      31,
+      20
+    ],
+    "anchorPx": [
+      11,
+      17
+    ],
+    "zone": "shallow",
+    "layer": "object"
+  },
+  {
+    "key": "kayaks",
+    "level": 5,
+    "file": "kayaks_5.png",
+    "size": [
+      37,
+      20
+    ],
+    "anchorPx": [
+      17,
+      17
+    ],
+    "zone": "shallow",
+    "layer": "object"
+  },
+  {
+    "key": "kayaks",
+    "level": 6,
+    "file": "kayaks_6.png",
+    "size": [
+      49,
+      20
+    ],
+    "anchorPx": [
+      17,
+      19
+    ],
+    "zone": "shallow",
+    "layer": "object"
+  },
+  {
+    "key": "kayaks",
+    "level": 7,
+    "file": "kayaks_7.png",
+    "size": [
+      50,
+      21
+    ],
+    "anchorPx": [
+      18,
+      19
+    ],
+    "zone": "shallow",
+    "layer": "object"
+  },
+  {
+    "key": "kayaks",
+    "level": 8,
+    "file": "kayaks_8.png",
+    "size": [
+      50,
+      25
+    ],
+    "anchorPx": [
+      16,
+      24
+    ],
+    "zone": "shallow",
+    "layer": "object"
+  },
+  {
+    "key": "rocks",
+    "level": 1,
+    "file": "rocks_1.png",
+    "size": [
+      11,
+      6
+    ],
+    "anchorPx": [
+      1,
+      6
+    ],
+    "zone": "shallow",
+    "layer": "object"
+  },
+  {
+    "key": "rocks",
+    "level": 2,
+    "file": "rocks_2.png",
+    "size": [
+      23,
+      9
+    ],
+    "anchorPx": [
+      14,
+      7
+    ],
+    "zone": "shallow",
+    "layer": "object"
+  },
+  {
+    "key": "rocks",
+    "level": 3,
+    "file": "rocks_3.png",
+    "size": [
+      27,
+      16
+    ],
+    "anchorPx": [
+      16,
+      16
+    ],
+    "zone": "shallow",
+    "layer": "object"
+  },
+  {
+    "key": "rocks",
+    "level": 4,
+    "file": "rocks_4.png",
+    "size": [
+      28,
+      18
+    ],
+    "anchorPx": [
+      16,
+      16
+    ],
+    "zone": "shallow",
+    "layer": "object"
+  },
+  {
+    "key": "rocks",
+    "level": 5,
+    "file": "rocks_5.png",
+    "size": [
+      32,
+      20
+    ],
+    "anchorPx": [
+      18,
+      17
+    ],
+    "zone": "shallow",
+    "layer": "object"
+  },
+  {
+    "key": "rocks",
+    "level": 6,
+    "file": "rocks_6.png",
+    "size": [
+      43,
+      22
+    ],
+    "anchorPx": [
+      19,
+      20
+    ],
+    "zone": "shallow",
+    "layer": "object"
+  },
+  {
+    "key": "rocks",
+    "level": 7,
+    "file": "rocks_7.png",
+    "size": [
+      43,
+      24
+    ],
+    "anchorPx": [
+      19,
+      20
+    ],
+    "zone": "shallow",
+    "layer": "object"
+  },
+  {
+    "key": "rocks",
+    "level": 8,
+    "file": "rocks_8.png",
+    "size": [
+      42,
+      28
+    ],
+    "anchorPx": [
+      21,
+      23
+    ],
+    "zone": "shallow",
+    "layer": "object"
+  },
+  {
+    "key": "rocks",
+    "level": 9,
+    "file": "rocks_9.png",
+    "size": [
+      45,
+      29
+    ],
+    "anchorPx": [
+      21,
+      25
+    ],
+    "zone": "shallow",
+    "layer": "object"
+  },
+  {
+    "key": "dolphins",
+    "level": 1,
+    "file": "dolphins_1.png",
+    "size": [
+      30,
+      19
+    ],
+    "anchorPx": [
+      16,
+      13
+    ],
+    "zone": "deep",
+    "layer": "object"
+  },
+  {
+    "key": "dolphins",
+    "level": 2,
+    "file": "dolphins_2.png",
+    "size": [
+      37,
+      22
+    ],
+    "anchorPx": [
+      22,
+      13
+    ],
+    "zone": "deep",
+    "layer": "object"
+  },
+  {
+    "key": "dolphins",
+    "level": 3,
+    "file": "dolphins_3.png",
+    "size": [
+      46,
+      25
+    ],
+    "anchorPx": [
+      22,
+      13
+    ],
+    "zone": "deep",
+    "layer": "object"
+  },
+  {
+    "key": "dolphins",
+    "level": 4,
+    "file": "dolphins_4.png",
+    "size": [
+      47,
+      31
+    ],
+    "anchorPx": [
+      22,
+      18
+    ],
+    "zone": "deep",
+    "layer": "object"
+  },
+  {
+    "key": "dolphins",
+    "level": 5,
+    "file": "dolphins_5.png",
+    "size": [
+      58,
+      35
+    ],
+    "anchorPx": [
+      32,
+      18
+    ],
+    "zone": "deep",
+    "layer": "object"
+  },
+  {
+    "key": "dolphins",
+    "level": 6,
+    "file": "dolphins_6.png",
+    "size": [
+      68,
+      36
+    ],
+    "anchorPx": [
+      32,
+      19
+    ],
+    "zone": "deep",
+    "layer": "object"
+  },
+  {
+    "key": "dolphins",
+    "level": 7,
+    "file": "dolphins_7.png",
+    "size": [
+      74,
+      42
+    ],
+    "anchorPx": [
+      37,
+      24
+    ],
+    "zone": "deep",
+    "layer": "object"
+  },
+  {
+    "key": "dolphins",
+    "level": 8,
+    "file": "dolphins_8.png",
+    "size": [
+      76,
+      43
+    ],
+    "anchorPx": [
+      38,
+      25
+    ],
+    "zone": "deep",
+    "layer": "object"
+  },
+  {
+    "key": "dolphins",
+    "level": 9,
+    "file": "dolphins_9.png",
+    "size": [
+      82,
+      47
+    ],
+    "anchorPx": [
+      39,
+      25
+    ],
+    "zone": "deep",
+    "layer": "object"
+  },
+  {
+    "key": "dolphins",
+    "level": 10,
+    "file": "dolphins_10.png",
+    "size": [
+      94,
+      49
+    ],
+    "anchorPx": [
+      50,
+      26
+    ],
+    "zone": "deep",
+    "layer": "object"
+  },
+  {
+    "key": "dolphins",
+    "level": 11,
+    "file": "dolphins_11.png",
+    "size": [
+      96,
+      58
+    ],
+    "anchorPx": [
+      51,
+      31
+    ],
+    "zone": "deep",
+    "layer": "object"
+  },
+  {
+    "key": "dolphins",
+    "level": 12,
+    "file": "dolphins_12.png",
+    "size": [
+      107,
+      59
+    ],
+    "anchorPx": [
+      52,
+      31
+    ],
+    "zone": "deep",
+    "layer": "object"
+  },
+  {
+    "key": "gulls",
+    "level": 1,
+    "file": "gulls_1.png",
+    "size": [
+      16,
+      21
+    ],
+    "anchorPx": [
+      1,
+      21
+    ],
+    "zone": "air",
+    "layer": "air"
+  },
+  {
+    "key": "gulls",
+    "level": 2,
+    "file": "gulls_2.png",
+    "size": [
+      30,
+      24
+    ],
+    "anchorPx": [
+      17,
+      24
+    ],
+    "zone": "air",
+    "layer": "air"
+  },
+  {
+    "key": "gulls",
+    "level": 3,
+    "file": "gulls_3.png",
+    "size": [
+      27,
+      30
+    ],
+    "anchorPx": [
+      16,
+      30
+    ],
+    "zone": "air",
+    "layer": "air"
+  },
+  {
+    "key": "gulls",
+    "level": 4,
+    "file": "gulls_4.png",
+    "size": [
+      27,
+      30
+    ],
+    "anchorPx": [
+      15,
+      30
+    ],
+    "zone": "air",
+    "layer": "air"
+  },
+  {
+    "key": "gulls",
+    "level": 5,
+    "file": "gulls_5.png",
+    "size": [
+      34,
+      37
+    ],
+    "anchorPx": [
+      23,
+      37
+    ],
+    "zone": "air",
+    "layer": "air"
+  },
+  {
+    "key": "gulls",
+    "level": 6,
+    "file": "gulls_6.png",
+    "size": [
+      47,
+      38
+    ],
+    "anchorPx": [
+      23,
+      38
+    ],
+    "zone": "air",
+    "layer": "air"
+  },
+  {
+    "key": "gulls",
+    "level": 7,
+    "file": "gulls_7.png",
+    "size": [
+      47,
+      38
+    ],
+    "anchorPx": [
+      23,
+      38
+    ],
+    "zone": "air",
+    "layer": "air"
+  },
+  {
+    "key": "gulls",
+    "level": 8,
+    "file": "gulls_8.png",
+    "size": [
+      48,
+      41
+    ],
+    "anchorPx": [
+      24,
+      41
+    ],
+    "zone": "air",
+    "layer": "air"
+  },
+  {
+    "key": "gulls",
+    "level": 9,
+    "file": "gulls_9.png",
+    "size": [
+      48,
+      41
+    ],
+    "anchorPx": [
+      24,
+      41
+    ],
+    "zone": "air",
+    "layer": "air"
+  },
+  {
+    "key": "gulls",
+    "level": 10,
+    "file": "gulls_10.png",
+    "size": [
+      56,
+      41
+    ],
+    "anchorPx": [
+      32,
+      41
+    ],
+    "zone": "air",
+    "layer": "air"
+  },
+  {
+    "key": "gulls",
+    "level": 11,
+    "file": "gulls_11.png",
+    "size": [
+      57,
+      42
+    ],
+    "anchorPx": [
+      32,
+      42
+    ],
+    "zone": "air",
+    "layer": "air"
+  },
+  {
+    "key": "gulls",
+    "level": 12,
+    "file": "gulls_12.png",
+    "size": [
+      58,
+      42
+    ],
+    "anchorPx": [
+      32,
+      42
+    ],
+    "zone": "air",
+    "layer": "air"
+  }
+]

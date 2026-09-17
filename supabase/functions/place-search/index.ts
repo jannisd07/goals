@@ -19,7 +19,12 @@ const jsonHeaders = {
   "Content-Type": "application/json; charset=utf-8",
 };
 
-const USER_REQUESTS_PER_MINUTE = 40;
+// The scarce resource is global, not per user: reserve_place_search_upstream_slot
+// serialises every cache miss at 1100 ms, so the whole project can serve roughly
+// 54 upstream lookups per minute. A per-user ceiling above a fraction of that does
+// not protect anything — one account could drain the shared budget and everybody
+// else would see "Search is busy".
+const USER_REQUESTS_PER_MINUTE = 12;
 const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const MAX_UPSTREAM_RESPONSE_BYTES = 512 * 1024;
 
@@ -31,6 +36,44 @@ type QuotaRow = {
 type CacheRow = {
   results: unknown;
 };
+
+/**
+ * Reads a response body as text but aborts as soon as it exceeds `maxBytes`.
+ * Returns null when the ceiling is hit, so an oversized answer never has to be
+ * held in memory in full.
+ */
+async function readBoundedText(
+  response: Response,
+  maxBytes: number,
+): Promise<string | null> {
+  const declaredLength = Number(response.headers.get("Content-Length") ?? "");
+  if (Number.isFinite(declaredLength) && declaredLength > maxBytes) {
+    await response.body?.cancel();
+    return null;
+  }
+
+  const reader = response.body?.getReader();
+  if (!reader) return "";
+
+  const decoder = new TextDecoder();
+  let text = "";
+  let received = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      received += value.byteLength;
+      if (received > maxBytes) {
+        await reader.cancel();
+        return null;
+      }
+      text += decoder.decode(value, { stream: true });
+    }
+  } finally {
+    reader.releaseLock();
+  }
+  return text + decoder.decode();
+}
 
 function jsonResponse(
   body: unknown,
@@ -154,9 +197,12 @@ Deno.serve(async (request: Request) => {
       parsed.value.limit,
     );
     if (cachedResults) {
+      // The cache is shared across all users and keyed only on the query text.
+      // Reporting hit/miss would let any account probe whether somebody else
+      // searched a given address in the last seven days, so the response never
+      // reveals which path served it.
       return jsonResponse(cachedResults, 200, {
         "Cache-Control": "private, max-age=300",
-        "X-Place-Search-Cache": "hit",
       });
     }
 
@@ -218,21 +264,14 @@ Deno.serve(async (request: Request) => {
       );
     }
 
-    const declaredContentLength = Number(
-      upstreamResponse.headers.get("Content-Length") ?? "0",
+    // Read with a hard byte ceiling instead of buffering first and measuring
+    // afterwards: a chunked or Content-Length-less response would otherwise be
+    // pulled into memory in full before the limit could ever reject it.
+    const upstreamBody = await readBoundedText(
+      upstreamResponse,
+      MAX_UPSTREAM_RESPONSE_BYTES,
     );
-    if (
-      Number.isFinite(declaredContentLength) &&
-      declaredContentLength > MAX_UPSTREAM_RESPONSE_BYTES
-    ) {
-      return jsonResponse({ error: "Search provider response was too large." }, 502);
-    }
-
-    const upstreamBody = await upstreamResponse.text();
-    if (
-      new TextEncoder().encode(upstreamBody).byteLength >
-      MAX_UPSTREAM_RESPONSE_BYTES
-    ) {
+    if (upstreamBody === null) {
       return jsonResponse({ error: "Search provider response was too large." }, 502);
     }
 
@@ -280,7 +319,6 @@ Deno.serve(async (request: Request) => {
 
     return jsonResponse(results, 200, {
       "Cache-Control": "private, max-age=300",
-      "X-Place-Search-Cache": "miss",
     });
   } catch (error) {
     const message = error instanceof Error ? error.name : "UnknownError";

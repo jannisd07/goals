@@ -15,13 +15,17 @@ async function readableFunctionError(error: unknown): Promise<Error> {
   if (context?.json) {
     try {
       const payload = await context.json();
+      // The function only ever rejects for rate limiting, and it sends copy that
+      // is already meant for the user.
       if (
         typeof payload === "object" &&
         payload !== null &&
-        "code" in payload &&
-        payload.code === "INSIGHT_REFRESH_LIMIT"
+        "error" in payload &&
+        typeof payload.error === "string" &&
+        payload.error.length > 0 &&
+        payload.error.length <= 120
       ) {
-        return new Error("You have used today’s three insight refreshes.");
+        return new Error(payload.error);
       }
     } catch {
       // Fall through to a stable user-facing error.

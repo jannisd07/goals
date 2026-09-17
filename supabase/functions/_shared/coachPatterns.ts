@@ -182,6 +182,10 @@ export function timeZoneClock(
       hour: "numeric",
       minute: "numeric",
       hour12: false,
+      // hour12:false alone leaves midnight as hour 24 on some engines, and the
+      // printed day may or may not be shifted with it. hourCycle "h23" pins
+      // midnight to hour 0 so hour and date always describe the same day.
+      hourCycle: "h23",
     });
   } catch {
     return fixedOffsetClock(fallbackOffsetMinutes);
@@ -272,7 +276,10 @@ function distinctDays(items: Timed[]): number {
 
 function usualHour(items: Timed[]): number | null {
   if (items.length === 0) return null;
-  return Math.round(median(items.map((i) => i.minuteOfDay)) / 60) % 24;
+  // Rounding up would wrap a 23:30-23:59 habit to hour 0 and tell somebody who
+  // always trains late at night to go "around 12am" — the wrong hour and the
+  // wrong day. Truncating keeps the stated hour inside the block they train in.
+  return Math.floor(median(items.map((i) => i.minuteOfDay)) / 60) % 24;
 }
 
 function isActiveGoal(goal: CoachGoal): boolean {

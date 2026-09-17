@@ -25,12 +25,20 @@ import {
 import { RootNavigator } from "./src/navigation/RootNavigator";
 import { PendingRatingSheet } from "./src/components/PendingRatingSheet";
 import { useAuthBootstrap } from "./src/hooks/useAuth";
+import { useIslandSync } from "./src/hooks/useIslandSync";
+import { useMilestoneDelivery } from "./src/hooks/useMilestoneDelivery";
 import { useCoachNudges } from "./src/hooks/useCoachNudges";
 import { useStudySpotSync } from "./src/hooks/useStudySpotSync";
 import { useFocusLiveActivity } from "./src/hooks/useFocusLiveActivity";
 import { useAppStore } from "./src/store";
 import { registerGeofences, setupNotifications } from "./src/services/geofencing";
 import { syncWeeklySummary } from "./src/lib/notifications";
+import { readPendingGrows, removePendingGrow } from "./src/lib/pendingGrows";
+import { flushSessionOutbox } from "./src/lib/sessionOutbox";
+import { autoGrowPick, overdueGrows } from "./src/lib/growDelivery";
+import { computeGrowSize } from "./src/lib/growRewards";
+import { categoryLimit, islandStageFor } from "./src/lib/islandScene";
+import type { AutoDeliveredGrow } from "./src/store/islandSlice";
 import {
   handleFocusLiveActivityAction,
   type FocusLiveActivityAction,
@@ -48,6 +56,8 @@ type NotificationDestination = {
   type?: string;
   sessionId?: string;
   goalId?: string;
+  goalName?: string;
+  durationSeconds?: number;
 };
 let pendingNotificationDestination: NotificationDestination | null = null;
 
@@ -70,6 +80,14 @@ function openNotificationDestination(data: NotificationDestination): void {
       goalId: data.goalId,
       sessionLengthMinutes: useAppStore.getState().lastSessionMinutes,
     });
+  } else if (data.type === "grow_reveal" && data.sessionId && data.goalId) {
+    navigationRef.navigate("GrowReveal", {
+      sessionId: data.sessionId,
+      goalId: data.goalId,
+      goalName: data.goalName ?? "Your visit",
+      durationSeconds: Number(data.durationSeconds) || 0,
+      category: null,
+    });
   }
 }
 
@@ -78,6 +96,89 @@ function flushPendingNotificationDestination(): void {
   const destination = pendingNotificationDestination;
   pendingNotificationDestination = null;
   openNotificationDestination(destination);
+}
+
+/**
+ * Places the rewards nobody came back for.
+ *
+ * A finished session has earned its object; the reveal screen only decides what
+ * it becomes. So a reward that has waited a day, or that is stuck behind a pile
+ * of newer ones, is placed here without asking — the player's own object and
+ * category first, another category only if theirs has no room. Should the whole
+ * island be unable to take it, it keeps waiting instead of being thrown away.
+ *
+ * The size is the one a session without history gets (medium): the exact size
+ * needs the goal's earlier sessions from the server, and a reward the player
+ * never opened is not worth going online for.
+ */
+async function deliverOverduePendingGrows(): Promise<void> {
+  const state = useAppStore.getState();
+  const userId = state.userConfig?.id;
+  if (!userId) return;
+  // Wait for the account's island. Placing against a local copy that is behind
+  // the server would spend the reward on a level the island has long passed.
+  if (state.islandSyncedFor !== userId) return;
+  const waiting = await readPendingGrows();
+  const overdue = overdueGrows(waiting, Date.now());
+  if (overdue.length === 0) return;
+
+  const delivered: AutoDeliveredGrow[] = [];
+  for (const grow of overdue) {
+    const store = useAppStore.getState();
+    // Applying is already guarded against running twice; without the same guard
+    // here a failed cleanup would announce the same reward again on every start.
+    if (store.appliedGrowSessionsByUser[userId]?.includes(grow.sessionId)) {
+      await removePendingGrow(grow.sessionId).catch(() => undefined);
+      continue;
+    }
+    const island = store.islandObjectsByUser[userId] ?? {};
+    const stage = islandStageFor(island);
+    const tier = computeGrowSize(grow.durationSeconds, []).tier;
+    const pick = autoGrowPick(grow, tier, island, (category) => categoryLimit(stage, category));
+    if (!pick) continue; // no room anywhere yet — try again next time
+    store.applyGrowReward(userId, {
+      sessionId: grow.sessionId,
+      category: pick.category,
+      objectKey: pick.objectKey,
+      toLevel: pick.toLevel,
+    });
+    await removePendingGrow(grow.sessionId).catch(() => undefined);
+    delivered.push({
+      goalName: grow.goalName,
+      category: pick.category,
+      objectKey: pick.objectKey,
+      level: pick.toLevel,
+      isNew: pick.fromLevel === 0,
+    });
+  }
+  if (delivered.length > 0) useAppStore.getState().noteAutoDeliveredGrows(delivered);
+}
+
+/**
+ * Reopens an object that grew but was never added, for example after an Auto
+ * Check-In whose notification was not tapped. Only from Home, never on top of a
+ * running session, onboarding or another reveal.
+ */
+async function openNextPendingGrow(): Promise<void> {
+  const state = useAppStore.getState();
+  if (!navigationRef.isReady() || state.isLoading || !state.isAuthenticated) return;
+  if (state.activeSession) return;
+  // "MainTabs" is the main screen itself since Grove was removed (2026-09-14) and
+  // the container stopped being a navigator with its own leaf routes.
+  const onHome = () => navigationRef.getCurrentRoute()?.name === "MainTabs";
+  if (!onHome()) return;
+  const [next] = await readPendingGrows();
+  if (!next || !onHome()) return;
+  navigationRef.navigate("GrowReveal", {
+    sessionId: next.sessionId,
+    goalId: next.goalId,
+    goalName: next.goalName,
+    durationSeconds: next.durationSeconds,
+    category: next.category,
+    // The object the session actually grew; without it the reveal preselects
+    // the first one of the category instead of the one in the timer ring.
+    objectKey: next.objectKey,
+  });
 }
 
 const queryClient = new QueryClient({
@@ -186,10 +287,17 @@ class AppErrorBoundary extends React.Component<
 }
 
 function AppContent() {
+
   const { bootstrapError, retryBootstrap } = useAuthBootstrap();
   useStudySpotSync();
   useFocusLiveActivity();
   useCoachNudges();
+  // The island belongs to the account: read it once after signing in, then keep
+  // it in step (src/hooks/useIslandSync.ts).
+  useIslandSync();
+  // The hour milestones are derived from the total tracked time, so they put
+  // themselves on the island whenever the hours are known.
+  useMilestoneDelivery();
   const queryCache = useQueryClient();
   const isAuthenticated = useAppStore((s) => s.isAuthenticated);
   const isLoading = useAppStore((s) => s.isLoading);
@@ -335,6 +443,16 @@ function AppContent() {
       void queryCache.invalidateQueries({ queryKey: ["garden", "sessions"] });
       void queryCache.invalidateQueries({ queryKey: ["study-spot-sync"] });
       void queryCache.invalidateQueries({ queryKey: ["friends-weekly"] });
+      // Anything that could not be sent while the phone was offline goes out
+      // now, before the aggregates above are read back.
+      void flushSessionOutbox().then((sent) => {
+        if (sent === 0) return;
+        void queryCache.invalidateQueries({ queryKey: ["sessions"] });
+        void queryCache.invalidateQueries({ queryKey: ["weekly-progress"] });
+        void queryCache.invalidateQueries({ queryKey: ["streak"] });
+        void queryCache.invalidateQueries({ queryKey: ["analytics"] });
+      });
+      void deliverOverduePendingGrows().finally(() => void openNextPendingGrow());
     });
     return () => subscription.remove();
   }, [isAuthenticated, queryCache]);
@@ -342,6 +460,8 @@ function AppContent() {
   useEffect(() => {
     if (isAuthenticated && !isLoading) {
       flushPendingNotificationDestination();
+      void flushSessionOutbox();
+      void deliverOverduePendingGrows().finally(() => void openNextPendingGrow());
     }
   }, [isAuthenticated, isLoading]);
 
@@ -541,7 +661,7 @@ function GoalsApp() {
 
   return (
     <GestureHandlerRootView
-      style={{ flex: 1, backgroundColor: NEU.bg }}
+      style={{ flex: 1, backgroundColor: NEU.bgSolid }}
       onLayout={onLayoutRootView}
     >
       <SafeAreaProvider>

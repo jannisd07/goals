@@ -2,6 +2,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { User } from "@supabase/supabase-js";
 import { supabase, supabaseConfigurationError } from "../lib/supabase";
 import { clearAccountNotifications, syncWeeklySummary } from "../lib/notifications";
+import { clearPendingGrows } from "../lib/pendingGrows";
+import { clearSessionOutbox, flushSessionOutbox } from "../lib/sessionOutbox";
 import { advancePomodoro } from "../lib/pomodoro";
 import { resetGeofencingForAccount } from "../services/geofencing";
 import { useAppStore } from "../store";
@@ -158,9 +160,10 @@ function applyUserConfig(config: UserConfig): void {
     config.notification_preferences?.weeklySummary ??
       DEFAULT_NOTIFICATION_PREFS.weeklySummary,
   );
-  if (config.onboarding_complete) {
-    state.setPendingOnboarding(null);
-  }
+  // A pending setup is never dropped here. RootNavigator saves it to the
+  // account, including one that finished onboarding earlier. Clearing it for
+  // those accounts silently threw away weekly targets chosen during a repeated
+  // setup right before signing in.
 }
 
 function clearUserScopedState(clearPendingOnboarding = false): void {
@@ -223,9 +226,15 @@ async function clearAccountDeviceState(closeManualSession = true): Promise<void>
       console.warn("Could not close the active focus session during sign-out:", error);
     });
   }
+  // Last chance for anything that never reached the server. The queue holds no
+  // account of its own, so it cannot be carried into the next sign-in — but it
+  // must not be thrown away without trying.
+  await flushSessionOutbox().catch(() => 0);
   await Promise.all([
     resetGeofencingForAccount(),
     clearAccountNotifications(),
+    clearPendingGrows(),
+    clearSessionOutbox(),
   ]);
 }
 
@@ -260,15 +269,32 @@ export function useAuthBootstrap() {
       authLoadGenerationRef.current = generation;
       setLoading(true);
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        // A token that could not be refreshed (offline, server hiccup) comes back
+        // as "no session" — the same shape as a real sign-out. Wiping the device
+        // for that lost unclaimed rewards and switched Auto Check-In off for a
+        // user who was never signed out at all. The refresh token is still on
+        // disk, so keep everything and let the next launch try again.
+        if (sessionError) throw sessionError;
         if (session?.user && hasRequiredEmailVerification(session.user)) {
           const previousUserId = useAppStore.getState().userConfig?.id;
           if (previousUserId && previousUserId !== session.user.id) {
             clearUserScopedState(true);
           }
-          const config = await loadOrCreateUserConfig(session.user);
-          if (authLoadGenerationRef.current !== generation) return;
-          applyUserConfig(config);
+          try {
+            const config = await loadOrCreateUserConfig(session.user);
+            if (authLoadGenerationRef.current !== generation) return;
+            applyUserConfig(config);
+          } catch (configError) {
+            if (authLoadGenerationRef.current !== generation) return;
+            // The account is valid, only the profile could not be fetched. If
+            // this device already knows the profile, carry on with it instead of
+            // showing a wall: everything the app needs is on the device, and a
+            // launch without a connection should still open the app.
+            const known = useAppStore.getState().userConfig;
+            if (known?.id !== session.user.id) throw configError;
+            console.warn("Using the stored profile; it could not be refreshed:", configError);
+          }
           setAuthenticated(true);
           setBootstrapError(null);
         } else {
@@ -453,6 +479,23 @@ export function useAuth() {
     clearUserScopedState(true);
   };
 
+  /**
+   * Renames the signed-in account. Only the profile row changes: updating the
+   * auth metadata as well would emit USER_UPDATED and flash the loading screen.
+   */
+  const updateDisplayName = async (displayName: string): Promise<string> => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user) {
+      throw new Error("Please sign in again to change your name.");
+    }
+    const saved = await saveUserDisplayName(session.user, displayName);
+    const current = useAppStore.getState().userConfig;
+    if (current?.id === session.user.id) {
+      useAppStore.getState().setUserConfig({ ...current, display_name: saved });
+    }
+    return saved;
+  };
+
   return {
     signInWithEmail,
     signUpWithEmail,
@@ -460,5 +503,6 @@ export function useAuth() {
     requestPasswordReset,
     signOut,
     deleteAccount,
+    updateDisplayName,
   };
 }

@@ -1,0 +1,1370 @@
+[
+  {
+    "key": "sandcastle",
+    "label": "Sandburg",
+    "level": 1,
+    "stages": 10,
+    "file": "sandcastle_01.png",
+    "size": [
+      8,
+      6
+    ],
+    "anchorPx": [
+      4,
+      5
+    ],
+    "zone": "beach",
+    "layer": "object",
+    "note": "Haufen \u2192 Burg mit T\u00fcrmen, Fahne, Graben"
+  },
+  {
+    "key": "sandcastle",
+    "label": "Sandburg",
+    "level": 2,
+    "stages": 10,
+    "file": "sandcastle_02.png",
+    "size": [
+      10,
+      6
+    ],
+    "anchorPx": [
+      5,
+      5
+    ],
+    "zone": "beach",
+    "layer": "object",
+    "note": "Haufen \u2192 Burg mit T\u00fcrmen, Fahne, Graben"
+  },
+  {
+    "key": "sandcastle",
+    "label": "Sandburg",
+    "level": 3,
+    "stages": 10,
+    "file": "sandcastle_03.png",
+    "size": [
+      12,
+      9
+    ],
+    "anchorPx": [
+      6,
+      7
+    ],
+    "zone": "beach",
+    "layer": "object",
+    "note": "Haufen \u2192 Burg mit T\u00fcrmen, Fahne, Graben"
+  },
+  {
+    "key": "sandcastle",
+    "label": "Sandburg",
+    "level": 4,
+    "stages": 10,
+    "file": "sandcastle_04.png",
+    "size": [
+      14,
+      10
+    ],
+    "anchorPx": [
+      7,
+      8
+    ],
+    "zone": "beach",
+    "layer": "object",
+    "note": "Haufen \u2192 Burg mit T\u00fcrmen, Fahne, Graben"
+  },
+  {
+    "key": "sandcastle",
+    "label": "Sandburg",
+    "level": 5,
+    "stages": 10,
+    "file": "sandcastle_05.png",
+    "size": [
+      16,
+      13
+    ],
+    "anchorPx": [
+      8,
+      11
+    ],
+    "zone": "beach",
+    "layer": "object",
+    "note": "Haufen \u2192 Burg mit T\u00fcrmen, Fahne, Graben"
+  },
+  {
+    "key": "sandcastle",
+    "label": "Sandburg",
+    "level": 6,
+    "stages": 10,
+    "file": "sandcastle_06.png",
+    "size": [
+      17,
+      14
+    ],
+    "anchorPx": [
+      8,
+      12
+    ],
+    "zone": "beach",
+    "layer": "object",
+    "note": "Haufen \u2192 Burg mit T\u00fcrmen, Fahne, Graben"
+  },
+  {
+    "key": "sandcastle",
+    "label": "Sandburg",
+    "level": 7,
+    "stages": 10,
+    "file": "sandcastle_07.png",
+    "size": [
+      18,
+      15
+    ],
+    "anchorPx": [
+      9,
+      13
+    ],
+    "zone": "beach",
+    "layer": "object",
+    "note": "Haufen \u2192 Burg mit T\u00fcrmen, Fahne, Graben"
+  },
+  {
+    "key": "sandcastle",
+    "label": "Sandburg",
+    "level": 8,
+    "stages": 10,
+    "file": "sandcastle_08.png",
+    "size": [
+      19,
+      16
+    ],
+    "anchorPx": [
+      9,
+      14
+    ],
+    "zone": "beach",
+    "layer": "object",
+    "note": "Haufen \u2192 Burg mit T\u00fcrmen, Fahne, Graben"
+  },
+  {
+    "key": "sandcastle",
+    "label": "Sandburg",
+    "level": 9,
+    "stages": 10,
+    "file": "sandcastle_09.png",
+    "size": [
+      20,
+      17
+    ],
+    "anchorPx": [
+      10,
+      14
+    ],
+    "zone": "beach",
+    "layer": "object",
+    "note": "Haufen \u2192 Burg mit T\u00fcrmen, Fahne, Graben"
+  },
+  {
+    "key": "sandcastle",
+    "label": "Sandburg",
+    "level": 10,
+    "stages": 10,
+    "file": "sandcastle_10.png",
+    "size": [
+      21,
+      19
+    ],
+    "anchorPx": [
+      10,
+      16
+    ],
+    "zone": "beach",
+    "layer": "object",
+    "note": "Haufen \u2192 Burg mit T\u00fcrmen, Fahne, Graben"
+  },
+  {
+    "key": "campfire",
+    "label": "Lagerfeuer",
+    "level": 1,
+    "stages": 9,
+    "file": "campfire_01.png",
+    "size": [
+      12,
+      7
+    ],
+    "anchorPx": [
+      6,
+      5
+    ],
+    "zone": "beach",
+    "layer": "object",
+    "note": "Steinring \u2192 Scheite \u2192 Flamme mit Funken"
+  },
+  {
+    "key": "campfire",
+    "label": "Lagerfeuer",
+    "level": 2,
+    "stages": 9,
+    "file": "campfire_02.png",
+    "size": [
+      12,
+      7
+    ],
+    "anchorPx": [
+      6,
+      5
+    ],
+    "zone": "beach",
+    "layer": "object",
+    "note": "Steinring \u2192 Scheite \u2192 Flamme mit Funken"
+  },
+  {
+    "key": "campfire",
+    "label": "Lagerfeuer",
+    "level": 3,
+    "stages": 9,
+    "file": "campfire_03.png",
+    "size": [
+      14,
+      8
+    ],
+    "anchorPx": [
+      7,
+      6
+    ],
+    "zone": "beach",
+    "layer": "object",
+    "note": "Steinring \u2192 Scheite \u2192 Flamme mit Funken"
+  },
+  {
+    "key": "campfire",
+    "label": "Lagerfeuer",
+    "level": 4,
+    "stages": 9,
+    "file": "campfire_04.png",
+    "size": [
+      14,
+      9
+    ],
+    "anchorPx": [
+      7,
+      7
+    ],
+    "zone": "beach",
+    "layer": "object",
+    "note": "Steinring \u2192 Scheite \u2192 Flamme mit Funken"
+  },
+  {
+    "key": "campfire",
+    "label": "Lagerfeuer",
+    "level": 5,
+    "stages": 9,
+    "file": "campfire_05.png",
+    "size": [
+      14,
+      10
+    ],
+    "anchorPx": [
+      7,
+      8
+    ],
+    "zone": "beach",
+    "layer": "object",
+    "note": "Steinring \u2192 Scheite \u2192 Flamme mit Funken"
+  },
+  {
+    "key": "campfire",
+    "label": "Lagerfeuer",
+    "level": 6,
+    "stages": 9,
+    "file": "campfire_06.png",
+    "size": [
+      14,
+      11
+    ],
+    "anchorPx": [
+      7,
+      9
+    ],
+    "zone": "beach",
+    "layer": "object",
+    "note": "Steinring \u2192 Scheite \u2192 Flamme mit Funken"
+  },
+  {
+    "key": "campfire",
+    "label": "Lagerfeuer",
+    "level": 7,
+    "stages": 9,
+    "file": "campfire_07.png",
+    "size": [
+      16,
+      14
+    ],
+    "anchorPx": [
+      8,
+      11
+    ],
+    "zone": "beach",
+    "layer": "object",
+    "note": "Steinring \u2192 Scheite \u2192 Flamme mit Funken"
+  },
+  {
+    "key": "campfire",
+    "label": "Lagerfeuer",
+    "level": 8,
+    "stages": 9,
+    "file": "campfire_08.png",
+    "size": [
+      16,
+      15
+    ],
+    "anchorPx": [
+      8,
+      12
+    ],
+    "zone": "beach",
+    "layer": "object",
+    "note": "Steinring \u2192 Scheite \u2192 Flamme mit Funken"
+  },
+  {
+    "key": "campfire",
+    "label": "Lagerfeuer",
+    "level": 9,
+    "stages": 9,
+    "file": "campfire_09.png",
+    "size": [
+      16,
+      15
+    ],
+    "anchorPx": [
+      8,
+      12
+    ],
+    "zone": "beach",
+    "layer": "object",
+    "note": "Steinring \u2192 Scheite \u2192 Flamme mit Funken"
+  },
+  {
+    "key": "deck_chairs",
+    "label": "Liegest\u00fchle",
+    "level": 1,
+    "stages": 9,
+    "file": "deck_chairs_01.png",
+    "size": [
+      14,
+      11
+    ],
+    "anchorPx": [
+      10,
+      9
+    ],
+    "zone": "beach",
+    "layer": "object",
+    "note": "1 bis 4 St\u00fchle, ab Stufe 6 mit Schirm"
+  },
+  {
+    "key": "deck_chairs",
+    "label": "Liegest\u00fchle",
+    "level": 2,
+    "stages": 9,
+    "file": "deck_chairs_02.png",
+    "size": [
+      14,
+      11
+    ],
+    "anchorPx": [
+      10,
+      9
+    ],
+    "zone": "beach",
+    "layer": "object",
+    "note": "1 bis 4 St\u00fchle, ab Stufe 6 mit Schirm"
+  },
+  {
+    "key": "deck_chairs",
+    "label": "Liegest\u00fchle",
+    "level": 3,
+    "stages": 9,
+    "file": "deck_chairs_03.png",
+    "size": [
+      14,
+      11
+    ],
+    "anchorPx": [
+      10,
+      9
+    ],
+    "zone": "beach",
+    "layer": "object",
+    "note": "1 bis 4 St\u00fchle, ab Stufe 6 mit Schirm"
+  },
+  {
+    "key": "deck_chairs",
+    "label": "Liegest\u00fchle",
+    "level": 4,
+    "stages": 9,
+    "file": "deck_chairs_04.png",
+    "size": [
+      14,
+      11
+    ],
+    "anchorPx": [
+      10,
+      9
+    ],
+    "zone": "beach",
+    "layer": "object",
+    "note": "1 bis 4 St\u00fchle, ab Stufe 6 mit Schirm"
+  },
+  {
+    "key": "deck_chairs",
+    "label": "Liegest\u00fchle",
+    "level": 5,
+    "stages": 9,
+    "file": "deck_chairs_05.png",
+    "size": [
+      20,
+      12
+    ],
+    "anchorPx": [
+      10,
+      10
+    ],
+    "zone": "beach",
+    "layer": "object",
+    "note": "1 bis 4 St\u00fchle, ab Stufe 6 mit Schirm"
+  },
+  {
+    "key": "deck_chairs",
+    "label": "Liegest\u00fchle",
+    "level": 6,
+    "stages": 9,
+    "file": "deck_chairs_06.png",
+    "size": [
+      20,
+      22
+    ],
+    "anchorPx": [
+      10,
+      20
+    ],
+    "zone": "beach",
+    "layer": "object",
+    "note": "1 bis 4 St\u00fchle, ab Stufe 6 mit Schirm"
+  },
+  {
+    "key": "deck_chairs",
+    "label": "Liegest\u00fchle",
+    "level": 7,
+    "stages": 9,
+    "file": "deck_chairs_07.png",
+    "size": [
+      20,
+      23
+    ],
+    "anchorPx": [
+      10,
+      21
+    ],
+    "zone": "beach",
+    "layer": "object",
+    "note": "1 bis 4 St\u00fchle, ab Stufe 6 mit Schirm"
+  },
+  {
+    "key": "deck_chairs",
+    "label": "Liegest\u00fchle",
+    "level": 8,
+    "stages": 9,
+    "file": "deck_chairs_08.png",
+    "size": [
+      20,
+      23
+    ],
+    "anchorPx": [
+      10,
+      21
+    ],
+    "zone": "beach",
+    "layer": "object",
+    "note": "1 bis 4 St\u00fchle, ab Stufe 6 mit Schirm"
+  },
+  {
+    "key": "deck_chairs",
+    "label": "Liegest\u00fchle",
+    "level": 9,
+    "stages": 9,
+    "file": "deck_chairs_09.png",
+    "size": [
+      21,
+      23
+    ],
+    "anchorPx": [
+      10,
+      21
+    ],
+    "zone": "beach",
+    "layer": "object",
+    "note": "1 bis 4 St\u00fchle, ab Stufe 6 mit Schirm"
+  },
+  {
+    "key": "shells",
+    "label": "Muscheln",
+    "level": 1,
+    "stages": 10,
+    "file": "shells_01.png",
+    "size": [
+      7,
+      6
+    ],
+    "anchorPx": [
+      3,
+      5
+    ],
+    "zone": "beach",
+    "layer": "object",
+    "note": "1 bis 11 Muscheln und Seesterne"
+  },
+  {
+    "key": "shells",
+    "label": "Muscheln",
+    "level": 2,
+    "stages": 10,
+    "file": "shells_02.png",
+    "size": [
+      9,
+      7
+    ],
+    "anchorPx": [
+      3,
+      5
+    ],
+    "zone": "beach",
+    "layer": "object",
+    "note": "1 bis 11 Muscheln und Seesterne"
+  },
+  {
+    "key": "shells",
+    "label": "Muscheln",
+    "level": 3,
+    "stages": 10,
+    "file": "shells_03.png",
+    "size": [
+      9,
+      7
+    ],
+    "anchorPx": [
+      3,
+      5
+    ],
+    "zone": "beach",
+    "layer": "object",
+    "note": "1 bis 11 Muscheln und Seesterne"
+  },
+  {
+    "key": "shells",
+    "label": "Muscheln",
+    "level": 4,
+    "stages": 10,
+    "file": "shells_04.png",
+    "size": [
+      10,
+      7
+    ],
+    "anchorPx": [
+      5,
+      5
+    ],
+    "zone": "beach",
+    "layer": "object",
+    "note": "1 bis 11 Muscheln und Seesterne"
+  },
+  {
+    "key": "shells",
+    "label": "Muscheln",
+    "level": 5,
+    "stages": 10,
+    "file": "shells_05.png",
+    "size": [
+      14,
+      8
+    ],
+    "anchorPx": [
+      5,
+      5
+    ],
+    "zone": "beach",
+    "layer": "object",
+    "note": "1 bis 11 Muscheln und Seesterne"
+  },
+  {
+    "key": "shells",
+    "label": "Muscheln",
+    "level": 6,
+    "stages": 10,
+    "file": "shells_06.png",
+    "size": [
+      17,
+      8
+    ],
+    "anchorPx": [
+      8,
+      5
+    ],
+    "zone": "beach",
+    "layer": "object",
+    "note": "1 bis 11 Muscheln und Seesterne"
+  },
+  {
+    "key": "shells",
+    "label": "Muscheln",
+    "level": 7,
+    "stages": 10,
+    "file": "shells_07.png",
+    "size": [
+      18,
+      8
+    ],
+    "anchorPx": [
+      8,
+      5
+    ],
+    "zone": "beach",
+    "layer": "object",
+    "note": "1 bis 11 Muscheln und Seesterne"
+  },
+  {
+    "key": "shells",
+    "label": "Muscheln",
+    "level": 8,
+    "stages": 10,
+    "file": "shells_08.png",
+    "size": [
+      18,
+      8
+    ],
+    "anchorPx": [
+      8,
+      5
+    ],
+    "zone": "beach",
+    "layer": "object",
+    "note": "1 bis 11 Muscheln und Seesterne"
+  },
+  {
+    "key": "shells",
+    "label": "Muscheln",
+    "level": 9,
+    "stages": 10,
+    "file": "shells_09.png",
+    "size": [
+      21,
+      8
+    ],
+    "anchorPx": [
+      10,
+      5
+    ],
+    "zone": "beach",
+    "layer": "object",
+    "note": "1 bis 11 Muscheln und Seesterne"
+  },
+  {
+    "key": "shells",
+    "label": "Muscheln",
+    "level": 10,
+    "stages": 10,
+    "file": "shells_10.png",
+    "size": [
+      24,
+      8
+    ],
+    "anchorPx": [
+      10,
+      5
+    ],
+    "zone": "beach",
+    "layer": "object",
+    "note": "1 bis 11 Muscheln und Seesterne"
+  },
+  {
+    "key": "surfboards",
+    "label": "Surfbretter",
+    "level": 1,
+    "stages": 8,
+    "file": "surfboards_01.png",
+    "size": [
+      6,
+      17
+    ],
+    "anchorPx": [
+      3,
+      16
+    ],
+    "zone": "beach",
+    "layer": "object",
+    "note": "1 bis 5 Bretter im Sand"
+  },
+  {
+    "key": "surfboards",
+    "label": "Surfbretter",
+    "level": 2,
+    "stages": 8,
+    "file": "surfboards_02.png",
+    "size": [
+      6,
+      17
+    ],
+    "anchorPx": [
+      3,
+      16
+    ],
+    "zone": "beach",
+    "layer": "object",
+    "note": "1 bis 5 Bretter im Sand"
+  },
+  {
+    "key": "surfboards",
+    "label": "Surfbretter",
+    "level": 3,
+    "stages": 8,
+    "file": "surfboards_03.png",
+    "size": [
+      6,
+      17
+    ],
+    "anchorPx": [
+      3,
+      16
+    ],
+    "zone": "beach",
+    "layer": "object",
+    "note": "1 bis 5 Bretter im Sand"
+  },
+  {
+    "key": "surfboards",
+    "label": "Surfbretter",
+    "level": 4,
+    "stages": 8,
+    "file": "surfboards_04.png",
+    "size": [
+      10,
+      20
+    ],
+    "anchorPx": [
+      5,
+      19
+    ],
+    "zone": "beach",
+    "layer": "object",
+    "note": "1 bis 5 Bretter im Sand"
+  },
+  {
+    "key": "surfboards",
+    "label": "Surfbretter",
+    "level": 5,
+    "stages": 8,
+    "file": "surfboards_05.png",
+    "size": [
+      10,
+      20
+    ],
+    "anchorPx": [
+      5,
+      19
+    ],
+    "zone": "beach",
+    "layer": "object",
+    "note": "1 bis 5 Bretter im Sand"
+  },
+  {
+    "key": "surfboards",
+    "label": "Surfbretter",
+    "level": 6,
+    "stages": 8,
+    "file": "surfboards_06.png",
+    "size": [
+      14,
+      20
+    ],
+    "anchorPx": [
+      7,
+      18
+    ],
+    "zone": "beach",
+    "layer": "object",
+    "note": "1 bis 5 Bretter im Sand"
+  },
+  {
+    "key": "surfboards",
+    "label": "Surfbretter",
+    "level": 7,
+    "stages": 8,
+    "file": "surfboards_07.png",
+    "size": [
+      14,
+      20
+    ],
+    "anchorPx": [
+      7,
+      18
+    ],
+    "zone": "beach",
+    "layer": "object",
+    "note": "1 bis 5 Bretter im Sand"
+  },
+  {
+    "key": "surfboards",
+    "label": "Surfbretter",
+    "level": 8,
+    "stages": 8,
+    "file": "surfboards_08.png",
+    "size": [
+      19,
+      23
+    ],
+    "anchorPx": [
+      9,
+      20
+    ],
+    "zone": "beach",
+    "layer": "object",
+    "note": "1 bis 5 Bretter im Sand"
+  },
+  {
+    "key": "hammock",
+    "label": "H\u00e4ngematte",
+    "level": 1,
+    "stages": 9,
+    "file": "hammock_01.png",
+    "size": [
+      17,
+      11
+    ],
+    "anchorPx": [
+      8,
+      11
+    ],
+    "zone": "beach",
+    "layer": "object",
+    "note": "Pfosten \u2192 Tuch \u2192 Kissen und Buch"
+  },
+  {
+    "key": "hammock",
+    "label": "H\u00e4ngematte",
+    "level": 2,
+    "stages": 9,
+    "file": "hammock_02.png",
+    "size": [
+      17,
+      12
+    ],
+    "anchorPx": [
+      8,
+      12
+    ],
+    "zone": "beach",
+    "layer": "object",
+    "note": "Pfosten \u2192 Tuch \u2192 Kissen und Buch"
+  },
+  {
+    "key": "hammock",
+    "label": "H\u00e4ngematte",
+    "level": 3,
+    "stages": 9,
+    "file": "hammock_03.png",
+    "size": [
+      18,
+      12
+    ],
+    "anchorPx": [
+      9,
+      12
+    ],
+    "zone": "beach",
+    "layer": "object",
+    "note": "Pfosten \u2192 Tuch \u2192 Kissen und Buch"
+  },
+  {
+    "key": "hammock",
+    "label": "H\u00e4ngematte",
+    "level": 4,
+    "stages": 9,
+    "file": "hammock_04.png",
+    "size": [
+      19,
+      13
+    ],
+    "anchorPx": [
+      9,
+      12
+    ],
+    "zone": "beach",
+    "layer": "object",
+    "note": "Pfosten \u2192 Tuch \u2192 Kissen und Buch"
+  },
+  {
+    "key": "hammock",
+    "label": "H\u00e4ngematte",
+    "level": 5,
+    "stages": 9,
+    "file": "hammock_05.png",
+    "size": [
+      19,
+      14
+    ],
+    "anchorPx": [
+      9,
+      13
+    ],
+    "zone": "beach",
+    "layer": "object",
+    "note": "Pfosten \u2192 Tuch \u2192 Kissen und Buch"
+  },
+  {
+    "key": "hammock",
+    "label": "H\u00e4ngematte",
+    "level": 6,
+    "stages": 9,
+    "file": "hammock_06.png",
+    "size": [
+      20,
+      14
+    ],
+    "anchorPx": [
+      10,
+      13
+    ],
+    "zone": "beach",
+    "layer": "object",
+    "note": "Pfosten \u2192 Tuch \u2192 Kissen und Buch"
+  },
+  {
+    "key": "hammock",
+    "label": "H\u00e4ngematte",
+    "level": 7,
+    "stages": 9,
+    "file": "hammock_07.png",
+    "size": [
+      21,
+      15
+    ],
+    "anchorPx": [
+      10,
+      14
+    ],
+    "zone": "beach",
+    "layer": "object",
+    "note": "Pfosten \u2192 Tuch \u2192 Kissen und Buch"
+  },
+  {
+    "key": "hammock",
+    "label": "H\u00e4ngematte",
+    "level": 8,
+    "stages": 9,
+    "file": "hammock_08.png",
+    "size": [
+      21,
+      15
+    ],
+    "anchorPx": [
+      10,
+      14
+    ],
+    "zone": "beach",
+    "layer": "object",
+    "note": "Pfosten \u2192 Tuch \u2192 Kissen und Buch"
+  },
+  {
+    "key": "hammock",
+    "label": "H\u00e4ngematte",
+    "level": 9,
+    "stages": 9,
+    "file": "hammock_09.png",
+    "size": [
+      22,
+      16
+    ],
+    "anchorPx": [
+      11,
+      15
+    ],
+    "zone": "beach",
+    "layer": "object",
+    "note": "Pfosten \u2192 Tuch \u2192 Kissen und Buch"
+  },
+  {
+    "key": "volleyball_net",
+    "label": "Volleyballnetz",
+    "level": 1,
+    "stages": 9,
+    "file": "volleyball_net_01.png",
+    "size": [
+      17,
+      13
+    ],
+    "anchorPx": [
+      8,
+      12
+    ],
+    "zone": "beach",
+    "layer": "object",
+    "note": "Pfosten \u2192 Netz \u2192 Linien und Ball"
+  },
+  {
+    "key": "volleyball_net",
+    "label": "Volleyballnetz",
+    "level": 2,
+    "stages": 9,
+    "file": "volleyball_net_02.png",
+    "size": [
+      17,
+      13
+    ],
+    "anchorPx": [
+      8,
+      12
+    ],
+    "zone": "beach",
+    "layer": "object",
+    "note": "Pfosten \u2192 Netz \u2192 Linien und Ball"
+  },
+  {
+    "key": "volleyball_net",
+    "label": "Volleyballnetz",
+    "level": 3,
+    "stages": 9,
+    "file": "volleyball_net_03.png",
+    "size": [
+      18,
+      14
+    ],
+    "anchorPx": [
+      9,
+      13
+    ],
+    "zone": "beach",
+    "layer": "object",
+    "note": "Pfosten \u2192 Netz \u2192 Linien und Ball"
+  },
+  {
+    "key": "volleyball_net",
+    "label": "Volleyballnetz",
+    "level": 4,
+    "stages": 9,
+    "file": "volleyball_net_04.png",
+    "size": [
+      19,
+      14
+    ],
+    "anchorPx": [
+      9,
+      13
+    ],
+    "zone": "beach",
+    "layer": "object",
+    "note": "Pfosten \u2192 Netz \u2192 Linien und Ball"
+  },
+  {
+    "key": "volleyball_net",
+    "label": "Volleyballnetz",
+    "level": 5,
+    "stages": 9,
+    "file": "volleyball_net_05.png",
+    "size": [
+      19,
+      15
+    ],
+    "anchorPx": [
+      9,
+      14
+    ],
+    "zone": "beach",
+    "layer": "object",
+    "note": "Pfosten \u2192 Netz \u2192 Linien und Ball"
+  },
+  {
+    "key": "volleyball_net",
+    "label": "Volleyballnetz",
+    "level": 6,
+    "stages": 9,
+    "file": "volleyball_net_06.png",
+    "size": [
+      23,
+      17
+    ],
+    "anchorPx": [
+      11,
+      14
+    ],
+    "zone": "beach",
+    "layer": "object",
+    "note": "Pfosten \u2192 Netz \u2192 Linien und Ball"
+  },
+  {
+    "key": "volleyball_net",
+    "label": "Volleyballnetz",
+    "level": 7,
+    "stages": 9,
+    "file": "volleyball_net_07.png",
+    "size": [
+      23,
+      18
+    ],
+    "anchorPx": [
+      11,
+      15
+    ],
+    "zone": "beach",
+    "layer": "object",
+    "note": "Pfosten \u2192 Netz \u2192 Linien und Ball"
+  },
+  {
+    "key": "volleyball_net",
+    "label": "Volleyballnetz",
+    "level": 8,
+    "stages": 9,
+    "file": "volleyball_net_08.png",
+    "size": [
+      25,
+      18
+    ],
+    "anchorPx": [
+      12,
+      15
+    ],
+    "zone": "beach",
+    "layer": "object",
+    "note": "Pfosten \u2192 Netz \u2192 Linien und Ball"
+  },
+  {
+    "key": "volleyball_net",
+    "label": "Volleyballnetz",
+    "level": 9,
+    "stages": 9,
+    "file": "volleyball_net_09.png",
+    "size": [
+      25,
+      18
+    ],
+    "anchorPx": [
+      12,
+      15
+    ],
+    "zone": "beach",
+    "layer": "object",
+    "note": "Pfosten \u2192 Netz \u2192 Linien und Ball"
+  },
+  {
+    "key": "beach_bar",
+    "label": "Strandbar",
+    "level": 1,
+    "stages": 12,
+    "file": "beach_bar_01.png",
+    "size": [
+      17,
+      9
+    ],
+    "anchorPx": [
+      8,
+      7
+    ],
+    "zone": "beach",
+    "layer": "object",
+    "note": "Theke \u2192 Palmendach \u2192 Flaschen, Hocker, Laterne"
+  },
+  {
+    "key": "beach_bar",
+    "label": "Strandbar",
+    "level": 2,
+    "stages": 12,
+    "file": "beach_bar_02.png",
+    "size": [
+      17,
+      9
+    ],
+    "anchorPx": [
+      8,
+      7
+    ],
+    "zone": "beach",
+    "layer": "object",
+    "note": "Theke \u2192 Palmendach \u2192 Flaschen, Hocker, Laterne"
+  },
+  {
+    "key": "beach_bar",
+    "label": "Strandbar",
+    "level": 3,
+    "stages": 12,
+    "file": "beach_bar_03.png",
+    "size": [
+      17,
+      9
+    ],
+    "anchorPx": [
+      8,
+      7
+    ],
+    "zone": "beach",
+    "layer": "object",
+    "note": "Theke \u2192 Palmendach \u2192 Flaschen, Hocker, Laterne"
+  },
+  {
+    "key": "beach_bar",
+    "label": "Strandbar",
+    "level": 4,
+    "stages": 12,
+    "file": "beach_bar_04.png",
+    "size": [
+      24,
+      20
+    ],
+    "anchorPx": [
+      12,
+      17
+    ],
+    "zone": "beach",
+    "layer": "object",
+    "note": "Theke \u2192 Palmendach \u2192 Flaschen, Hocker, Laterne"
+  },
+  {
+    "key": "beach_bar",
+    "label": "Strandbar",
+    "level": 5,
+    "stages": 12,
+    "file": "beach_bar_05.png",
+    "size": [
+      26,
+      20
+    ],
+    "anchorPx": [
+      13,
+      17
+    ],
+    "zone": "beach",
+    "layer": "object",
+    "note": "Theke \u2192 Palmendach \u2192 Flaschen, Hocker, Laterne"
+  },
+  {
+    "key": "beach_bar",
+    "label": "Strandbar",
+    "level": 6,
+    "stages": 12,
+    "file": "beach_bar_06.png",
+    "size": [
+      26,
+      21
+    ],
+    "anchorPx": [
+      13,
+      18
+    ],
+    "zone": "beach",
+    "layer": "object",
+    "note": "Theke \u2192 Palmendach \u2192 Flaschen, Hocker, Laterne"
+  },
+  {
+    "key": "beach_bar",
+    "label": "Strandbar",
+    "level": 7,
+    "stages": 12,
+    "file": "beach_bar_07.png",
+    "size": [
+      26,
+      21
+    ],
+    "anchorPx": [
+      13,
+      18
+    ],
+    "zone": "beach",
+    "layer": "object",
+    "note": "Theke \u2192 Palmendach \u2192 Flaschen, Hocker, Laterne"
+  },
+  {
+    "key": "beach_bar",
+    "label": "Strandbar",
+    "level": 8,
+    "stages": 12,
+    "file": "beach_bar_08.png",
+    "size": [
+      28,
+      25
+    ],
+    "anchorPx": [
+      14,
+      18
+    ],
+    "zone": "beach",
+    "layer": "object",
+    "note": "Theke \u2192 Palmendach \u2192 Flaschen, Hocker, Laterne"
+  },
+  {
+    "key": "beach_bar",
+    "label": "Strandbar",
+    "level": 9,
+    "stages": 12,
+    "file": "beach_bar_09.png",
+    "size": [
+      28,
+      25
+    ],
+    "anchorPx": [
+      14,
+      18
+    ],
+    "zone": "beach",
+    "layer": "object",
+    "note": "Theke \u2192 Palmendach \u2192 Flaschen, Hocker, Laterne"
+  },
+  {
+    "key": "beach_bar",
+    "label": "Strandbar",
+    "level": 10,
+    "stages": 12,
+    "file": "beach_bar_10.png",
+    "size": [
+      28,
+      25
+    ],
+    "anchorPx": [
+      14,
+      18
+    ],
+    "zone": "beach",
+    "layer": "object",
+    "note": "Theke \u2192 Palmendach \u2192 Flaschen, Hocker, Laterne"
+  },
+  {
+    "key": "beach_bar",
+    "label": "Strandbar",
+    "level": 11,
+    "stages": 12,
+    "file": "beach_bar_11.png",
+    "size": [
+      30,
+      25
+    ],
+    "anchorPx": [
+      15,
+      18
+    ],
+    "zone": "beach",
+    "layer": "object",
+    "note": "Theke \u2192 Palmendach \u2192 Flaschen, Hocker, Laterne"
+  },
+  {
+    "key": "beach_bar",
+    "label": "Strandbar",
+    "level": 12,
+    "stages": 12,
+    "file": "beach_bar_12.png",
+    "size": [
+      30,
+      25
+    ],
+    "anchorPx": [
+      15,
+      18
+    ],
+    "zone": "beach",
+    "layer": "object",
+    "note": "Theke \u2192 Palmendach \u2192 Flaschen, Hocker, Laterne"
+  }
+]

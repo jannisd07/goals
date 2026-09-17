@@ -119,7 +119,20 @@ export interface ActiveSession {
   start_time: string;
   pomodoro: PomodoroState | null;
   ambient_sound: AmbientSoundKey | null;
+  /** What grows on the island during this session. Absent on sessions started before growing existed. */
+  grow_category?: GrowCategory | null;
+  /**
+   * Which object of that category grows. Held on the session so that reopening
+   * the start sheet mid-session cannot swap what the session finally awards.
+   */
+  grow_object_key?: string | null;
 }
+
+/**
+ * Island object categories a session can grow (island/WACHSTUM.md §7.1). Special
+ * objects only come from the rewards roadmap (src/lib/rewards.ts).
+ */
+export type GrowCategory = "plant" | "building" | "water" | "beach";
 
 export interface WeeklyProgress {
   goal_id: string;
@@ -166,6 +179,12 @@ export interface FriendWeekly {
   focus_target_hours: number;
   checkins: number;
   checkin_target: number;
+  /** Island size, 1 to 5. Older rows have none, so treat a missing value as 1. */
+  island_stage?: number | null;
+  /** Growth levels collected across the whole catalog. */
+  island_levels?: number | null;
+  /** Hours from every session ever, focus and visits together. */
+  total_hours?: number | null;
 }
 
 export interface PendingOnboarding {
@@ -194,7 +213,9 @@ export const MIN_VISIT_MINUTES_OPTIONS = [
   { label: "10 min", value: 10 },
   { label: "20 min", value: 20 },
   { label: "30 min", value: 30 },
+  { label: "45 min", value: 45 },
   { label: "60 min", value: 60 },
+  { label: "2 h", value: 120 },
 ] as const;
 
 export const DEFAULT_MIN_VISIT_MINUTES = 10;
@@ -205,6 +226,14 @@ export const MIN_VISIT_MINUTES_MAX = 240;
 export const MIN_GEOFENCE_DURATION_SECONDS = DEFAULT_MIN_VISIT_MINUTES * 60;
 
 /** Clamps any stored or user-supplied value onto the supported range. */
+/** Prose form of a minimum stay: "45 minutes", "2 hours". */
+export function formatMinVisitDuration(minutes: number): string {
+  if (minutes > 60 && minutes % 60 === 0) {
+    return `${minutes / 60} hours`;
+  }
+  return `${minutes} minutes`;
+}
+
 export function normalizeMinVisitMinutes(value: unknown): number {
   const n = typeof value === "number" ? value : Number(value);
   if (!Number.isFinite(n)) return DEFAULT_MIN_VISIT_MINUTES;

@@ -26,6 +26,9 @@
     "supabase/functions/_shared/coachPatterns.ts",
     "supabase/functions/_shared/coachWriter.ts",
     "src/lib/coachSchedule.ts",
+    "src/lib/growRewards.ts",
+    "src/lib/islandPlacement.ts",
+    "src/lib/rewards.ts",
     "src/types/index.ts"
   ],
   "exclude": [

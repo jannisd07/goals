@@ -30,10 +30,21 @@ export function formatDuration(seconds: number): string {
   return `${secs}s`;
 }
 
+/**
+ * The big timer face. Past an hour it rolls over to `1:15:23` instead of
+ * counting minutes forever — a long Flowtime session read `75:23`, while the
+ * Live Activity on the lock screen showed the hour.
+ */
 export function formatTimer(seconds: number): string {
-  const mins = Math.floor(seconds / 60);
-  const secs = seconds % 60;
-  return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+  const total = Math.max(0, Math.floor(seconds));
+  const hours = Math.floor(total / 3600);
+  const mins = Math.floor((total % 3600) / 60);
+  const secs = total % 60;
+  const paddedSeconds = secs.toString().padStart(2, "0");
+  if (hours > 0) {
+    return `${hours}:${mins.toString().padStart(2, "0")}:${paddedSeconds}`;
+  }
+  return `${mins.toString().padStart(2, "0")}:${paddedSeconds}`;
 }
 
 export function getGreeting(): string {

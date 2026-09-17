@@ -43,12 +43,14 @@ import Animated, {
   type SharedValue,
 } from "react-native-reanimated";
 import { NeumorphicSurface } from "../components/NeumorphicSurface";
+import { PAPER } from "../theme/paper";
 import { CategoryCards, ValueStepper } from "../components/CategoryCards";
 import { TextAction } from "../components/ui/TextAction";
 import { MinimalTextInput } from "../components/ui/MinimalTextInput";
 import { LocationIcon, BellIcon } from "../components/TabIcons";
 import { useAppStore } from "../store";
 import { completePendingOnboarding } from "../lib/onboarding";
+import { regionForRadius } from "../lib/mapRegion";
 import {
   GEOFENCE_RADIUS_OPTIONS,
   getUserPlaceSearchContext,
@@ -642,6 +644,7 @@ function PageShell({
 }) {
   return (
     <ScrollView
+      alwaysBounceVertical={false}
       style={{ width: SCREEN_WIDTH, height: "100%" }}
       contentContainerStyle={{
         flexGrow: 1,
@@ -723,8 +726,8 @@ function FocusStyleCard({
         marginBottom: 18,
         borderRadius: NEU.radiusLarge,
         borderWidth: 1,
-        borderColor: selected ? NEU.accent : NEU.track,
-        backgroundColor: selected ? NEU.accent : NEU.card,
+        borderColor: selected ? PAPER.accent : PAPER.line,
+        backgroundColor: selected ? PAPER.accentWash : PAPER.surface,
         paddingHorizontal: 20,
         paddingVertical: 20,
         opacity: pressed ? 0.74 : 1,
@@ -740,7 +743,7 @@ function FocusStyleCard({
       >
         <Text
           style={{
-            color: selected ? "#FFFFFF" : NEU.textPrimary,
+            color: selected ? PAPER.accentInk : PAPER.ink,
             fontSize: 18,
             fontFamily: NEU_FONTS.label,
           }}
@@ -749,7 +752,7 @@ function FocusStyleCard({
         </Text>
         <Text
           style={{
-            color: selected ? "rgba(255,255,255,0.82)" : NEU.accent,
+            color: PAPER.accentInk,
             fontSize: 12,
             fontFamily: NEU_FONTS.label,
             letterSpacing: 0.8,
@@ -761,7 +764,7 @@ function FocusStyleCard({
       </View>
       <Text
         style={{
-          color: selected ? "rgba(255,255,255,0.88)" : NEU.textSecondary,
+          color: PAPER.inkMuted,
           fontSize: 16,
           fontFamily: NEU_FONTS.body,
           lineHeight: 24,
@@ -816,7 +819,8 @@ function PermissionRow({
             label={state === "denied" ? "Settings" : "Allow"}
             onPress={onRequest}
             containerStyle={{ marginLeft: 10, minWidth: 60 }}
-          />
+          textStyle={{ color: NEU.textPrimary }}
+            />
         )}
       </View>
     </NeumorphicSurface>
@@ -991,17 +995,21 @@ export function OnboardingScreen() {
     [checkinSearching, checkinSelectedPlace, searchContext],
   );
 
-  const animateMapToPlace = useCallback((place: PlaceSuggestion) => {
-    checkinMapRef.current?.animateToRegion(
-      {
-        latitude: place.latitude,
-        longitude: place.longitude,
-        latitudeDelta: 0.012,
-        longitudeDelta: 0.012,
-      },
-      320,
-    );
-  }, []);
+  const animateMapToPlace = useCallback(
+    (place: PlaceSuggestion) => {
+      checkinMapRef.current?.animateToRegion(
+        regionForRadius(place.latitude, place.longitude, checkinRadius),
+        320,
+      );
+    },
+    [checkinRadius],
+  );
+
+  // Re-frame the map when the radius changes, so the circle stays readable.
+  useEffect(() => {
+    if (!checkinSelectedPlace) return;
+    animateMapToPlace(checkinSelectedPlace);
+  }, [animateMapToPlace, checkinSelectedPlace]);
 
   const selectCheckinPlace = useCallback(
     (place: PlaceSuggestion) => {
@@ -1129,6 +1137,7 @@ export function OnboardingScreen() {
       focusHours,
       checkinCategory,
       checkinSessions,
+      checkinMinVisit,
       checkinSelectedPlace,
       checkinRadius,
     ],
@@ -1417,9 +1426,7 @@ export function OnboardingScreen() {
                 subtitle="This feature measures focused minutes. Set the timer style and weekly target before moving to Auto Check-In."
               >
                 <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
-                  <NeumorphicSurface radius={NEU.radiusLarge} contentPadding={22}>
-                    <FocusRingAnimation reduceMotion={reduceMotion} />
-                  </NeumorphicSurface>
+                  <FocusRingAnimation reduceMotion={reduceMotion} />
                   <Text
                     style={{
                       color: NEU.textSecondary,
@@ -1447,9 +1454,7 @@ export function OnboardingScreen() {
                 subtitle="Your Focus Timer setup is complete. This separate feature counts visits when you arrive at one pinned place."
               >
                 <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
-                  <NeumorphicSurface radius={NEU.radiusLarge} contentPadding={22}>
-                    <PinPulseAnimation reduceMotion={reduceMotion} />
-                  </NeumorphicSurface>
+                  <PinPulseAnimation reduceMotion={reduceMotion} />
                   <Text
                     style={{
                       color: NEU.textSecondary,
@@ -1476,8 +1481,8 @@ export function OnboardingScreen() {
               <View style={{ marginTop: 24 }}>
                 <FocusStyleCard
                   title="Intervals"
-                  behavior="Countdown"
-                  description="Work for a set time, then take an automatic break. Best when structure helps you begin."
+                  behavior="Set time"
+                  description="Pick a length, like 25 minutes. When it's up, a short break starts on its own."
                   selected={focusStyle === "interval"}
                   onPress={() => {
                     setFocusStyle("interval");
@@ -1486,8 +1491,8 @@ export function OnboardingScreen() {
                 />
                 <FocusStyleCard
                   title="Flowtime"
-                  behavior="Count up"
-                  description="Work without a countdown. When you stop, the app suggests a break based on your focus time."
+                  behavior="No limit"
+                  description="The clock runs until you stop it. The longer you focused, the longer your break."
                   selected={focusStyle === "flowtime"}
                   onPress={() => {
                     setFocusStyle("flowtime");
@@ -1805,15 +1810,15 @@ export function OnboardingScreen() {
                                   paddingHorizontal: 10,
                                   borderRadius: 16,
                                   borderWidth: 1,
-                                  borderColor: selected ? NEU.accent : NEU.track,
-                                  backgroundColor: selected ? NEU.accent : NEU.card,
+                                  borderColor: selected ? PAPER.accent : PAPER.line,
+                                  backgroundColor: selected ? PAPER.accentWash : PAPER.surface,
                                   alignItems: "center",
                                   justifyContent: "center",
                                 }}
                               >
                                 <Text
                                   style={{
-                                    color: selected ? "#FFFFFF" : NEU.textPrimary,
+                                    color: selected ? PAPER.accentInk : PAPER.ink,
                                     fontSize: 13,
                                     fontFamily: NEU_FONTS.label,
                                   }}
@@ -1939,7 +1944,9 @@ export function OnboardingScreen() {
                   >
                     Minimum stay
                   </Text>
-                  <View style={{ flexDirection: "row", gap: 8 }}>
+                  {/* Six options sit in two rows of three, so none is clipped on
+                      a 375pt iPhone. */}
+                  <View style={{ flexDirection: "row", flexWrap: "wrap", columnGap: 8, rowGap: 0 }}>
                     {MIN_VISIT_MINUTES_OPTIONS.map((option) => {
                       const selected = checkinMinVisit === option.value;
                       return (
@@ -1953,29 +1960,28 @@ export function OnboardingScreen() {
                           accessibilityLabel={`Minimum stay ${option.label}`}
                           accessibilityState={{ selected }}
                           style={{
-                            minWidth: 60,
+                            width: "31%",
                             minHeight: 44,
-                            alignItems: "center",
+                            alignItems: "stretch",
                             justifyContent: "center",
                           }}
                         >
                           <View
                             pointerEvents="none"
                             style={{
-                              minWidth: 60,
                               height: 34,
-                              paddingHorizontal: 10,
+                              paddingHorizontal: 4,
                               borderRadius: 17,
                               borderWidth: 1,
-                              borderColor: selected ? NEU.accent : NEU.track,
-                              backgroundColor: selected ? NEU.accent : NEU.card,
+                              borderColor: selected ? PAPER.accent : PAPER.line,
+                              backgroundColor: selected ? PAPER.accentWash : PAPER.surface,
                               alignItems: "center",
                               justifyContent: "center",
                             }}
                           >
                             <Text
                               style={{
-                                color: selected ? "#FFFFFF" : NEU.textPrimary,
+                                color: selected ? PAPER.accentInk : PAPER.ink,
                                 fontSize: 13,
                                 fontFamily: NEU_FONTS.label,
                               }}
@@ -2079,6 +2085,7 @@ export function OnboardingScreen() {
     },
     [
       checkinCategory,
+      checkinMinVisit,
       checkinRadius,
       checkinSearchAttempted,
       checkinSearchQuery,
@@ -2113,11 +2120,11 @@ export function OnboardingScreen() {
   // entering transitions begin at mount time; rendering it earlier makes
   // Feature 1 appear static while Feature 2 still animates normally.
   if (!isAppVisible) {
-    return <SafeAreaView style={{ flex: 1, backgroundColor: NEU.bg }} />;
+    return <SafeAreaView style={{ flex: 1, backgroundColor: NEU.pageSolid }} />;
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: NEU.bg }} edges={["top", "bottom"]}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: NEU.pageSolid }} edges={["top", "bottom"]}>
       <OnboardingProgress
         total={pages.length}
         current={pageIndex}
@@ -2139,9 +2146,12 @@ export function OnboardingScreen() {
         )}
         horizontal
         pagingEnabled
+        // Pages with their own horizontal controls (steppers, map) must not
+        // compete with the pager, otherwise their taps are swallowed.
         scrollEnabled={
           !chapterRevealing &&
           currentPage !== "focusGoal" &&
+          currentPage !== "checkinGoal" &&
           currentPage !== "checkinLocation"
         }
         showsHorizontalScrollIndicator={false}
@@ -2168,7 +2178,7 @@ export function OnboardingScreen() {
         ) : pageIndex > 0 ? (
           <TextAction label="Back" onPress={() => goTo(pageIndex - 1)} />
         ) : !postAuth ? (
-          <TextAction label="Sign In" onPress={() => navigation.navigate("Auth")} />
+          <TextAction label="Sign In" onPress={() => navigation.navigate("Auth")} textStyle={{ color: NEU.textPrimary }} />
         ) : (
           <View style={{ minWidth: 72, minHeight: 44 }} />
         )}
@@ -2180,7 +2190,8 @@ export function OnboardingScreen() {
             align="right"
             onPress={handlePrimary}
             disabled={saving}
-          />
+          textStyle={{ color: NEU.textPrimary }}
+            />
         )}
       </View>
     </SafeAreaView>

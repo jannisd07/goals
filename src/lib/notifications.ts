@@ -96,6 +96,37 @@ export async function sendStudySpotNudge(goalName: string, goalId: string): Prom
 }
 
 /**
+ * Tells the player that a landmark now stands on their island.
+ *
+ * Sent the moment the hours are reached, so the milestone is an event and not
+ * something to be discovered later. It is a statement, not a nudge: the object
+ * is already there, whether or not the notification is ever tapped.
+ */
+export async function sendMilestoneReached(
+  title: string,
+  description: string,
+  hours: number,
+): Promise<boolean> {
+  if (!(await hasPermission())) return false;
+
+  try {
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        title: `${hours} hours · ${title}`,
+        body: description,
+        data: { type: "milestone" },
+        sound: true,
+      },
+      trigger: null,
+    });
+    return true;
+  } catch (error) {
+    console.warn("Could not send the milestone notification:", error);
+    return false;
+  }
+}
+
+/**
  * Schedules one truthful boundary notification while iOS may suspend JS.
  * Flowtime has no predetermined end, and paused timers schedule nothing.
  */

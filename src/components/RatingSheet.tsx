@@ -7,7 +7,8 @@ import { hapticSelection, hapticMedium } from "../lib/haptics";
 import { PopupCard } from "./ui/PopupCard";
 import { PrimaryButton } from "./ui/PrimaryButton";
 import { MinimalTextInput } from "./ui/MinimalTextInput";
-import { NEU, NEU_FONTS } from "../theme/neumorphism";
+import { NEU_FONTS } from "../theme/neumorphism";
+import { PAPER } from "../theme/paper";
 
 interface RatingSheetProps {
   onSubmit: (rating: number, notes: string | null) => void;
@@ -126,7 +127,7 @@ export function RatingSheet({
           {/* Notes input */}
           <MinimalTextInput
             placeholder="Quick note (optional)"
-            placeholderTextColor={NEU.textSecondary}
+            placeholderTextColor={PAPER.inkFaint}
             value={notes}
             onChangeText={setNotes}
             style={styles.notesInput}
@@ -184,14 +185,14 @@ const styles = StyleSheet.create({
 
   // Header
   headerTitle: {
-    color: NEU.textPrimary,
+    color: PAPER.ink,
     fontSize: 22,
     fontFamily: "Outfit_700Bold",
     textAlign: "center",
     marginBottom: 4,
   },
   headerSubtitle: {
-    color: NEU.textSecondary,
+    color: PAPER.inkMuted,
     fontSize: 16,
     fontFamily: "Outfit_500Medium",
     textAlign: "center",
@@ -200,14 +201,13 @@ const styles = StyleSheet.create({
   // Divider
   divider: {
     height: 1,
-    backgroundColor: NEU.track,
-    opacity: 0.6,
+    backgroundColor: PAPER.line,
     marginVertical: 20,
   },
 
   // Rating
   ratingPrompt: {
-    color: NEU.textSecondary,
+    color: PAPER.inkMuted,
     fontSize: 16,
     fontFamily: "Outfit_500Medium",
     textAlign: "center",
@@ -224,25 +224,27 @@ const styles = StyleSheet.create({
     height: 48,
     borderRadius: 24,
     borderWidth: 1,
-    borderColor: NEU.track,
-    backgroundColor: NEU.card,
+    borderColor: PAPER.line,
+    backgroundColor: PAPER.surface,
     alignItems: "center",
     justifyContent: "center",
   },
   ratingCircleSelected: {
-    borderColor: NEU.accent,
-    backgroundColor: NEU.accent,
+    borderWidth: 2,
+    borderColor: PAPER.accent,
+    backgroundColor: PAPER.accentWash,
   },
   ratingNumber: {
-    color: NEU.textPrimary,
+    color: PAPER.inkMuted,
     fontSize: 18,
     fontFamily: NEU_FONTS.label,
   },
   ratingNumberSelected: {
-    color: "#FFFFFF",
+    color: PAPER.accentInk,
+    fontFamily: NEU_FONTS.heading,
   },
   ratingLabel: {
-    color: NEU.textSecondary,
+    color: PAPER.accentInk,
     fontSize: 13,
     fontFamily: "Outfit_500Medium",
     textAlign: "center",
@@ -261,7 +263,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   skipButtonText: {
-    color: NEU.textSecondary,
+    color: PAPER.inkMuted,
     fontSize: 14,
     fontFamily: "Outfit_500Medium",
   },

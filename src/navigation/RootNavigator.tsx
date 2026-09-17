@@ -2,8 +2,11 @@ import React, { useEffect, useRef, useState, useCallback } from "react";
 import { ActivityIndicator, Pressable, Text, View } from "react-native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import * as Location from "expo-location";
+import { useQueryClient } from "@tanstack/react-query";
 import { MainTabs } from "./MainTabs";
 import { FocusSessionScreen } from "../screens/FocusSessionScreen";
+import { GrowRevealScreen } from "../screens/GrowRevealScreen";
+import { IslandPlaceScreen } from "../screens/IslandPlaceScreen";
 import { AnalyticsScreen } from "../screens/AnalyticsScreen";
 import { AnalyticsWeekScreen } from "../screens/AnalyticsWeekScreen";
 import { SettingsScreen } from "../screens/SettingsScreen";
@@ -12,10 +15,13 @@ import { SetupGeofenceScreen } from "../screens/SetupGeofenceScreen";
 import { OnboardingScreen } from "../screens/OnboardingScreen";
 import { AuthScreen } from "../screens/AuthScreen";
 import { FriendsScreen } from "../screens/FriendsScreen";
+import { FriendIslandScreen } from "../screens/FriendIslandScreen";
+import { RewardsScreen } from "../screens/RewardsScreen";
 import { PermissionGateScreen } from "../screens/PermissionGateScreen";
 import { PasswordResetScreen } from "../screens/PasswordResetScreen";
 import { useAppStore } from "../store";
 import { completePendingOnboarding } from "../lib/onboarding";
+import { isStaleSession } from "../lib/pomodoro";
 import { supabase } from "../lib/supabase";
 import { NEU } from "../theme/neumorphism";
 import { NEU_FONTS } from "../theme/neumorphism";
@@ -24,6 +30,27 @@ import type { RootStackParamList } from "./types";
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export function RootNavigator() {
+  // A session left running days ago must not wake up and count the whole gap.
+  // The store hydrates from disk after mount, so this watches the session itself
+  // instead of looking once.
+  const restoredSession = useAppStore((state) => state.activeSession);
+  useEffect(() => {
+    const pomodoro = restoredSession?.pomodoro;
+    if (!pomodoro) return;
+    const startTime = restoredSession?.start_time ? Date.parse(restoredSession.start_time) : NaN;
+    const stale = isStaleSession({
+      startTimeMs: Number.isNaN(startTime) ? null : startTime,
+      focusedSeconds: pomodoro.focused_seconds ?? 0,
+      lastTickMs: pomodoro.last_tick_at_ms ?? null,
+      nowMs: Date.now(),
+    });
+    if (stale) {
+      console.warn("Dropping a stale focus session from the store");
+      useAppStore.getState().endSession(false);
+    }
+  }, [restoredSession]);
+
+  const queryClient = useQueryClient();
   const isAuthenticated = useAppStore((s) => s.isAuthenticated);
   const isLoading = useAppStore((s) => s.isLoading);
   const userConfig = useAppStore((s) => s.userConfig);
@@ -45,25 +72,43 @@ export function RootNavigator() {
     }
   }, [isAuthenticated, userConfig?.onboarding_complete]);
 
-  // User finished the pre-auth tour, then signed up: persist the collected setup
-  // exactly once, then let the navigator fall through to the main app.
+  // The setup collected before sign-in is saved exactly once, then the
+  // navigator falls through to the main app. This also runs for an account that
+  // finished onboarding earlier: signing in after a repeated setup used to drop
+  // the newly chosen weekly targets without a word.
   useEffect(() => {
-    if (!isAuthenticated || !userConfig || userConfig.onboarding_complete) return;
+    if (!isAuthenticated || !userConfig) return;
     if (!pendingOnboarding || flushingOnboardingRef.current || onboardingFlushError) return;
+
+    // Setup collected before signing in belongs to a NEW account. Signing into
+    // an account that is already set up must not let that tour rewrite its
+    // goals — someone who signs out, swipes through the tour and then taps
+    // "Sign In" would otherwise come back to a single, retargeted goal.
+    if (userConfig.onboarding_complete) {
+      setPendingOnboarding(null);
+      return;
+    }
 
     const userId = userConfig.id;
     flushingOnboardingRef.current = true;
     setFlushingOnboarding(true);
-    completePendingOnboarding(userId, pendingOnboarding)
+    completePendingOnboarding(userId, pendingOnboarding, {
+      // Skipping Auto Check-In in a repeated setup must not remove the check-in
+      // goal the account already has.
+      preserveExistingPhysicalGoal: userConfig.onboarding_complete,
+    })
       .then(() => {
         const current = useAppStore.getState();
         if (!current.isAuthenticated || current.userConfig?.id !== userId) return;
         setPendingOnboarding(null);
+        current.setFocusStyle(pendingOnboarding.focus_style);
         setUserConfig({
           ...current.userConfig,
           focus_style: pendingOnboarding.focus_style,
           onboarding_complete: true,
         });
+        // Home may already hold the goals loaded at sign-in, with the old targets.
+        void queryClient.invalidateQueries({ queryKey: ["goals"] });
       })
       .catch((error) => {
         const current = useAppStore.getState();
@@ -83,6 +128,7 @@ export function RootNavigator() {
     pendingOnboarding,
     onboardingFlushError,
     onboardingFlushAttempt,
+    queryClient,
     setPendingOnboarding,
     setUserConfig,
   ]);
@@ -180,77 +226,103 @@ export function RootNavigator() {
     );
   }
 
-  if (userConfig && !userConfig.onboarding_complete) {
-    if (pendingOnboarding || flushingOnboarding) {
-      if (onboardingFlushError) {
-        return (
-          <View
+  // Saving a pending setup blocks the app for every signed-in account, so a
+  // failure is visible instead of Home quietly showing the old targets.
+  if (userConfig && (pendingOnboarding || flushingOnboarding)) {
+    if (onboardingFlushError) {
+      return (
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: NEU.bg,
+            paddingHorizontal: 32,
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <Text
             style={{
-              flex: 1,
-              backgroundColor: NEU.bg,
-              paddingHorizontal: 32,
+              color: NEU.textPrimary,
+              fontFamily: NEU_FONTS.heading,
+              fontSize: 26,
+              textAlign: "center",
+            }}
+          >
+            Setup not saved
+          </Text>
+          <Text
+            style={{
+              color: NEU.textSecondary,
+              fontFamily: NEU_FONTS.body,
+              fontSize: 16,
+              lineHeight: 24,
+              textAlign: "center",
+              marginTop: 12,
+              marginBottom: 24,
+            }}
+          >
+            {onboardingFlushError}
+          </Text>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Retry saving setup"
+            onPress={() => {
+              setOnboardingFlushError(null);
+              setOnboardingFlushAttempt((attempt) => attempt + 1);
+            }}
+            style={{
+              minHeight: 48,
+              paddingHorizontal: 24,
+              borderRadius: 24,
+              backgroundColor: NEU.accent,
               alignItems: "center",
               justifyContent: "center",
             }}
           >
             <Text
               style={{
-                color: NEU.textPrimary,
-                fontFamily: NEU_FONTS.heading,
-                fontSize: 26,
-                textAlign: "center",
-              }}
-            >
-              Setup not saved
-            </Text>
-            <Text
-              style={{
-                color: NEU.textSecondary,
-                fontFamily: NEU_FONTS.body,
+                color: "#FFFFFF",
+                fontFamily: NEU_FONTS.label,
                 fontSize: 16,
-                lineHeight: 24,
-                textAlign: "center",
-                marginTop: 12,
-                marginBottom: 24,
               }}
             >
-              {onboardingFlushError}
+              Try Again
             </Text>
+          </Pressable>
+          {userConfig.onboarding_complete ? (
+            // An account that already has goals must never be locked out by a
+            // setup it can simply ignore.
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Retry saving setup"
+              accessibilityLabel="Keep my current goals"
               onPress={() => {
                 setOnboardingFlushError(null);
-                setOnboardingFlushAttempt((attempt) => attempt + 1);
+                setPendingOnboarding(null);
               }}
-              style={{
-                minHeight: 48,
-                paddingHorizontal: 24,
-                borderRadius: 24,
-                backgroundColor: NEU.accent,
-                alignItems: "center",
-                justifyContent: "center",
-              }}
+              style={{ minHeight: 48, justifyContent: "center", marginTop: 8 }}
             >
               <Text
                 style={{
-                  color: "#FFFFFF",
+                  color: NEU.textPrimary,
                   fontFamily: NEU_FONTS.label,
-                  fontSize: 16,
+                  fontSize: 15,
                 }}
               >
-                Try Again
+                Keep my current goals
               </Text>
             </Pressable>
-          </View>
-        );
-      }
-      return (
-        <View style={{ flex: 1, backgroundColor: NEU.bg, alignItems: "center", justifyContent: "center" }}>
-          <ActivityIndicator size="large" color={NEU.accent} />
+          ) : null}
         </View>
       );
     }
+    return (
+      <View style={{ flex: 1, backgroundColor: NEU.bg, alignItems: "center", justifyContent: "center" }}>
+        <ActivityIndicator size="large" color={NEU.accent} />
+      </View>
+    );
+  }
+
+  if (userConfig && !userConfig.onboarding_complete) {
     return (
       <Stack.Navigator
         screenOptions={{ headerShown: false, contentStyle: { backgroundColor: NEU.bg } }}
@@ -277,6 +349,7 @@ export function RootNavigator() {
         headerShown: false,
         contentStyle: { backgroundColor: NEU.bg },
         animation: "fade",
+        animationDuration: 280,
       }}
     >
       <Stack.Screen name="MainTabs" component={MainTabs} />
@@ -284,37 +357,57 @@ export function RootNavigator() {
         name="FocusSession"
         component={FocusSessionScreen}
         getId={() => "active-focus-session"}
-        options={{ animation: "fade", gestureEnabled: false }}
+        options={{ animation: "fade", animationDuration: 280, gestureEnabled: false }}
+      />
+      <Stack.Screen
+        name="GrowReveal"
+        component={GrowRevealScreen}
+        options={{ animation: "fade", animationDuration: 320, gestureEnabled: false }}
+      />
+      <Stack.Screen
+        name="IslandPlace"
+        component={IslandPlaceScreen}
+        options={{ animation: "fade", animationDuration: 260 }}
       />
       <Stack.Screen
         name="Analytics"
         component={AnalyticsScreen}
-        options={{ presentation: "card", animation: "fade" }}
+        options={{ presentation: "card", animation: "fade", animationDuration: 280 }}
       />
       <Stack.Screen
         name="AnalyticsWeek"
         component={AnalyticsWeekScreen}
-        options={{ presentation: "card", animation: "fade" }}
+        options={{ presentation: "card", animation: "fade", animationDuration: 280 }}
       />
       <Stack.Screen
         name="Settings"
         component={SettingsScreen}
-        options={{ presentation: "card", animation: "fade" }}
+        options={{ presentation: "card", animation: "fade", animationDuration: 280 }}
       />
       <Stack.Screen
         name="SetupStudying"
         component={SetupStudyingScreen}
-        options={{ presentation: "card", animation: "fade" }}
+        options={{ presentation: "card", animation: "fade", animationDuration: 280 }}
       />
       <Stack.Screen
         name="SetupGeofence"
         component={SetupGeofenceScreen}
-        options={{ presentation: "card", animation: "fade" }}
+        options={{ presentation: "card", animation: "fade", animationDuration: 280 }}
       />
       <Stack.Screen
         name="Friends"
         component={FriendsScreen}
-        options={{ presentation: "card", animation: "fade" }}
+        options={{ presentation: "card", animation: "fade", animationDuration: 280 }}
+      />
+      <Stack.Screen
+        name="FriendIsland"
+        component={FriendIslandScreen}
+        options={{ presentation: "card", animation: "fade", animationDuration: 280 }}
+      />
+      <Stack.Screen
+        name="Rewards"
+        component={RewardsScreen}
+        options={{ presentation: "card", animation: "fade", animationDuration: 280 }}
       />
     </Stack.Navigator>
   );

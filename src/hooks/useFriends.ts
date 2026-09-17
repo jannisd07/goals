@@ -5,6 +5,16 @@ import { supabase } from "../lib/supabase";
 import { useAppStore } from "../store";
 import { getWeekStart, getWeekEnd } from "../lib/time";
 import type { FriendWeekly } from "../types";
+import type { IslandObjectLevels } from "../lib/growRewards";
+import type { Spot } from "../lib/islandPlacement";
+
+/** A friend's island as it is drawn: what stands on it, and where. */
+export interface FriendIsland {
+  stage: number;
+  levels: number;
+  objects: IslandObjectLevels;
+  spots: Record<string, Spot>;
+}
 
 const FRIENDS_KEY = ["friends-weekly"];
 
@@ -111,4 +121,35 @@ export function useShareFriendCode(code: string | null | undefined) {
       message: `Add me on Goals — my friend code is ${code}`,
     }).catch(() => null);
   }, [code]);
+}
+
+/**
+ * What stands on a friend's island, fetched only when you actually go and look.
+ *
+ * Deliberately not part of the friends list: the list shows everyone at once and
+ * a whole island each would be a lot of data for a screen that only needs a
+ * size. `get_friend_island` checks the friend link itself, so a missing link is
+ * an error from the server rather than something this hook has to police.
+ */
+export function useFriendIsland(friendId: string | null) {
+  return useQuery({
+    queryKey: ["friend-island", friendId ?? "none"],
+    enabled: Boolean(friendId),
+    queryFn: async (): Promise<FriendIsland> => {
+      const { data, error } = await supabase.rpc("get_friend_island", { friend: friendId });
+      if (error) throw error;
+      const row = (Array.isArray(data) ? data[0] : data) as
+        | { stage: number; levels: number; objects: unknown; spots: unknown }
+        | undefined;
+      // A friend who has never grown anything has no row at all, and an empty
+      // island of size one is the honest picture of that.
+      if (!row) return { stage: 1, levels: 0, objects: {}, spots: {} };
+      return {
+        stage: Math.max(1, Math.min(5, Math.round(row.stage ?? 1))),
+        levels: Math.max(0, Math.round(row.levels ?? 0)),
+        objects: (row.objects ?? {}) as FriendIsland["objects"],
+        spots: (row.spots ?? {}) as FriendIsland["spots"],
+      };
+    },
+  });
 }

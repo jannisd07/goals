@@ -3,6 +3,7 @@ import { Alert, AppState, View, Text, Linking, StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as Location from "expo-location";
 import { NeumorphicSurface } from "../components/NeumorphicSurface";
+import { PAPER } from "../theme/paper";
 import { TextAction } from "../components/ui/TextAction";
 import { LocationIcon, RefreshIcon } from "../components/TabIcons";
 import { hapticLight, hapticSuccess } from "../lib/haptics";
@@ -187,7 +188,7 @@ export function PermissionGateScreen({
           align="center"
           onPress={handleSkip}
           containerStyle={{ alignSelf: "center", marginTop: 20 }}
-          textStyle={{ color: NEU.textSecondary }}
+          textStyle={{ color: PAPER.inkMuted }}
         />
       </View>
     </SafeAreaView>
@@ -203,7 +204,7 @@ const styles = StyleSheet.create({
   title: {
     fontFamily: NEU_FONTS.heading,
     fontSize: 28,
-    color: NEU.textPrimary,
+    color: PAPER.ink,
     textAlign: "center",
     marginBottom: 8,
     lineHeight: 34,
@@ -212,7 +213,7 @@ const styles = StyleSheet.create({
   subtitle: {
     fontFamily: NEU_FONTS.body,
     fontSize: 16,
-    color: NEU.textSecondary,
+    color: PAPER.inkMuted,
     textAlign: "center",
     lineHeight: 23,
   },
@@ -224,7 +225,7 @@ const styles = StyleSheet.create({
   },
   rowDivider: {
     borderBottomWidth: 1,
-    borderBottomColor: NEU.track,
+    borderBottomColor: PAPER.line,
   },
   rowIcon: {
     width: 32,
@@ -233,13 +234,13 @@ const styles = StyleSheet.create({
   rowTitle: {
     fontFamily: NEU_FONTS.label,
     fontSize: 16,
-    color: NEU.textPrimary,
+    color: PAPER.ink,
     marginBottom: 2,
   },
   rowDescription: {
     fontFamily: NEU_FONTS.body,
     fontSize: 13,
-    color: NEU.textSecondary,
+    color: PAPER.inkMuted,
     lineHeight: 18,
   },
   rowAction: {

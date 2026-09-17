@@ -4,6 +4,14 @@ import { supabase } from "../lib/supabase";
 import { useAppStore } from "../store";
 import { clearPersistedGeofenceVisit } from "../services/geofencing";
 import { getWeekStart, getWeekEnd } from "../lib/time";
+import { MAX_GEOFENCE_SESSION_MS } from "../lib/geofenceSessions";
+import {
+  flushSessionOutbox,
+  isLocalSessionId,
+  queueSession,
+  rateQueuedSession,
+  removeQueuedSession,
+} from "../lib/sessionOutbox";
 import type {
   Session,
   SessionTrigger,
@@ -15,6 +23,19 @@ import type {
 const SESSIONS_KEY = ["sessions"];
 const WEEKLY_PROGRESS_KEY = ["weekly-progress"];
 const ACTIVE_CHECKIN_KEY = ["active-checkin"];
+
+/**
+ * Whether a failed write is worth keeping for a later attempt.
+ *
+ * A session that is gone or points at a deleted goal can never be written, and
+ * queueing it would block everything behind it. Everything else — no
+ * connection, server asleep, a timeout — is exactly what the outbox is for.
+ */
+function isRetryable(error: unknown): boolean {
+  const code = (error as { code?: string } | null)?.code;
+  // PGRST116: the update matched no row. 23503: the goal no longer exists.
+  return code !== "PGRST116" && code !== "23503";
+}
 
 export function useWeeklyProgress() {
   const setWeeklyProgress = useAppStore((s) => s.setWeeklyProgress);
@@ -215,42 +236,86 @@ export function useEndActiveCheckIn() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (session: Session): Promise<Session> => {
+    mutationFn: async (session: Session): Promise<Session | null> => {
       if (session.trigger !== "geofence" && session.trigger !== "manual_checkin") {
         throw new Error("This is not an Auto Check-In session.");
       }
 
       const endedAt = new Date();
-      const durationSeconds = Math.max(
-        1,
-        Math.floor((endedAt.getTime() - new Date(session.start_time).getTime()) / 1000),
+      // A visit whose Exit was never delivered can sit open for days. Ending it
+      // by hand must not book all of that as time at the place — every other
+      // path in the app caps a run-away counter, this one did not.
+      const durationSeconds = Math.min(
+        Math.floor(MAX_GEOFENCE_SESSION_MS / 1000),
+        Math.max(
+          1,
+          Math.floor((endedAt.getTime() - new Date(session.start_time).getTime()) / 1000),
+        ),
       );
-      const { data, error } = await supabase
-        .from("sessions")
-        .update({
-          end_time: endedAt.toISOString(),
-          duration_seconds: durationSeconds,
-          growth_stage: Math.min(4, Math.floor(durationSeconds / 1800)),
-        })
-        .eq("id", session.id)
-        .is("end_time", null)
-        .select()
-        .maybeSingle();
-      if (error) throw error;
+      const growthStage = Math.min(4, Math.floor(durationSeconds / 1800));
+      const keepForLater = async (): Promise<null> => {
+        await queueSession({
+          id: session.id,
+          serverId: isLocalSessionId(session.id) ? null : session.id,
+          goalId: session.goal_id,
+          trigger: session.trigger,
+          startTime: session.start_time,
+          endTime: endedAt.toISOString(),
+          durationSeconds,
+          pomodoroCycles: 0,
+          growthStage,
+          ambientSound: null,
+          startLatitude: session.start_latitude ?? null,
+          startLongitude: session.start_longitude ?? null,
+          rating: null,
+          notes: null,
+          queuedAt: new Date().toISOString(),
+        });
+        await clearPersistedGeofenceVisit(session.goal_id).catch(() => undefined);
+        return null;
+      };
+
+      if (isLocalSessionId(session.id)) return keepForLater();
+
+      let data: Session | null;
+      try {
+        const result = await supabase
+          .from("sessions")
+          .update({
+            end_time: endedAt.toISOString(),
+            duration_seconds: durationSeconds,
+            growth_stage: growthStage,
+          })
+          .eq("id", session.id)
+          .is("end_time", null)
+          .select()
+          .maybeSingle();
+        if (result.error) {
+          if (isRetryable(result.error)) return keepForLater();
+          throw result.error;
+        }
+        data = result.data as Session | null;
+      } catch (error) {
+        if (isRetryable(error)) return keepForLater();
+        throw error;
+      }
       if (!data) throw new Error("This check-in has already ended.");
 
       await clearPersistedGeofenceVisit(session.goal_id).catch(() => undefined);
       return data as Session;
     },
-    onSuccess: (session) => {
+    onSuccess: (_result, session) => {
+      void flushSessionOutbox();
       queryClient.setQueryData(
         [...ACTIVE_CHECKIN_KEY, session.goal_id],
         null,
       );
       queryClient.invalidateQueries({ queryKey: SESSIONS_KEY });
+      // The week view keeps its own key; without this a session that just ended
+      // is missing from the chart for the next five minutes.
+      queryClient.invalidateQueries({ queryKey: ["analytics", "week"] });
       queryClient.invalidateQueries({ queryKey: WEEKLY_PROGRESS_KEY });
       queryClient.invalidateQueries({ queryKey: ["streak"] });
-      queryClient.invalidateQueries({ queryKey: ["garden", "sessions"] });
       queryClient.invalidateQueries({ queryKey: ["stats", "server-insight"] });
       useAppStore.getState().setLastCompletedSessionId(session.id);
     },
@@ -263,14 +328,25 @@ interface EndSessionInput {
   pomodoro_cycles: number;
   growth_stage: number;
   ambient_sound: AmbientSoundKey | null;
+  /** Needed to write the whole row later if this one cannot be sent now. */
+  goal_id: string;
+  start_time: string;
 }
 
 export function useEndSession() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (input: EndSessionInput): Promise<Session> => {
+    mutationFn: async (input: EndSessionInput): Promise<Session | null> => {
+      const startedOffline = isLocalSessionId(input.session_id);
+
       if (input.duration_seconds <= 0) {
+        // Nothing worth keeping. A session that never reached the server has no
+        // row to remove, so there is nothing to do but forget it.
+        if (startedOffline) {
+          await removeQueuedSession(input.session_id);
+          return null;
+        }
         const { data, error } = await supabase
           .from("sessions")
           .delete()
@@ -282,28 +358,102 @@ export function useEndSession() {
         return data as Session;
       }
 
+      const endedAt = new Date().toISOString();
+      const keepForLater = async (): Promise<null> => {
+        await queueSession({
+          id: input.session_id,
+          serverId: startedOffline ? null : input.session_id,
+          goalId: input.goal_id,
+          trigger: "manual_pomodoro",
+          startTime: input.start_time,
+          endTime: endedAt,
+          durationSeconds: input.duration_seconds,
+          pomodoroCycles: input.pomodoro_cycles,
+          growthStage: input.growth_stage,
+          ambientSound: input.ambient_sound,
+          startLatitude: null,
+          startLongitude: null,
+          rating: null,
+          notes: null,
+          queuedAt: new Date().toISOString(),
+        });
+        return null;
+      };
+
+      // The row only exists if the session could be started online.
+      if (startedOffline) return keepForLater();
+
+      try {
+        const { data, error } = await supabase
+          .from("sessions")
+          .update({
+            end_time: endedAt,
+            duration_seconds: input.duration_seconds,
+            pomodoro_cycles: input.pomodoro_cycles,
+            growth_stage: input.growth_stage,
+            ambient_sound: input.ambient_sound,
+          })
+          .eq("id", input.session_id)
+          .select()
+          .single();
+
+        if (error) {
+          if (isRetryable(error)) return keepForLater();
+          throw error;
+        }
+        return data as Session;
+      } catch (error) {
+        // A thrown fetch error means the request never left the phone.
+        if (isRetryable(error)) return keepForLater();
+        throw error;
+      }
+    },
+    onSuccess: () => {
+      void flushSessionOutbox();
+      queryClient.invalidateQueries({ queryKey: SESSIONS_KEY });
+      queryClient.invalidateQueries({ queryKey: ["analytics", "week"] });
+      queryClient.invalidateQueries({ queryKey: WEEKLY_PROGRESS_KEY });
+      queryClient.invalidateQueries({ queryKey: ["streak"] });
+      queryClient.invalidateQueries({ queryKey: ["stats", "server-insight"] });
+      queryClient.invalidateQueries({ queryKey: ["study-spot-sync"] });
+    },
+  });
+}
+
+/**
+ * Removes a session the user marks as wrong, e.g. an Auto Check-In that fired while
+ * they only drove past the gym. RLS allows deleting one's own sessions; an empty
+ * result means the row was already gone or not ours, which is reported as an error
+ * instead of a silent no-op.
+ */
+export function useDeleteSession() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (sessionId: string): Promise<string> => {
+      // If it is still waiting to be sent, deleting it means never sending it.
+      await removeQueuedSession(sessionId);
+      if (isLocalSessionId(sessionId)) return sessionId;
+
       const { data, error } = await supabase
         .from("sessions")
-        .update({
-          end_time: new Date().toISOString(),
-          duration_seconds: input.duration_seconds,
-          pomodoro_cycles: input.pomodoro_cycles,
-          growth_stage: input.growth_stage,
-          ambient_sound: input.ambient_sound,
-        })
-        .eq("id", input.session_id)
-        .select()
-        .single();
+        .delete()
+        .eq("id", sessionId)
+        .select("id");
 
       if (error) throw error;
-      return data as Session;
+      if (!data || data.length === 0) {
+        throw new Error("This session was not found. Reload the week and try again.");
+      }
+      return sessionId;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: SESSIONS_KEY });
       queryClient.invalidateQueries({ queryKey: WEEKLY_PROGRESS_KEY });
+      // The week list lives under its own key, not under ["sessions"].
+      queryClient.invalidateQueries({ queryKey: ["analytics"] });
       queryClient.invalidateQueries({ queryKey: ["streak"] });
-      queryClient.invalidateQueries({ queryKey: ["garden", "sessions"] });
-      queryClient.invalidateQueries({ queryKey: ["study-spot-sync"] });
+      queryClient.invalidateQueries({ queryKey: ["stats", "server-insight"] });
     },
   });
 }
@@ -318,23 +468,44 @@ export function useRateSession() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (input: RateSessionInput): Promise<Session> => {
-      const { data, error } = await supabase
-        .from("sessions")
-        .update({
-          rating: input.rating,
-          notes: input.notes,
-        })
-        .eq("id", input.session_id)
-        .select()
-        .single();
+    mutationFn: async (input: RateSessionInput): Promise<Session | null> => {
+      // A session that has not reached the server yet carries its rating along
+      // in the queue instead of failing in front of the player.
+      const keepForLater = async (): Promise<null> => {
+        const queued = await rateQueuedSession(
+          input.session_id,
+          input.rating,
+          input.notes,
+        );
+        if (!queued) throw new Error("Your rating could not be saved.");
+        return null;
+      };
 
-      if (error) throw error;
-      return data as Session;
+      if (isLocalSessionId(input.session_id)) return keepForLater();
+
+      try {
+        const { data, error } = await supabase
+          .from("sessions")
+          .update({
+            rating: input.rating,
+            notes: input.notes,
+          })
+          .eq("id", input.session_id)
+          .select()
+          .single();
+
+        if (error) {
+          if (isRetryable(error)) return keepForLater();
+          throw error;
+        }
+        return data as Session;
+      } catch (error) {
+        if (isRetryable(error)) return keepForLater();
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: SESSIONS_KEY });
-      queryClient.invalidateQueries({ queryKey: ["garden", "sessions"] });
     },
   });
 }

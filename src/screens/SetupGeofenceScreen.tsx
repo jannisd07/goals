@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -33,12 +33,15 @@ import { hapticMedium } from "../lib/haptics";
 import {
   DEFAULT_MIN_VISIT_MINUTES,
   MIN_VISIT_MINUTES_OPTIONS,
+  formatMinVisitDuration,
   normalizeMinVisitMinutes,
 } from "../types";
 import { PrimaryButton } from "../components/ui/PrimaryButton";
 import { TextAction } from "../components/ui/TextAction";
 import { MinimalTextInput } from "../components/ui/MinimalTextInput";
 import { NeumorphicSurface } from "../components/NeumorphicSurface";
+import { PAPER } from "../theme/paper";
+import { regionForRadius } from "../lib/mapRegion";
 import { CategoryCards, ValueStepper } from "../components/CategoryCards";
 import { CHECKIN_CATEGORIES, type Goal } from "../types";
 import { NEU, NEU_FONTS } from "../theme/neumorphism";
@@ -85,6 +88,15 @@ export function SetupGeofenceScreen() {
       3,
   );
   const [radius, setRadius] = useState(checkinGoal?.location?.radius_meters ?? 30);
+
+  // Keep the detection circle framed when the radius changes or the pin moves.
+  useEffect(() => {
+    if (!selectedPlace) return;
+    mapRef.current?.animateToRegion(
+      regionForRadius(selectedPlace.latitude, selectedPlace.longitude, radius),
+      300,
+    );
+  }, [radius, selectedPlace]);
   const [minVisitMinutes, setMinVisitMinutes] = useState(
     normalizeMinVisitMinutes(
       checkinGoal?.min_visit_minutes ??
@@ -267,7 +279,10 @@ export function SetupGeofenceScreen() {
         .select("id")
         .eq("user_id", user.id)
         .eq("type", "physical")
-        .eq("is_active", true)
+        // A goal that was switched off is reused rather than replaced: it still
+        // owns every session ever logged against it, and setting it up again is
+        // meant to bring that goal back, not start a second one beside it.
+        .order("is_active", { ascending: false })
         .order("updated_at", { ascending: false })
         .limit(1)
         .maybeSingle();
@@ -362,6 +377,7 @@ export function SetupGeofenceScreen() {
             label="Back"
             onPress={() => setCurrentStep(1)}
             disabled={saving}
+            textStyle={{ color: PAPER.accentInk }}
           />
         ) : (
           <View style={{ width: 72 }} />
@@ -376,17 +392,25 @@ export function SetupGeofenceScreen() {
 
         {currentStep === 2 ? (
           <TextAction
-            label={saving ? "Please wait..." : "Finish"}
+            label={saving ? "Please wait..." : "Save"}
             align="right"
             onPress={handleDone}
             disabled={saving}
+            textStyle={{ color: PAPER.accentInk }}
           />
         ) : (
-          <TextAction label="Close" align="right" onPress={() => navigation.goBack()} />
+          <TextAction
+            label="Close"
+            align="right"
+            onPress={() => navigation.goBack()}
+            textStyle={{ color: PAPER.accentInk }}
+          />
         )}
       </View>
 
       <ScrollView
+          bounces={false}
+          alwaysBounceVertical={false}
         style={{ flex: 1 }}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
@@ -550,12 +574,11 @@ export function SetupGeofenceScreen() {
                     <MapView
                       ref={mapRef}
                       style={StyleSheet.absoluteFill}
-                      initialRegion={{
-                        latitude: selectedPlace.latitude,
-                        longitude: selectedPlace.longitude,
-                        latitudeDelta: 0.012,
-                        longitudeDelta: 0.012,
-                      }}
+                      initialRegion={regionForRadius(
+                        selectedPlace.latitude,
+                        selectedPlace.longitude,
+                        radius,
+                      )}
                       onPress={handleMapPress}
                       pitchEnabled={false}
                       rotateEnabled={false}
@@ -622,7 +645,7 @@ export function SetupGeofenceScreen() {
                 })}
               </View>
               <Text style={styles.mapHint}>
-                Visits shorter than {minVisitMinutes} minutes are discarded, so
+                Visits shorter than {formatMinVisitDuration(minVisitMinutes)} are discarded, so
                 walking past this place never becomes a session.
               </Text>
             </View>
@@ -642,7 +665,7 @@ export function SetupGeofenceScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: NEU.bg,
+    backgroundColor: PAPER.page,
   },
   headerRow: {
     flexDirection: "row",
@@ -669,13 +692,13 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: NEU.track,
+    backgroundColor: PAPER.line,
   },
   stepDotActive: {
     backgroundColor: NEU.accent,
   },
   title: {
-    color: NEU.textPrimary,
+    color: PAPER.ink,
     fontSize: 28,
     fontFamily: NEU_FONTS.heading,
     letterSpacing: -0.3,
@@ -691,21 +714,21 @@ const styles = StyleSheet.create({
     borderRadius: NEU.radiusLarge,
     overflow: "hidden",
     borderWidth: 1,
-    borderColor: NEU.track,
-    backgroundColor: NEU.card,
+    borderColor: PAPER.line,
+    backgroundColor: PAPER.surface,
   },
   mapHint: {
-    color: NEU.textSecondary,
+    color: PAPER.inkMuted,
     fontSize: 13,
     lineHeight: 18,
     fontFamily: NEU_FONTS.body,
     marginTop: 8,
   },
   sectionLabel: {
-    color: NEU.textSecondary,
-    fontSize: 13,
+    color: PAPER.inkFaint,
+    fontSize: 11,
     fontFamily: NEU_FONTS.label,
-    letterSpacing: 1.2,
+    letterSpacing: 1,
     textTransform: "uppercase",
     marginBottom: 14,
   },
@@ -730,12 +753,12 @@ const styles = StyleSheet.create({
     fontFamily: NEU_FONTS.label,
   },
   attribution: {
-    color: NEU.textSecondary,
+    color: PAPER.inkFaint,
     fontSize: 11,
     fontFamily: NEU_FONTS.body,
   },
   searchScope: {
-    color: NEU.textSecondary,
+    color: PAPER.inkMuted,
     fontSize: 12,
     fontFamily: NEU_FONTS.label,
     marginBottom: 8,
@@ -777,27 +800,31 @@ const styles = StyleSheet.create({
   pill: {
     paddingHorizontal: 24,
     height: 38,
-    borderRadius: NEU.radiusSmall,
+    borderRadius: PAPER.radiusSm,
     borderWidth: 1,
-    borderColor: NEU.track,
+    borderColor: PAPER.line,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: NEU.card,
+    backgroundColor: PAPER.surface,
   },
+  // Same selection language as Stats: the pill stays light, only the outline
+  // and label turn green.
   pillActive: {
-    borderColor: NEU.accent,
-    backgroundColor: NEU.accent,
+    borderColor: PAPER.accent,
+    backgroundColor: PAPER.accentWash,
   },
   pillText: {
-    color: NEU.textPrimary,
+    color: PAPER.inkMuted,
     fontSize: 15,
     fontFamily: NEU_FONTS.label,
   },
   pillTextActive: {
-    color: "#FFFFFF",
+    color: PAPER.accentInk,
+    fontFamily: NEU_FONTS.heading,
   },
 
   textInput: {
+    // Typed text sits inside the white search field, not on the artwork.
     color: NEU.textPrimary,
     fontSize: 16,
     height: 48,

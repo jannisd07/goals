@@ -10,13 +10,13 @@ const MODE_COPY: Record<
 > = {
   interval: {
     title: "Intervals",
-    behavior: "Countdown",
-    accessibilityLabel: "Intervals, countdown with automatic breaks",
+    behavior: "Set time",
+    accessibilityLabel: "Intervals, set time with automatic breaks",
   },
   flowtime: {
     title: "Flowtime",
-    behavior: "Count up",
-    accessibilityLabel: "Flowtime, open-ended count up",
+    behavior: "No limit",
+    accessibilityLabel: "Flowtime, no time limit",
   },
 };
 

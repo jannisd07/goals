@@ -13,7 +13,8 @@ import { PrimaryButton } from "../components/ui/PrimaryButton";
 import { TextAction } from "../components/ui/TextAction";
 import { MinimalTextInput } from "../components/ui/MinimalTextInput";
 import { FOCUS_CATEGORIES, type Goal } from "../types";
-import { NEU, NEU_FONTS } from "../theme/neumorphism";
+import { NEU_FONTS } from "../theme/neumorphism";
+import { PAPER } from "../theme/paper";
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
@@ -72,7 +73,10 @@ export function SetupStudyingScreen() {
         .select("id")
         .eq("user_id", user.id)
         .eq("type", "focus")
-        .eq("is_active", true)
+        // A goal that was switched off is reused rather than replaced: it still
+        // owns every session ever logged against it, and setting it up again is
+        // meant to bring that goal back, not start a second one beside it.
+        .order("is_active", { ascending: false })
         .order("updated_at", { ascending: false })
         .limit(1)
         .maybeSingle();
@@ -150,10 +154,13 @@ export function SetupStudyingScreen() {
           label="Cancel"
           onPress={() => navigation.goBack()}
           disabled={saving}
+          textStyle={{ color: PAPER.accentInk }}
         />
       </View>
 
       <ScrollView
+          bounces={false}
+          alwaysBounceVertical={false}
         style={styles.flex1}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
@@ -214,7 +221,7 @@ export function SetupStudyingScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: NEU.bg,
+    backgroundColor: PAPER.page,
   },
   flex1: {
     flex: 1,
@@ -231,13 +238,13 @@ const styles = StyleSheet.create({
     paddingBottom: 28,
   },
   title: {
-    color: NEU.textPrimary,
+    color: PAPER.ink,
     fontSize: 28,
     fontFamily: NEU_FONTS.heading,
     letterSpacing: -0.3,
   },
   subtitle: {
-    color: NEU.textSecondary,
+    color: PAPER.inkMuted,
     fontSize: 16,
     fontFamily: NEU_FONTS.body,
     lineHeight: 23,
@@ -245,16 +252,16 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   sectionLabel: {
-    color: NEU.textSecondary,
-    fontSize: 13,
+    color: PAPER.inkFaint,
+    fontSize: 11,
     fontFamily: NEU_FONTS.label,
-    letterSpacing: 1.2,
+    letterSpacing: 1,
     textTransform: "uppercase",
     marginTop: 10,
     marginBottom: 14,
   },
   fieldHelp: {
-    color: NEU.textSecondary,
+    color: PAPER.inkMuted,
     fontSize: 13,
     fontFamily: NEU_FONTS.body,
     lineHeight: 18,

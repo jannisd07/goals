@@ -18,7 +18,7 @@
 | `PROGRESS.md` | Feature-Status & Entscheidungen — immer aktuell halten |
 | `Information/` | Historische Prompts/Beschreibungen (nicht mehr maßgeblich) |
 | `ios/` | Natives iOS-Projekt (aus `npx expo prebuild`) |
-| `assets/` | Icons, Splash und `sounds/` (CC0-Fokus-Musik); `island/` enthält 4 alte Platzhalter-PNGs und wird Zielordner der gerenderten Insel-WebPs |
+| `assets/` | Icons, Splash, `sounds/` (CC0-Fokus-Musik) und `home/island-ocean-1.png` als verbindlicher Home-Hintergrund; `island/` enthält 4 alte Platzhalter-PNGs und wird Zielordner der gerenderten Insel-WebPs |
 | `plugins/withGoalsNativeConfig.js` | Expo-Config-Plugin: native App-IDs/URL-Schemes/Permissions bereinigen |
 | `supabase/` | Schema, Migrationen, Edge Functions |
 | `supabase/functions/_shared/coachPatterns.ts` | Deterministische Musteranalyse ohne KI für Coach-Nudges und Stats-Insight: Wochenziel, übliche Zeit, beste Zeit, Pause, Rhythmus, Trend |
@@ -43,6 +43,18 @@
 | `GardenPreview.tsx` | Grove-Vorschau, terminale Karte der Homepage (20pt oben / 31pt unten) |
 | `ProgressBar.tsx` | Flache Progress-Bar (Accent-Fill, Track `NEU.track`) |
 | `RatingSheet.tsx` | **Popup** nach Session-Ende: „Wie war die Session?" (Rating fließt in KI-Insights, wird nie angezeigt) |
+| `DisplayNameSheet.tsx` | **Popup** aus Settings → Account: Anzeigenamen ändern (1–80 Zeichen, speichert über `useAuth().updateDisplayName`) |
+| `GoalStartSheet.tsx` | **Popup** beim Start eines Goals: Fokus-Länge, Stil und was wächst (Pflanzen, Gebäude, Wasser, Strand); Check-In starten oder beenden |
+| `grow/GrowObjectArt.tsx` | Zeichnet ein Insel-Objekt als Pixel-Sprite — alle vier Kategorien; die flachen Formen sind nur noch Rückfall |
+| `grow/plantSprites.ts` | Pixelzeilen der 80 Pflanzenbilder (8 Arten × 10 Stufen), erzeugt von `island/pixel/export_sprites.py` — nicht von Hand ändern |
+| `hooks/useFocusLiveActivity.ios.ts` | Treibt die Live Activity: laufende Session **und** offener Auto Check-In, plus was gerade wächst |
+| `grow/MilestoneMoment.tsx` | Der Bildschirm, wenn eine Landmarke ankommt: Stunden, Objekt, Beschreibung |
+| `grow/specialSprites.ts` | Die zehn Landmarken-Bilder, erzeugt von `island/pixel/special.py` |
+| `grow/RewardWaitingPill.tsx` | Zeile auf Home: wie viele Belohnungen warten, oder was die App selbst platziert hat |
+| `grow/GrowingObject.tsx` | Das Objekt im Fokus-Ring: wächst mit der Zeit, springt sichtbar eine Stufe hoch, ruht bei Pause und Pause |
+| `grow/waterPieceSprites.ts` | Die einzelnen Wasserteile (Boot, Steg, Boje, Kajak, Fels, Delfin, Möwe) für die Insel selbst |
+| `island/IslandObjectsLayer.tsx` | Zeichnet alles Gewachsene über den Home-Hintergrund: Wasser an festen Plätzen, Land an seinem gefundenen |
+| `island/islandSprites.ts` | Eine Suche über alle vier Sprite-Dateien, samt Palette und Ankerpixel |
 | `PendingRatingSheet.tsx` | Globale Rating-Destination für manuell beendete Sessions und Check-In-Notifications |
 | `FocusSetupSheet.tsx` | **Popup** vor Deep-Work-Start (Long-Press auf Start-Pill): Modus Intervall/Flowtime, Presets, Slider, Pausenvorschau |
 | `CategoryCards.tsx` | „Wofür ist es"-Kategorie-Grid + `ValueStepper` (Onboarding + beide Setup-Screens) |
@@ -61,6 +73,7 @@
 
 - `FocusSetupSheet.tsx` (Deep-Work-Start, via Long-Press)
 - `RatingSheet.tsx` (Session-Bewertung)
+- `GoalStartSheet.tsx` (Start eines Goals, inkl. Auswahl, was wächst)
 - `ui/PopupCard.tsx` (generische Basis)
 - System-Alerts (`Alert.alert`) verstreut in Screens — bei Redesign prüfen
 
@@ -74,13 +87,14 @@
 | `AnalyticsWeekScreen.tsx` | Stack | Wochendetail der Stats |
 | `AuthScreen.tsx` | Stack (unauth) | Login/Signup; flache Minimal-Inputs, zwei runde Apple-/Google-Buttons; Back führt ins Onboarding |
 | `PasswordResetScreen.tsx` | Recovery-Gate | Neues Passwort nach `com.goals.app://reset-password` setzen |
-| `OnboardingScreen.tsx` | Stack (unauth/first) | 7-Seiten-Tour in zwei klaren Feature-Kapiteln; Auto Check-In wird direkt per Karte/Pin eingerichtet, Permissions schließt den Flow ohne Extra-Slide ab |
+| `OnboardingScreen.tsx` | Stack (unauth/first) | 8-Seiten-Tour in zwei klaren Feature-Kapiteln; Auto Check-In wird direkt per Karte/Pin eingerichtet, Permissions schließt den Flow ohne Extra-Slide ab |
 | `PermissionGateScreen.tsx` | Gate | Permissions nachfordern bei Rückkehrern |
 | `SettingsScreen.tsx` | Stack | Goals bearbeiten, Focus-Prefs, Friends, Budget, Notifications, Permissions, Konto |
 | `SetupStudyingScreen.tsx` | Stack | Deep-Work-Goal einrichten (Kategorie-Cards + Wochenstunden) |
 | `SetupGeofenceScreen.tsx` | Stack | Auto-Check-In: Ortssuche (Nominatim), Kategorie-Cards, Radius, Wochenziel |
 | `FriendsScreen.tsx` | Stack | Eigener Code, Freund hinzufügen, Wochenfortschritt der Freunde |
-| `FocusSessionScreen.tsx` | Stack (fullscreen) | Laufende Session: Intervall + Flowtime, neumorphischer Timer-Dial, Pause, +5min, Musik |
+| `FocusSessionScreen.tsx` | Stack (fullscreen) | Laufende Session im Paper-Look: Intervall + Flowtime, Ring mit wachsendem Objekt, Pause, +5min, Musik; Ende ab 5 min öffnet `GrowReveal` |
+| `GrowRevealScreen.tsx` | Stack (Fade) | Session-Belohnung: Größe, Kategorie (nach Auto Check-In), Objekt neu hinzufügen oder wachsen lassen |
 Entfernt: `CreateGoalScreen.tsx`, `SessionLengthPicker.tsx`, `GardenOrb.tsx`,
 `PlantRenderer.tsx`, `SkiaIslandDemoScreen.tsx`, `GlassCard.tsx` und
 `NoiseTexture.tsx`. Es gibt keine tote Skia-/Glassmorphism-Route mehr.
@@ -102,6 +116,7 @@ Entfernt: `CreateGoalScreen.tsx`, `SessionLengthPicker.tsx`, `GardenOrb.tsx`,
 | `goalsSlice.ts` | Goals + Wochenfortschritt |
 | `sessionSlice.ts` | Aktive Session, Pomodoro-State, Ambient-Sound-Prefs |
 | `walletSlice.ts` | Zeitbudget (Fixzeiten → verfügbare Stunden) |
+| `islandSlice.ts` | Insel pro Konto, nur auf dem Gerät: Stufe pro Objekt, bereits angewendete Sessions, zuletzt gewählte Kategorie |
 
 ## src/hooks
 
@@ -113,6 +128,7 @@ Entfernt: `CreateGoalScreen.tsx`, `SessionLengthPicker.tsx`, `GardenOrb.tsx`,
 | `useInsights.ts` | JWT-geschützter Stats-Insight pro gewähltem Goal (sendet Geräte-Zeitzone), 10-min-Client-Cache, lokaler Fehler-Fallback |
 | `useCoachNudges.ts` | Holt Coach-Nudges (1× pro Tag und bei neuem Wochenfortschritt) und plant die lokalen Notifications |
 | `usePomodoro.ts` | Wall-clock-Timer: Start-Deduplizierung, Intervall/Flowtime, Pause, Hintergrund-/Restart-Reconciliation |
+| `useGrowHistory.ts` | Längen der früheren Sessions eines Goals (ab 5 min, neueste 50) für die Belohnungsgröße |
 | `useAmbientSound.ts` | Fokus-Musik-Player (expo-audio, Loop, Hintergrund) |
 | `useFriends.ts` | Friend-Code (generieren/teilen), Freund hinzufügen/entfernen, Wochenübersicht |
 | `useStreak.ts` | Streak berechnen + Erinnerungs-Notification synchronisieren |
@@ -141,12 +157,24 @@ Entfernt: `CreateGoalScreen.tsx`, `SessionLengthPicker.tsx`, `GardenOrb.tsx`,
 | `time.ts` | Datum/Zeit-Formatierung, Wochenstart (Montag), Geräte-Zeitzone |
 | `haptics.ts` | Haptik-Wrapper |
 | `constellation.ts` | Deterministisches 3D-Sternbild-Layout und Projektion für den aktiven Grove |
+| `growRewards.ts` | Reine, getestete Belohnungslogik: Kategorien, Katalog v1, Größe aus dem Verlauf, neu hinzufügen oder wachsen |
+| `islandMerge.ts` | Verschmilzt zwei Kopien einer Insel: höhere Stufe gewinnt, Insel schrumpft nie |
+| `islandSync.ts` | Liest und schreibt die Insel in `public.island_state` |
+| `milestones.ts` | Welche Landmarken die Gesamtstunden verdient haben und was der Insel noch fehlt |
+| `growDelivery.ts` | Sorgt dafür, dass jede Session ein Objekt hinterlässt: wann die App selbst platziert und was |
+| `pendingGrows.ts` | Verdiente, aber noch nicht platzierte Belohnungen; serialisierte Änderungen, überlebt App-Neustart und Hintergrund-Task |
+| `islandScene.ts` | Reine Logik der Insel: Inselgröße aus den gesammelten Stufen, welche Teile wo stehen |
+| `islandPlacement.ts` | Sucht den Platz für ein neues Landobjekt: viel Platz bevorzugt, leicht zufällig, pro Account fest |
+| `islandZones.ts` | Zonenkarte je Inselgröße (Wiese, Strand, Fels, Wasser), erzeugt von `island/pixel/export_layout.py` |
+| `islandLand.ts` | Untergrund, Platzbedarf und Ankerpunkte der Landobjekte, ebenfalls erzeugt |
+| `islandSlots.ts` | Die festen Plätze im Wasser je Inselgröße, erzeugt von `island/pixel/export_layout.py` — nicht von Hand ändern |
+| `pendingGrows.ts` | Noch nicht platzierte Belohnungen in AsyncStorage (auch aus dem Geofence-Task), beim Abmelden gelöscht |
 
 ## src/services
 
 | Datei | Zweck |
 |---|---|
-| `geofencing.ts` | Background-Geofencing-Task (expo-location + task-manager), Auto-Check-In-Sessions |
+| `geofencing.ts` | Background-Geofencing-Task (expo-location + task-manager), Auto-Check-In-Sessions; legt die Belohnung ab und schickt die Grow-Notification |
 
 ## src/types
 
@@ -159,7 +187,8 @@ Entfernt: `CreateGoalScreen.tsx`, `SessionLengthPicker.tsx`, `GardenOrb.tsx`,
 | Pfad | Zweck |
 |---|---|
 | `schema.sql` | Kanonisches Fresh-Project-App-Schema: 4 nutzerbezogene Tabellen, Constraints, RLS und abgesicherte Friend-RPCs |
-| `migrations/` | Inkrementelle SQL-Migrationen einschließlich privatem Place-Search-/Insight-Betrieb und `manual_checkin`; alle sieben Migrationen sind remote angewendet |
+| `island_state` | Eine Zeile pro Spieler: die ganze Insel als JSON, damit sie am Account hängt und nicht am Gerät |
+| `migrations/` | Inkrementelle SQL-Migrationen einschließlich privatem Place-Search-/Insight-Betrieb und `manual_checkin`; alle neun Migrationen sind remote angewendet |
 | `functions/delete-account/` | Deployte Edge Function: JWT-validierte Hard-Delete des eigenen Kontos |
 | `functions/analyze-sessions/` | Deployte Edge Function: JWT-validierter Stats-Insight pro Goal aus der Coach-Engine, immer frisch berechnet (kein Cache, kein Refresh-Limit mehr) |
 | `functions/place-search/` | Deployte JWT-geschützte Ortssuche mit gemeinsamem Cache, Nutzerquote und globaler Upstream-Queue |

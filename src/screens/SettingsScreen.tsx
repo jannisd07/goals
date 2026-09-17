@@ -9,36 +9,39 @@ import {
   Pressable,
   StyleSheet,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import * as Location from "expo-location";
 import * as Notifications from "expo-notifications";
-import { NeumorphicSurface } from "../components/NeumorphicSurface";
+import {
+  PaperCard,
+  PaperHeader,
+  PaperLabel,
+  PaperScreen,
+} from "../components/paper/PaperUI";
 import { FlatToggle } from "../components/ui/FlatToggle";
 import { TextAction } from "../components/ui/TextAction";
 import { FocusModeSwitch } from "../components/ui/FocusModeSwitch";
 import { ChevronRightIcon } from "../components/TabIcons";
+import { DisplayNameSheet } from "../components/DisplayNameSheet";
 import { useAppStore } from "../store";
 import { useAuth } from "../hooks/useAuth";
+import { useDeactivateGoal } from "../hooks/useGoals";
 import { hapticLight } from "../lib/haptics";
 import { persistFocusStyle } from "../lib/focusStyle";
 import { syncWeeklySummary } from "../lib/notifications";
 import { persistUserPreferences } from "../lib/userPreferences";
-import { AMBIENT_SOUNDS, type AmbientSoundKey, type FocusStyle } from "../types";
+import { AMBIENT_SOUNDS, type AmbientSoundKey, type FocusStyle, type Goal } from "../types";
 import type { NotificationPrefs } from "../store/configSlice";
 import type { RootStackParamList } from "../navigation/types";
-import { NEU, NEU_FONTS } from "../theme/neumorphism";
+import { NEU_FONTS } from "../theme/neumorphism";
+import { PAPER } from "../theme/paper";
 
 type SettingsNav = NativeStackNavigationProp<RootStackParamList>;
 
 const BREAK_OPTIONS = [5, 10, 15, 20] as const;
 const LENGTH_OPTIONS = [15, 25, 45, 60] as const;
-
-function SectionHeader({ title }: { title: string }) {
-  return <Text style={styles.sectionHeader}>{title}</Text>;
-}
 
 function Divider() {
   return <View style={styles.divider} />;
@@ -86,7 +89,7 @@ function NavigationRow({
         <Text style={styles.rowLabel}>{label}</Text>
         {subtitle ? <Text style={styles.rowSubtitle}>{subtitle}</Text> : null}
       </View>
-      <ChevronRightIcon size={18} color={NEU.accent} strokeWidth={2} />
+      <ChevronRightIcon size={18} color={PAPER.inkFaint} strokeWidth={2} />
     </Pressable>
   );
 }
@@ -139,7 +142,7 @@ export function SettingsScreen() {
     ambientSound: 0,
     notifications: 0,
   });
-  const { signOut, deleteAccount } = useAuth();
+  const { signOut, deleteAccount, updateDisplayName } = useAuth();
   const userConfig = useAppStore((s) => s.userConfig);
   const goals = useAppStore((s) => s.goals);
   const breakDuration = useAppStore((s) => s.breakDuration);
@@ -155,8 +158,44 @@ export function SettingsScreen() {
 
   const focusGoal = goals.find((g) => g.type === "focus") ?? null;
   const checkinGoal = goals.find((g) => g.type === "physical") ?? null;
+  const deactivateGoal = useDeactivateGoal();
+
+  /**
+   * Switching a goal off is reversible and keeps every logged hour, so it asks
+   * once and says exactly that — this is not the delete button.
+   */
+  const handleTurnOffGoal = useCallback(
+    (goal: Goal) => {
+      hapticLight();
+      Alert.alert(
+        `Turn off ${goal.name}?`,
+        goal.type === "physical"
+          ? "Visits stop being recorded and the location is no longer watched. Everything you have logged so far is kept, and you can set it up again any time."
+          : "This goal disappears from Home. Everything you have logged so far is kept, and you can set it up again any time.",
+        [
+          { text: "Cancel", style: "cancel" },
+          {
+            text: "Turn off",
+            style: "destructive",
+            onPress: () => {
+              void deactivateGoal.mutateAsync(goal).catch((error: unknown) => {
+                Alert.alert(
+                  "Couldn’t turn it off",
+                  error instanceof Error
+                    ? error.message
+                    : "Check your connection and try again.",
+                );
+              });
+            },
+          },
+        ],
+      );
+    },
+    [deactivateGoal],
+  );
 
   const [deletingAccount, setDeletingAccount] = useState(false);
+  const [editingName, setEditingName] = useState(false);
   const [locationGranted, setLocationGranted] = useState<boolean | null>(null);
   const [notifGranted, setNotifGranted] = useState<boolean | null>(null);
 
@@ -389,23 +428,27 @@ export function SettingsScreen() {
   }, []);
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: NEU.bg }} edges={["top"]}>
-      <Animated.View entering={FadeIn.duration(400)} style={{ flex: 1 }}>
+    <PaperScreen edges={["top"]}>
+      <PaperHeader
+        title="Settings"
+        onClose={() => {
+          hapticLight();
+          navigation.goBack();
+        }}
+      />
+      <Animated.View entering={FadeIn.duration(220)} style={{ flex: 1 }}>
         <ScrollView
+          bounces={false}
+          alwaysBounceVertical={false}
           style={{ flex: 1 }}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
-          <View style={styles.header}>
-            <View style={{ width: 72 }} />
-            <Text style={styles.headerTitle}>Settings</Text>
-            <TextAction label="Close" align="right" onPress={() => navigation.goBack()} />
-          </View>
 
           {/* Goals */}
           <Animated.View entering={FadeInDown.delay(50).duration(400)}>
-            <NeumorphicSurface style={styles.card} lightShadowOpacity={0}>
-              <SectionHeader title="Goals" />
+            <PaperLabel style={styles.firstLabel}>Goals</PaperLabel>
+            <PaperCard style={styles.card} padding={0}>
               <NavigationRow
                 label={focusGoal ? focusGoal.name : "Deep Work"}
                 subtitle={
@@ -416,6 +459,19 @@ export function SettingsScreen() {
                 onPress={() => navigation.navigate("SetupStudying")}
               />
               <Divider />
+              {focusGoal ? (
+                <>
+                  <Divider />
+                  <TextAction
+                    label="Turn off this focus goal"
+                    onPress={() => handleTurnOffGoal(focusGoal)}
+                    disabled={deactivateGoal.isPending}
+                    containerStyle={styles.cardAction}
+                    textStyle={styles.linkText}
+                  />
+                </>
+              ) : null}
+              <Divider />
               <NavigationRow
                 label={checkinGoal ? checkinGoal.name : "Auto Check-In"}
                 subtitle={
@@ -425,14 +481,25 @@ export function SettingsScreen() {
                 }
                 onPress={() => navigation.navigate("SetupGeofence")}
               />
-            </NeumorphicSurface>
+              {checkinGoal ? (
+                <>
+                  <Divider />
+                  <TextAction
+                    label="Turn off Auto Check-In"
+                    onPress={() => handleTurnOffGoal(checkinGoal)}
+                    disabled={deactivateGoal.isPending}
+                    containerStyle={styles.cardAction}
+                    textStyle={styles.linkText}
+                  />
+                </>
+              ) : null}
+            </PaperCard>
           </Animated.View>
 
           {/* Focus */}
           <Animated.View entering={FadeInDown.delay(100).duration(400)}>
-            <NeumorphicSurface style={styles.card}>
-              <SectionHeader title="Focus Sessions" />
-
+            <PaperLabel>Focus sessions</PaperLabel>
+            <PaperCard style={styles.card} padding={16}>
               <Text style={styles.fieldLabel}>Focus style</Text>
               <FocusModeSwitch
                 value={focusStyle}
@@ -442,18 +509,18 @@ export function SettingsScreen() {
               <View style={styles.focusModeExplanation}>
                 <Text style={styles.focusModeTitle}>
                   {focusStyle === "interval"
-                    ? "Structured countdown"
-                    : "Open-ended count up"}
+                    ? "Breaks start on their own"
+                    : "You decide when to stop"}
                 </Text>
                 <Text style={styles.focusModeText}>
                   {focusStyle === "interval"
-                    ? "A break begins automatically when each focus block ends."
-                    : "The timer runs until you choose Break. Recovery is calculated from the time you just focused, so there is no fixed break-length setting."}
+                    ? "Each block runs for the length below, then a short break begins."
+                    : "The clock runs until you take a break. The longer you focused, the longer the break. The ring below is only a visual goal."}
                 </Text>
               </View>
 
               <Text style={[styles.fieldLabel, { marginTop: 18 }]}>
-                {focusStyle === "interval" ? "Focus block length" : "Starting ring target"}
+                {focusStyle === "interval" ? "Focus block length" : "Ring goal"}
               </Text>
               <SegmentRow
                 options={LENGTH_OPTIONS}
@@ -506,25 +573,25 @@ export function SettingsScreen() {
                   );
                 })}
               </View>
-            </NeumorphicSurface>
+            </PaperCard>
           </Animated.View>
 
           {/* Friends */}
           <Animated.View entering={FadeInDown.delay(150).duration(400)}>
-            <NeumorphicSurface style={styles.card}>
-              <SectionHeader title="Friends" />
+            <PaperLabel>Friends</PaperLabel>
+            <PaperCard style={styles.card} padding={0}>
               <NavigationRow
                 label="Connect with friends"
                 subtitle="Share your code and see how their week is going"
                 onPress={() => navigation.navigate("Friends")}
               />
-            </NeumorphicSurface>
+            </PaperCard>
           </Animated.View>
 
           {/* Notifications */}
           <Animated.View entering={FadeInDown.delay(250).duration(400)}>
-            <NeumorphicSurface style={styles.card}>
-              <SectionHeader title="Notifications" />
+            <PaperLabel>Notifications</PaperLabel>
+            <PaperCard style={styles.card} padding={0}>
               <ToggleRow
                 label="Streak reminders"
                 subtitle="An evening nudge when your streak is at risk"
@@ -552,18 +619,20 @@ export function SettingsScreen() {
                 value={notificationPrefs.weeklySummary}
                 onChange={toggleNotificationPref("weeklySummary")}
               />
+              <Divider />
               <TextAction
-                label="Send Test Notification"
+                label="Send test notification"
                 onPress={() => void handleTestNotification()}
-                containerStyle={{ marginTop: 6 }}
+                containerStyle={styles.cardAction}
+                textStyle={styles.linkText}
               />
-            </NeumorphicSurface>
+            </PaperCard>
           </Animated.View>
 
           {/* Permissions */}
           <Animated.View entering={FadeInDown.delay(300).duration(400)}>
-            <NeumorphicSurface style={styles.card}>
-              <SectionHeader title="Permissions" />
+            <PaperLabel>Permissions</PaperLabel>
+            <PaperCard style={styles.card} padding={0}>
               <View style={styles.permissionRow}>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.rowLabel}>Location (background)</Text>
@@ -591,129 +660,178 @@ export function SettingsScreen() {
                   </Text>
                 </View>
               </View>
+              <Divider />
               <TextAction
-                label="Open System Settings"
+                label="Open system settings"
                 onPress={() => void Linking.openSettings()}
-                containerStyle={{ marginTop: 6 }}
+                containerStyle={styles.cardAction}
+                textStyle={styles.linkText}
               />
-            </NeumorphicSurface>
+            </PaperCard>
           </Animated.View>
 
           {/* Account */}
           <Animated.View entering={FadeInDown.delay(350).duration(400)}>
-            <NeumorphicSurface style={styles.card}>
-              <SectionHeader title="Account" />
-
-              <View style={{ marginBottom: 16 }}>
-                <Text style={styles.accountLabel}>Display Name</Text>
-                <Text style={styles.accountValue}>{userConfig?.display_name ?? "User"}</Text>
-              </View>
-
-              <View style={{ marginBottom: 12 }}>
+            <PaperLabel>Account</PaperLabel>
+            <PaperCard style={styles.card} padding={0}>
+              <Pressable
+                onPress={() => {
+                  hapticLight();
+                  setEditingName(true);
+                }}
+                disabled={!userConfig?.id}
+                accessibilityRole="button"
+                accessibilityLabel={`Display name, ${userConfig?.display_name ?? "User"}`}
+                accessibilityHint="Opens a field to change your name"
+                style={({ pressed }) => [
+                  styles.accountRow,
+                  styles.accountEditRow,
+                  { opacity: pressed ? 0.55 : 1 },
+                ]}
+              >
+                <View style={{ flex: 1, marginRight: 10 }}>
+                  <Text style={styles.accountLabel}>Display name</Text>
+                  <Text style={styles.accountValue} numberOfLines={1}>
+                    {userConfig?.display_name ?? "User"}
+                  </Text>
+                </View>
+                <Text style={styles.editText}>Edit</Text>
+              </Pressable>
+              <Divider />
+              <View style={styles.accountRow}>
                 <Text style={styles.accountLabel}>Status</Text>
                 <Text style={styles.accountValue}>
                   {userConfig?.id ? "Signed in" : "Not signed in"}
                 </Text>
               </View>
-
-              <TextAction label="Sign Out" onPress={handleSignOut} />
+              <Divider />
               <TextAction
-                label={deletingAccount ? "Deleting account..." : "Delete Account"}
+                label="Sign out"
+                onPress={handleSignOut}
+                containerStyle={styles.cardAction}
+                textStyle={styles.linkText}
+              />
+              <Divider />
+              <TextAction
+                label={deletingAccount ? "Deleting account..." : "Delete account"}
                 onPress={handleDeleteAccount}
                 disabled={deletingAccount}
-                textStyle={{ color: NEU.textSecondary }}
+                containerStyle={styles.cardAction}
+                textStyle={styles.dangerText}
               />
-            </NeumorphicSurface>
+            </PaperCard>
           </Animated.View>
         </ScrollView>
       </Animated.View>
-    </SafeAreaView>
+      <DisplayNameSheet
+        visible={editingName}
+        currentName={userConfig?.display_name ?? ""}
+        onSave={updateDisplayName}
+        onClose={() => setEditingName(false)}
+      />
+    </PaperScreen>
   );
 }
 
 const styles = StyleSheet.create({
   scrollContent: {
-    paddingBottom: 40,
+    paddingBottom: 48,
   },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 22,
-    paddingTop: 12,
-    paddingBottom: 24,
-  },
-  headerTitle: {
-    color: NEU.textPrimary,
-    fontSize: 18,
-    fontFamily: NEU_FONTS.heading,
+  firstLabel: {
+    marginTop: 12,
   },
   card: {
-    marginHorizontal: 24,
-    marginBottom: 16,
+    marginBottom: 4,
   },
-  sectionHeader: {
-    color: NEU.textPrimary,
-    fontSize: 16,
-    fontFamily: NEU_FONTS.label,
-    marginBottom: 14,
+  cardAction: {
+    minHeight: 50,
+    justifyContent: "center",
+    paddingHorizontal: 16,
   },
+  linkText: {
+    color: PAPER.accentInk,
+    fontSize: 15,
+    textAlign: "left",
+  },
+  dangerText: {
+    color: PAPER.danger,
+    fontSize: 15,
+    textAlign: "left",
+  },
+
   divider: {
     height: 1,
-    backgroundColor: NEU.track,
-    opacity: 0.6,
+    backgroundColor: PAPER.line,
   },
   fieldLabel: {
-    color: NEU.textSecondary,
-    fontSize: 13,
+    color: PAPER.inkFaint,
+    fontSize: 11,
     fontFamily: NEU_FONTS.label,
-    letterSpacing: 1.0,
+    letterSpacing: 1,
     textTransform: "uppercase",
     marginBottom: 10,
   },
+
+  // A quiet left rule instead of a tinted callout box. A second filled panel
+  // inside a card is the thing that makes settings pages look padded out.
   focusModeExplanation: {
     borderLeftWidth: 2,
-    borderLeftColor: NEU.accent,
+    borderLeftColor: PAPER.accent,
     paddingLeft: 12,
     marginTop: 14,
   },
   focusModeTitle: {
-    color: NEU.textPrimary,
+    color: PAPER.ink,
     fontSize: 15,
     fontFamily: NEU_FONTS.label,
   },
   focusModeText: {
-    color: NEU.textSecondary,
+    color: PAPER.inkMuted,
     fontSize: 14,
     lineHeight: 20,
     fontFamily: NEU_FONTS.body,
     marginTop: 3,
   },
+
   toggleRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingVertical: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    minHeight: PAPER.hitTarget,
   },
   navRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingVertical: 12,
-    minHeight: NEU.hitTarget,
+    paddingVertical: 13,
+    paddingHorizontal: 16,
+    minHeight: PAPER.hitTarget,
   },
   permissionRow: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    minHeight: PAPER.hitTarget,
+  },
+  accountRow: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+  },
+  accountEditRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    minHeight: PAPER.hitTarget,
   },
   rowLabel: {
-    color: NEU.textPrimary,
+    color: PAPER.ink,
     fontSize: 16,
     fontFamily: NEU_FONTS.label,
   },
   rowSubtitle: {
-    color: NEU.textSecondary,
+    color: PAPER.inkMuted,
     fontSize: 13,
     fontFamily: NEU_FONTS.body,
     marginTop: 2,
@@ -726,29 +844,31 @@ const styles = StyleSheet.create({
   },
   segmentTouch: {
     flex: 1,
-    minHeight: NEU.hitTarget,
+    minHeight: PAPER.hitTarget,
     justifyContent: "center",
   },
   segment: {
     minHeight: 38,
-    borderRadius: NEU.radiusSmall,
+    borderRadius: PAPER.radiusSm,
     borderWidth: 1,
-    borderColor: NEU.track,
+    borderColor: PAPER.line,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: NEU.card,
+    backgroundColor: PAPER.surface,
   },
   segmentActive: {
-    borderColor: NEU.accent,
-    backgroundColor: NEU.accent,
+    borderColor: PAPER.accent,
+    backgroundColor: PAPER.accentWash,
   },
   segmentText: {
-    color: NEU.textPrimary,
+    color: PAPER.inkMuted,
     fontSize: 14,
     fontFamily: NEU_FONTS.label,
+    fontVariant: ["tabular-nums"],
   },
   segmentTextActive: {
-    color: "#FFFFFF",
+    color: PAPER.accentInk,
+    fontFamily: NEU_FONTS.heading,
   },
 
   soundRow: {
@@ -757,43 +877,49 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   soundPillTouch: {
-    minHeight: NEU.hitTarget,
+    minHeight: PAPER.hitTarget,
     justifyContent: "center",
   },
   soundPill: {
     height: 34,
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: NEU.track,
+    borderColor: PAPER.line,
     paddingHorizontal: 14,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: NEU.card,
+    backgroundColor: PAPER.surface,
   },
   soundPillActive: {
-    borderColor: NEU.accent,
-    backgroundColor: NEU.accent,
+    borderColor: PAPER.accent,
+    backgroundColor: PAPER.accentWash,
   },
   soundPillText: {
-    color: NEU.textPrimary,
+    color: PAPER.inkMuted,
     fontSize: 13,
     fontFamily: NEU_FONTS.body,
   },
   soundPillTextActive: {
-    color: "#FFFFFF",
+    color: PAPER.accentInk,
+    fontFamily: NEU_FONTS.label,
   },
 
   accountLabel: {
-    color: NEU.textSecondary,
-    fontSize: 12,
+    color: PAPER.inkFaint,
+    fontSize: 11,
     fontFamily: NEU_FONTS.label,
     textTransform: "uppercase",
-    letterSpacing: 0.5,
-    marginBottom: 4,
+    letterSpacing: 1,
+    marginBottom: 3,
   },
   accountValue: {
-    color: NEU.textPrimary,
+    color: PAPER.ink,
     fontSize: 16,
     fontFamily: NEU_FONTS.body,
+  },
+  editText: {
+    color: PAPER.accentInk,
+    fontSize: 15,
+    fontFamily: NEU_FONTS.label,
   },
 });

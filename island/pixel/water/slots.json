@@ -1,0 +1,386 @@
+{
+  "version": 1,
+  "generated": "2026-09-14",
+  "generator": "island/pixel/layout.py",
+  "about": "Fixed places for the water objects, the same for every player. A slot is an angle around the island plus a band: 0 is the water line, 1 the outer edge of the shallow ring, above 2 open sea. Because the slots are angles, they keep working when the island grows.",
+  "howToUse": "position = island.radius(angle) + island.sideHeight(angle) + shallowWidth * band; x = centreX + cos(angle) * position, y = centreY + sin(angle) * position / 2. Owning n pieces of a group means using the first n slots.",
+  "slots": {
+    "dock": [
+      {
+        "angle": 291,
+        "band": -0.35,
+        "mirror": false
+      }
+    ],
+    "boats": [
+      {
+        "angle": 309,
+        "band": 1.1,
+        "level": 10
+      },
+      {
+        "angle": 84,
+        "band": 5.5,
+        "level": 4
+      },
+      {
+        "angle": 152,
+        "band": 2.1,
+        "level": 7
+      },
+      {
+        "angle": 248,
+        "band": 4.0,
+        "level": 2
+      },
+      {
+        "angle": 296,
+        "band": 6.5,
+        "level": 5
+      }
+    ],
+    "buoys": [
+      {
+        "angle": 22,
+        "band": 1.0
+      },
+      {
+        "angle": 58,
+        "band": 2.4
+      },
+      {
+        "angle": 94,
+        "band": 1.7
+      },
+      {
+        "angle": 130,
+        "band": 3.2
+      },
+      {
+        "angle": 171,
+        "band": 0.4
+      },
+      {
+        "angle": 202,
+        "band": 0.96
+      },
+      {
+        "angle": 238,
+        "band": 1.4
+      },
+      {
+        "angle": 274,
+        "band": 3.6
+      },
+      {
+        "angle": 310,
+        "band": 2.4
+      },
+      {
+        "angle": 351,
+        "band": 1.65
+      }
+    ],
+    "kayaks": [
+      {
+        "angle": 12,
+        "band": 0.45
+      },
+      {
+        "angle": 68,
+        "band": 0.8
+      },
+      {
+        "angle": 124,
+        "band": 1.15
+      },
+      {
+        "angle": 150,
+        "band": 0.45
+      },
+      {
+        "angle": 222,
+        "band": 0.8
+      },
+      {
+        "angle": 248,
+        "band": 1.15
+      },
+      {
+        "angle": 284,
+        "band": 0.65
+      },
+      {
+        "angle": 346,
+        "band": 0.8
+      }
+    ],
+    "rockClusters": [
+      {
+        "angle": 96,
+        "band": 0.5,
+        "members": [
+          {
+            "du": 0,
+            "dv": 0,
+            "size": 2
+          },
+          {
+            "du": 6,
+            "dv": 2,
+            "size": 0
+          },
+          {
+            "du": -5,
+            "dv": 3,
+            "size": 1
+          }
+        ]
+      },
+      {
+        "angle": 166,
+        "band": 0.4,
+        "members": [
+          {
+            "du": 0,
+            "dv": 0,
+            "size": 2
+          },
+          {
+            "du": 6,
+            "dv": 2,
+            "size": 0
+          },
+          {
+            "du": -5,
+            "dv": 3,
+            "size": 1
+          }
+        ]
+      },
+      {
+        "angle": 318,
+        "band": 1.2,
+        "members": [
+          {
+            "du": 0,
+            "dv": 0,
+            "size": 2
+          },
+          {
+            "du": 6,
+            "dv": 2,
+            "size": 0
+          },
+          {
+            "du": -5,
+            "dv": 3,
+            "size": 1
+          }
+        ]
+      }
+    ],
+    "dolphinSchools": [
+      {
+        "angle": 104,
+        "band": 4.6,
+        "members": [
+          {
+            "du": 0,
+            "dv": 0
+          },
+          {
+            "du": -9,
+            "dv": -4
+          },
+          {
+            "du": 9,
+            "dv": 3
+          },
+          {
+            "du": -16,
+            "dv": 4
+          },
+          {
+            "du": 16,
+            "dv": -3
+          },
+          {
+            "du": -6,
+            "dv": 8
+          },
+          {
+            "du": 7,
+            "dv": 9
+          },
+          {
+            "du": -21,
+            "dv": -2
+          },
+          {
+            "du": 22,
+            "dv": 6
+          }
+        ]
+      },
+      {
+        "angle": 232,
+        "band": 3.0,
+        "members": [
+          {
+            "du": 0,
+            "dv": 0
+          },
+          {
+            "du": -9,
+            "dv": -4
+          },
+          {
+            "du": 9,
+            "dv": 3
+          },
+          {
+            "du": -16,
+            "dv": 4
+          },
+          {
+            "du": 16,
+            "dv": -3
+          },
+          {
+            "du": -6,
+            "dv": 8
+          },
+          {
+            "du": 7,
+            "dv": 9
+          },
+          {
+            "du": -21,
+            "dv": -2
+          },
+          {
+            "du": 22,
+            "dv": 6
+          }
+        ]
+      },
+      {
+        "angle": 280,
+        "band": 5.8,
+        "members": [
+          {
+            "du": 0,
+            "dv": 0
+          },
+          {
+            "du": -9,
+            "dv": -4
+          },
+          {
+            "du": 9,
+            "dv": 3
+          },
+          {
+            "du": -16,
+            "dv": 4
+          },
+          {
+            "du": 16,
+            "dv": -3
+          },
+          {
+            "du": -6,
+            "dv": 8
+          },
+          {
+            "du": 7,
+            "dv": 9
+          },
+          {
+            "du": -21,
+            "dv": -2
+          },
+          {
+            "du": 22,
+            "dv": 6
+          }
+        ]
+      }
+    ],
+    "gulls": [
+      {
+        "angle": 15,
+        "band": 0.5,
+        "height": 16,
+        "big": true
+      },
+      {
+        "angle": 50,
+        "band": 2.1,
+        "height": 23,
+        "big": false
+      },
+      {
+        "angle": 90,
+        "band": 3.7,
+        "height": 30,
+        "big": false
+      },
+      {
+        "angle": 125,
+        "band": 5.3,
+        "height": 37,
+        "big": true
+      },
+      {
+        "angle": 160,
+        "band": 0.5,
+        "height": 44,
+        "big": false
+      },
+      {
+        "angle": 195,
+        "band": 0.58,
+        "height": 16,
+        "big": false
+      },
+      {
+        "angle": 230,
+        "band": 3.7,
+        "height": 23,
+        "big": true
+      },
+      {
+        "angle": 270,
+        "band": 5.3,
+        "height": 30,
+        "big": false
+      },
+      {
+        "angle": 305,
+        "band": 0.5,
+        "height": 37,
+        "big": false
+      },
+      {
+        "angle": 340,
+        "band": 1.54,
+        "height": 44,
+        "big": true
+      },
+      {
+        "angle": 205,
+        "band": -3.0,
+        "height": 34,
+        "big": true
+      },
+      {
+        "angle": 35,
+        "band": -5.5,
+        "height": 26,
+        "big": false
+      }
+    ]
+  }
+}

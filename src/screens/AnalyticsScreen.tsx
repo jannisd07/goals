@@ -7,11 +7,15 @@ import {
   StyleSheet,
   Pressable,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { NeumorphicSurface } from "../components/NeumorphicSurface";
+import {
+  PaperCard,
+  PaperHeader,
+  PaperLabel,
+  PaperScreen,
+} from "../components/paper/PaperUI";
 import { TextAction } from "../components/ui/TextAction";
 import { ChevronLeftIcon, ChevronRightIcon } from "../components/TabIcons";
 import { useMonthSessions } from "../hooks/useSessions";
@@ -22,7 +26,8 @@ import { formatInsightUpdatedAt } from "../lib/serverInsights";
 import { hapticLight } from "../lib/haptics";
 import type { Goal, Session } from "../types";
 import type { RootStackParamList } from "../navigation/types";
-import { NEU, NEU_FONTS } from "../theme/neumorphism";
+import { NEU_FONTS } from "../theme/neumorphism";
+import { PAPER } from "../theme/paper";
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
@@ -84,11 +89,18 @@ function buildMonthGrid(
   return weeks;
 }
 
+/**
+ * Four fixed steps rather than a continuous alpha ramp. A smooth gradient makes
+ * every day look slightly different and nothing look meaningful; discrete steps
+ * let you actually compare two weeks at a glance.
+ */
+const HEAT_STEPS = ["#CDE7D5", "#8FCBA4", "#4FAC72", "#2E9E4F"] as const;
+
 function intensityColor(value: number, maxValue: number, physical: boolean): string {
-  if (value <= 0) return "#D5DBE4";
+  if (value <= 0) return PAPER.sunken;
   const t = Math.min(1, value / Math.max(physical ? 1 : 30, maxValue));
-  const alpha = 0.3 + t * 0.7;
-  return `rgba(${NEU.accentRgb}, ${alpha.toFixed(2)})`;
+  const step = Math.min(HEAT_STEPS.length - 1, Math.floor(t * HEAT_STEPS.length));
+  return HEAT_STEPS[step];
 }
 
 interface WeekSummary {
@@ -259,77 +271,78 @@ export function AnalyticsScreen() {
       : "";
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: NEU.bg }} edges={["top", "bottom"]}>
-      <Animated.View entering={FadeIn.duration(400)} style={{ flex: 1 }}>
+    <PaperScreen edges={["top"]}>
+      <PaperHeader
+        title="Stats"
+        onClose={() => {
+          hapticLight();
+          navigation.goBack();
+        }}
+      />
+      <Animated.View entering={FadeIn.duration(220)} style={{ flex: 1 }}>
         <ScrollView
+          bounces={false}
+          alwaysBounceVertical={false}
           style={{ flex: 1 }}
           contentContainerStyle={{ paddingBottom: SCREEN_BOTTOM_CLEARANCE }}
           showsVerticalScrollIndicator={false}
         >
-          {/* Header belongs to this same scrolling surface; nothing is sticky. */}
-          <View style={styles.header}>
-            <TextAction
-              label="Back"
-              onPress={() => {
-                hapticLight();
-                navigation.goBack();
-              }}
-              containerStyle={{ alignSelf: "flex-start", marginLeft: -4 }}
-            />
-            <View style={styles.headerMain}>
-              <View>
-                <Text style={styles.headerTitle}>Stats</Text>
-                <Text style={styles.headerSubtitle}>
-                  {MONTH_NAMES[month]} {year}
-                </Text>
-              </View>
-              <View style={styles.monthNav}>
-                <Pressable
-                  onPress={goPrevMonth}
-                  accessibilityRole="button"
-                  accessibilityLabel="Previous month"
-                  style={({ pressed }) => [
-                    styles.monthNavBtn,
-                    { opacity: pressed ? 0.5 : 1 },
-                  ]}
-                >
-                  <ChevronLeftIcon size={20} color={NEU.accent} strokeWidth={2} />
-                </Pressable>
-                <Pressable
-                  onPress={goNextMonth}
-                  disabled={isCurrentMonth}
-                  accessibilityRole="button"
-                  accessibilityLabel="Next month"
-                  accessibilityState={{ disabled: isCurrentMonth }}
-                  style={({ pressed }) => [
-                    styles.monthNavBtn,
-                    { opacity: isCurrentMonth ? 0.3 : pressed ? 0.5 : 1 },
-                  ]}
-                >
-                  <ChevronRightIcon size={20} color={NEU.accent} strokeWidth={2} />
-                </Pressable>
-              </View>
+          {/* The month is the axis everything below is read against, so it gets
+              its own line rather than being tucked into the title. */}
+          <View style={styles.monthRow}>
+            <Text style={styles.monthLabel}>
+              {MONTH_NAMES[month]} {year}
+            </Text>
+            <View style={styles.monthNav}>
+              <Pressable
+                onPress={goPrevMonth}
+                accessibilityRole="button"
+                accessibilityLabel="Previous month"
+                style={({ pressed }) => [
+                  styles.monthNavBtn,
+                  { opacity: pressed ? 0.5 : 1 },
+                ]}
+              >
+                <ChevronLeftIcon size={18} color={PAPER.ink} strokeWidth={2} />
+              </Pressable>
+              <Pressable
+                onPress={goNextMonth}
+                disabled={isCurrentMonth}
+                accessibilityRole="button"
+                accessibilityLabel="Next month"
+                accessibilityState={{ disabled: isCurrentMonth }}
+                style={({ pressed }) => [
+                  styles.monthNavBtn,
+                  { opacity: isCurrentMonth ? 0.25 : pressed ? 0.5 : 1 },
+                ]}
+              >
+                <ChevronRightIcon size={18} color={PAPER.ink} strokeWidth={2} />
+              </Pressable>
             </View>
           </View>
 
           {isLoading ? (
             <View style={styles.loadingState}>
-              <ActivityIndicator size="small" color={NEU.accent} />
+              <ActivityIndicator size="small" color={PAPER.accent} />
               <Text style={styles.emptyText}>Loading your stats…</Text>
             </View>
           ) : isError ? (
-            <NeumorphicSurface style={styles.card} contentPadding={20}>
+            <PaperCard style={styles.card} padding={18}>
               <Text style={styles.emptyTitle}>Stats could not be loaded</Text>
               <Text style={styles.emptyText}>Check your connection and try again.</Text>
-              <TextAction label="Try Again" onPress={() => void refetch()} />
-            </NeumorphicSurface>
+              <TextAction
+                label="Try Again"
+                onPress={() => void refetch()}
+                textStyle={styles.linkText}
+              />
+            </PaperCard>
           ) : activeGoals.length === 0 ? (
-            <NeumorphicSurface style={styles.card} contentPadding={20}>
+            <PaperCard style={styles.card} padding={18}>
               <Text style={styles.emptyTitle}>No goals yet</Text>
               <Text style={styles.emptyText}>
                 Set up a goal on the Home screen and your progress will show up here.
               </Text>
-            </NeumorphicSurface>
+            </PaperCard>
           ) : (
             <>
               {/* Goal segments */}
@@ -365,28 +378,33 @@ export function AnalyticsScreen() {
                 </Animated.View>
               ) : null}
 
-              {/* KPI row */}
+              {/* Two numbers, one card, one hairline between them. Two separate
+                  panels for two numbers reads as filler. */}
               <Animated.View entering={FadeInDown.delay(100).duration(400)}>
-                <View style={styles.kpiRow}>
-                  <NeumorphicSurface style={styles.kpiCard} contentPadding={14}>
-                    <Text style={styles.kpiValue}>
-                      {isPhysical ? totalVisits : totalHours.toFixed(1)}
-                      <Text style={styles.kpiUnit}>{isPhysical ? " visits" : "h"}</Text>
-                    </Text>
-                    <Text style={styles.kpiLabel}>this month</Text>
-                  </NeumorphicSurface>
-                  <NeumorphicSurface style={styles.kpiCard} contentPadding={14}>
-                    <Text style={styles.kpiValue}>
-                      {completedWeeks.length > 0 ? `${weeksHit}/${completedWeeks.length}` : "—"}
-                    </Text>
-                    <Text style={styles.kpiLabel}>weeks on target</Text>
-                  </NeumorphicSurface>
-                </View>
+                <PaperCard style={styles.card} padding={0}>
+                  <View style={styles.kpiRow}>
+                    <View style={styles.kpiCell}>
+                      <Text style={styles.kpiValue}>
+                        {isPhysical ? totalVisits : totalHours.toFixed(1)}
+                        <Text style={styles.kpiUnit}>{isPhysical ? " visits" : "h"}</Text>
+                      </Text>
+                      <Text style={styles.kpiLabel}>this month</Text>
+                    </View>
+                    <View style={styles.kpiSplit} />
+                    <View style={styles.kpiCell}>
+                      <Text style={styles.kpiValue}>
+                        {completedWeeks.length > 0 ? `${weeksHit}/${completedWeeks.length}` : "—"}
+                      </Text>
+                      <Text style={styles.kpiLabel}>weeks on target</Text>
+                    </View>
+                  </View>
+                </PaperCard>
               </Animated.View>
 
               {/* Calendar heatmap */}
               <Animated.View entering={FadeInDown.delay(150).duration(400)}>
-                <NeumorphicSurface style={styles.card} contentPadding={16}>
+                <PaperLabel>Daily activity</PaperLabel>
+                <PaperCard style={styles.card} padding={14}>
                   <View style={styles.dayHeaderRow}>
                     {DAY_HEADERS.map((d, i) => (
                       <Text key={`${d}-${i}`} style={styles.dayHeader}>
@@ -428,14 +446,22 @@ export function AnalyticsScreen() {
                       ))}
                     </View>
                   ))}
-                </NeumorphicSurface>
+                  <View style={styles.legendRow}>
+                    <Text style={styles.legendLabel}>Less</Text>
+                    <View style={styles.legendSwatch} />
+                    {HEAT_STEPS.map((color) => (
+                      <View key={color} style={[styles.legendSwatch, { backgroundColor: color }]} />
+                    ))}
+                    <Text style={styles.legendLabel}>More</Text>
+                  </View>
+                </PaperCard>
               </Animated.View>
 
               {/* Insight — quiet, data-driven, no AI framing */}
               <Animated.View entering={FadeInDown.delay(200).duration(400)}>
-                <NeumorphicSurface style={styles.card} contentPadding={16}>
+                <PaperLabel>Your pattern</PaperLabel>
+                <PaperCard style={styles.card} padding={16}>
                   <View style={styles.insightHeader}>
-                    <Text style={styles.insightLabel}>Your pattern</Text>
                     <TextAction
                       label={serverInsight.isRefreshing ? "Refreshing…" : "Refresh"}
                       onPress={() => {
@@ -453,7 +479,7 @@ export function AnalyticsScreen() {
                   </View>
                   {serverInsight.isLoading && !localInsight ? (
                     <View style={styles.insightLoading}>
-                      <ActivityIndicator size="small" color={NEU.accent} />
+                      <ActivityIndicator size="small" color={PAPER.accent} />
                       <Text style={styles.insightLoadingText}>Finding your patterns…</Text>
                     </View>
                   ) : (
@@ -466,13 +492,14 @@ export function AnalyticsScreen() {
                   ) : insightUpdatedLabel ? (
                     <Text style={styles.insightMeta}>{insightUpdatedLabel}</Text>
                   ) : null}
-                </NeumorphicSurface>
+                </PaperCard>
               </Animated.View>
 
               {/* Weeks drill-down */}
               {weekSummaries.length > 0 ? (
                 <Animated.View entering={FadeInDown.delay(250).duration(400)}>
-                  <NeumorphicSurface style={styles.card} contentPadding={8}>
+                  <PaperLabel>Week by week</PaperLabel>
+                  <PaperCard style={styles.card} padding={0}>
                     {weekSummaries.map((week, index) => (
                       <Pressable
                         key={week.startISO}
@@ -496,7 +523,7 @@ export function AnalyticsScreen() {
                         <Text
                           style={[
                             styles.weekListValue,
-                            week.hitTarget === true && { color: NEU.accent },
+                            week.hitTarget === true && styles.weekListValueHit,
                           ]}
                         >
                           {isPhysical
@@ -510,122 +537,128 @@ export function AnalyticsScreen() {
                         </Text>
                       </Pressable>
                     ))}
-                  </NeumorphicSurface>
+                  </PaperCard>
                 </Animated.View>
               ) : null}
             </>
           )}
         </ScrollView>
       </Animated.View>
-    </SafeAreaView>
+    </PaperScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  header: {
-    paddingHorizontal: 22,
-    paddingTop: 4,
-    paddingBottom: 16,
-  },
-  headerMain: {
+  monthRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginTop: 2,
+    paddingLeft: PAPER.gutter + 4,
+    paddingRight: PAPER.gutter - 4,
+    paddingTop: 6,
+    paddingBottom: 4,
   },
-  headerTitle: {
-    color: NEU.textPrimary,
-    fontSize: 28,
+  monthLabel: {
+    color: PAPER.ink,
+    fontSize: 26,
+    lineHeight: 32,
     fontFamily: NEU_FONTS.heading,
-    letterSpacing: -0.3,
-  },
-  headerSubtitle: {
-    color: NEU.textSecondary,
-    fontSize: 13,
-    fontFamily: NEU_FONTS.body,
-    marginTop: 3,
+    letterSpacing: -0.4,
   },
   monthNav: {
     flexDirection: "row",
-    gap: 4,
   },
   monthNavBtn: {
-    width: NEU.hitTarget,
-    height: NEU.hitTarget,
+    width: PAPER.hitTarget,
+    height: PAPER.hitTarget,
     alignItems: "center",
     justifyContent: "center",
   },
 
   card: {
-    marginHorizontal: 24,
-    marginBottom: 16,
+    marginBottom: 4,
   },
   loadingState: {
     minHeight: 180,
     alignItems: "center",
     justifyContent: "center",
     gap: 12,
-    paddingHorizontal: 24,
+    paddingHorizontal: PAPER.gutter,
+  },
+  linkText: {
+    color: PAPER.accentInk,
+    fontSize: 15,
   },
 
+  // Goal picker: white stays white when chosen, only the label and outline
+  // turn green, so a selected goal still belongs to the same family of cards.
   segmentRow: {
     flexDirection: "row",
-    gap: 10,
-    marginHorizontal: 24,
-    marginBottom: 16,
+    gap: 8,
+    marginHorizontal: PAPER.gutter,
+    marginTop: 14,
+    marginBottom: 18,
   },
   segmentTouch: {
     flex: 1,
-    minHeight: NEU.hitTarget,
+    minHeight: PAPER.hitTarget,
     justifyContent: "center",
   },
   segment: {
     minHeight: 38,
-    borderRadius: NEU.radiusSmall,
+    borderRadius: PAPER.radiusSm,
     borderWidth: 1,
-    borderColor: NEU.track,
+    borderColor: PAPER.line,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: NEU.card,
+    backgroundColor: PAPER.surface,
     paddingHorizontal: 10,
   },
   segmentActive: {
-    borderColor: NEU.accent,
-    backgroundColor: NEU.accent,
+    borderColor: PAPER.accent,
+    backgroundColor: PAPER.accentWash,
   },
   segmentText: {
-    color: NEU.textPrimary,
+    color: PAPER.inkMuted,
     fontSize: 14,
     fontFamily: NEU_FONTS.label,
   },
   segmentTextActive: {
-    color: "#FFFFFF",
+    color: PAPER.accentInk,
+    fontFamily: NEU_FONTS.heading,
   },
 
   kpiRow: {
     flexDirection: "row",
-    gap: 16,
-    marginHorizontal: 24,
-    marginBottom: 16,
+    alignItems: "stretch",
   },
-  kpiCard: {
+  kpiCell: {
     flex: 1,
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+  },
+  kpiSplit: {
+    width: 1,
+    backgroundColor: PAPER.line,
+    marginVertical: 12,
   },
   kpiValue: {
-    color: NEU.textPrimary,
-    fontSize: 22,
+    color: PAPER.ink,
+    fontSize: 26,
+    lineHeight: 32,
     fontFamily: NEU_FONTS.heading,
+    fontVariant: ["tabular-nums"],
   },
   kpiUnit: {
     fontSize: 15,
     fontFamily: NEU_FONTS.label,
-    color: NEU.textSecondary,
+    color: PAPER.inkMuted,
   },
   kpiLabel: {
-    color: NEU.textSecondary,
+    color: PAPER.inkMuted,
     fontSize: 13,
     fontFamily: NEU_FONTS.body,
-    marginTop: 3,
+    marginTop: 2,
   },
 
   dayHeaderRow: {
@@ -635,45 +668,59 @@ const styles = StyleSheet.create({
   dayHeader: {
     flex: 1,
     textAlign: "center",
-    color: NEU.textSecondary,
+    color: PAPER.inkFaint,
     fontSize: 11,
     fontFamily: NEU_FONTS.label,
   },
   weekRow: {
     flexDirection: "row",
-    marginBottom: 6,
+    marginBottom: 5,
   },
   dayCellWrap: {
     flex: 1,
     alignItems: "center",
   },
   dayCell: {
-    width: 30,
-    height: 30,
-    borderRadius: 8,
+    width: 28,
+    height: 28,
+    borderRadius: 6,
   },
   dayCellToday: {
     borderWidth: 2,
-    borderColor: NEU.accent,
+    borderColor: PAPER.ink,
+  },
+  legendRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "flex-end",
+    gap: 4,
+    marginTop: 8,
+  },
+  legendLabel: {
+    color: PAPER.inkFaint,
+    fontSize: 11,
+    fontFamily: NEU_FONTS.body,
+    marginHorizontal: 4,
+  },
+  legendSwatch: {
+    width: 11,
+    height: 11,
+    borderRadius: 3,
+    backgroundColor: PAPER.sunken,
   },
 
   insightText: {
-    color: NEU.textPrimary,
+    color: PAPER.ink,
     fontSize: 16,
     fontFamily: NEU_FONTS.body,
-    lineHeight: 23,
+    lineHeight: 24,
   },
   insightHeader: {
-    minHeight: NEU.hitTarget,
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 4,
-  },
-  insightLabel: {
-    color: NEU.textPrimary,
-    fontSize: 16,
-    fontFamily: NEU_FONTS.label,
+    justifyContent: "flex-end",
+    marginTop: -4,
+    marginBottom: 2,
   },
   insightRefresh: {
     minWidth: 72,
@@ -681,6 +728,7 @@ const styles = StyleSheet.create({
   },
   insightRefreshText: {
     fontSize: 14,
+    color: PAPER.accentInk,
   },
   insightLoading: {
     minHeight: 46,
@@ -689,49 +737,53 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   insightLoadingText: {
-    color: NEU.textSecondary,
+    color: PAPER.inkMuted,
     fontSize: 15,
     fontFamily: NEU_FONTS.body,
   },
   insightMeta: {
-    color: NEU.textSecondary,
+    color: PAPER.inkFaint,
     fontSize: 13,
     fontFamily: NEU_FONTS.body,
-    marginTop: 10,
+    marginTop: 12,
   },
 
   weekListRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 10,
-    minHeight: NEU.hitTarget,
+    paddingHorizontal: 16,
+    minHeight: 52,
   },
   weekListDivider: {
     borderTopWidth: 1,
-    borderTopColor: "rgba(197, 205, 216, 0.6)",
+    borderTopColor: PAPER.line,
   },
   weekListLabel: {
-    color: NEU.textPrimary,
+    color: PAPER.ink,
     fontSize: 15,
     fontFamily: NEU_FONTS.body,
   },
   weekListValue: {
-    color: NEU.textSecondary,
+    color: PAPER.inkMuted,
     fontSize: 14,
     fontFamily: NEU_FONTS.label,
+    fontVariant: ["tabular-nums"],
+  },
+  weekListValueHit: {
+    color: PAPER.accentInk,
   },
 
   emptyTitle: {
-    color: NEU.textPrimary,
-    fontSize: 18,
+    color: PAPER.ink,
+    fontSize: 16,
     fontFamily: NEU_FONTS.label,
-    marginBottom: 8,
+    marginBottom: 6,
   },
   emptyText: {
-    color: NEU.textSecondary,
-    fontSize: 16,
+    color: PAPER.inkMuted,
+    fontSize: 15,
     fontFamily: NEU_FONTS.body,
-    lineHeight: 23,
+    lineHeight: 21,
   },
 });

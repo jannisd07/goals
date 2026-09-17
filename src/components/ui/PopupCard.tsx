@@ -1,6 +1,6 @@
 import React from "react";
 import { StyleProp, StyleSheet, View, ViewStyle } from "react-native";
-import { NEU } from "../../theme/neumorphism";
+import { PAPER } from "../../theme/paper";
 
 interface PopupCardProps {
   children: React.ReactNode;
@@ -22,7 +22,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingTop: 20,
     paddingBottom: 24,
-    borderRadius: NEU.radiusLarge,
-    backgroundColor: NEU.card,
+    borderRadius: PAPER.radiusLg,
+    backgroundColor: PAPER.surface,
   },
 });

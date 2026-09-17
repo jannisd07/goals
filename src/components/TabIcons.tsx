@@ -141,6 +141,21 @@ export function CloseIcon({ size = 24, color = "#000000", strokeWidth = 1.5 }: I
   );
 }
 
+/** A tick, for confirming a set of changes. */
+export function CheckIcon({ size = 24, color = "#000000", strokeWidth = 2 }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M5 12.5 10 17.5 19 7"
+        stroke={color}
+        strokeWidth={strokeWidth}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
+
 export function RefreshIcon({ size = 20, color = "#000000", strokeWidth = 1.5 }: IconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
@@ -180,6 +195,32 @@ export function BellIcon({ size = 20, color = "#000000", strokeWidth = 1.5 }: Ic
       />
       <Path
         d="M13.73 21A2 2 0 0 1 10.27 21"
+        stroke={color}
+        strokeWidth={strokeWidth}
+        strokeLinecap="round"
+      />
+    </Svg>
+  );
+}
+
+export function TrashIcon({ size = 20, color = "#000000", strokeWidth = 1.5 }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M4 7H20M10 4.5H14"
+        stroke={color}
+        strokeWidth={strokeWidth}
+        strokeLinecap="round"
+      />
+      <Path
+        d="M6.5 7L7.2 19.4C7.25 20.3 8 21 8.9 21H15.1C16 21 16.75 20.3 16.8 19.4L17.5 7"
+        stroke={color}
+        strokeWidth={strokeWidth}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <Path
+        d="M10 10.5V17.5M14 10.5V17.5"
         stroke={color}
         strokeWidth={strokeWidth}
         strokeLinecap="round"

@@ -12,6 +12,10 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import * as AppleAuthentication from "expo-apple-authentication";
+// Imported statically like every other dependency: a dynamic import() builds a
+// module namespace at runtime, which reads every export of the module at once.
+// For "react-native" that crashed the app outright (see useFriends.ts).
+import * as WebBrowser from "expo-web-browser";
 import * as Crypto from "expo-crypto";
 import Svg, { Path } from "react-native-svg";
 import { supabase } from "../lib/supabase";
@@ -149,7 +153,7 @@ function AuthTabs({
               style={{
                 fontFamily: isActive ? NEU_FONTS.label : NEU_FONTS.body,
                 fontSize: 16,
-                color: isActive ? NEU.accent : NEU.textSecondary,
+                color: isActive ? NEU.textPrimary : NEU.textSecondary,
               }}
             >
               {tab === "signin" ? "Sign In" : "Sign Up"}
@@ -258,7 +262,6 @@ async function signInWithGoogle(): Promise<boolean> {
   if (!data.url) throw new Error("No OAuth URL returned.");
 
   // Open the browser for Google sign-in
-  const WebBrowser = await import("expo-web-browser");
   const result = await WebBrowser.openAuthSessionAsync(data.url, redirectUrl);
 
   if (result.type === "success" && result.url) {
@@ -403,14 +406,16 @@ function AuthSubmitButton({
           minHeight: 56,
           flex: 1,
           borderRadius: NEU.radius,
-          backgroundColor: NEU.textPrimary,
+          backgroundColor: NEU.card,
+          borderWidth: 1,
+          borderColor: NEU.track,
           alignItems: "center",
           justifyContent: "center",
         }}
       >
         <Text
           style={{
-            color: "#FFFFFF",
+            color: NEU.textPrimary,
             fontSize: 17,
             fontFamily: NEU_FONTS.label,
             letterSpacing: 0.1,
@@ -594,12 +599,14 @@ export function AuthScreen() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: NEU.bg }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: NEU.pageSolid }}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
         <ScrollView
+          bounces={false}
+          alwaysBounceVertical={false}
           contentContainerStyle={{
             flexGrow: 1,
             paddingTop: 16,
@@ -624,6 +631,7 @@ export function AuthScreen() {
               }}
               disabled={loading}
               containerStyle={{ marginBottom: 22, alignSelf: "flex-start" }}
+              textStyle={{ color: NEU.textPrimary }}
             />
             <Text
               style={{

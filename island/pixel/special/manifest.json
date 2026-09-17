@@ -1,0 +1,992 @@
+[
+  {
+    "key": "flagpole",
+    "label": "Flagpole",
+    "level": 1,
+    "stages": 1,
+    "file": "flagpole_1.png",
+    "size": [
+      15,
+      33
+    ],
+    "anchorPx": [
+      7,
+      31
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 2.6,
+    "zone": "grass",
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 14
+  },
+  {
+    "key": "flagpole",
+    "label": "Germany",
+    "level": 1,
+    "stages": 1,
+    "file": "flagpole_1_de.png",
+    "variant": "de",
+    "size": [
+      25,
+      33
+    ],
+    "anchorPx": [
+      7,
+      31
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 2.6,
+    "zone": "grass",
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 13
+  },
+  {
+    "key": "flagpole",
+    "label": "Turkey",
+    "level": 1,
+    "stages": 1,
+    "file": "flagpole_1_tr.png",
+    "variant": "tr",
+    "size": [
+      25,
+      33
+    ],
+    "anchorPx": [
+      7,
+      31
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 2.6,
+    "zone": "grass",
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 12
+  },
+  {
+    "key": "flagpole",
+    "label": "Ukraine",
+    "level": 1,
+    "stages": 1,
+    "file": "flagpole_1_ua.png",
+    "variant": "ua",
+    "size": [
+      25,
+      33
+    ],
+    "anchorPx": [
+      7,
+      31
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 2.6,
+    "zone": "grass",
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 12
+  },
+  {
+    "key": "flagpole",
+    "label": "Syria",
+    "level": 1,
+    "stages": 1,
+    "file": "flagpole_1_sy.png",
+    "variant": "sy",
+    "size": [
+      25,
+      33
+    ],
+    "anchorPx": [
+      7,
+      31
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 2.6,
+    "zone": "grass",
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 14
+  },
+  {
+    "key": "flagpole",
+    "label": "Romania",
+    "level": 1,
+    "stages": 1,
+    "file": "flagpole_1_ro.png",
+    "variant": "ro",
+    "size": [
+      25,
+      33
+    ],
+    "anchorPx": [
+      7,
+      31
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 2.6,
+    "zone": "grass",
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 13
+  },
+  {
+    "key": "flagpole",
+    "label": "Poland",
+    "level": 1,
+    "stages": 1,
+    "file": "flagpole_1_pl.png",
+    "variant": "pl",
+    "size": [
+      25,
+      33
+    ],
+    "anchorPx": [
+      7,
+      31
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 2.6,
+    "zone": "grass",
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 12
+  },
+  {
+    "key": "flagpole",
+    "label": "Afghanistan",
+    "level": 1,
+    "stages": 1,
+    "file": "flagpole_1_af.png",
+    "variant": "af",
+    "size": [
+      25,
+      33
+    ],
+    "anchorPx": [
+      7,
+      31
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 2.6,
+    "zone": "grass",
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 14
+  },
+  {
+    "key": "flagpole",
+    "label": "Italy",
+    "level": 1,
+    "stages": 1,
+    "file": "flagpole_1_it.png",
+    "variant": "it",
+    "size": [
+      25,
+      33
+    ],
+    "anchorPx": [
+      7,
+      31
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 2.6,
+    "zone": "grass",
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 13
+  },
+  {
+    "key": "flagpole",
+    "label": "Bulgaria",
+    "level": 1,
+    "stages": 1,
+    "file": "flagpole_1_bg.png",
+    "variant": "bg",
+    "size": [
+      25,
+      33
+    ],
+    "anchorPx": [
+      7,
+      31
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 2.6,
+    "zone": "grass",
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 13
+  },
+  {
+    "key": "flagpole",
+    "label": "Croatia",
+    "level": 1,
+    "stages": 1,
+    "file": "flagpole_1_hr.png",
+    "variant": "hr",
+    "size": [
+      25,
+      33
+    ],
+    "anchorPx": [
+      7,
+      31
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 2.6,
+    "zone": "grass",
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 13
+  },
+  {
+    "key": "flagpole",
+    "label": "Kosovo",
+    "level": 1,
+    "stages": 1,
+    "file": "flagpole_1_xk.png",
+    "variant": "xk",
+    "size": [
+      25,
+      33
+    ],
+    "anchorPx": [
+      7,
+      31
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 2.6,
+    "zone": "grass",
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 13
+  },
+  {
+    "key": "flagpole",
+    "label": "India",
+    "level": 1,
+    "stages": 1,
+    "file": "flagpole_1_in.png",
+    "variant": "in",
+    "size": [
+      25,
+      33
+    ],
+    "anchorPx": [
+      7,
+      31
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 2.6,
+    "zone": "grass",
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 14
+  },
+  {
+    "key": "flagpole",
+    "label": "Greece",
+    "level": 1,
+    "stages": 1,
+    "file": "flagpole_1_gr.png",
+    "variant": "gr",
+    "size": [
+      25,
+      33
+    ],
+    "anchorPx": [
+      7,
+      31
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 2.6,
+    "zone": "grass",
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 12
+  },
+  {
+    "key": "flagpole",
+    "label": "Serbia",
+    "level": 1,
+    "stages": 1,
+    "file": "flagpole_1_rs.png",
+    "variant": "rs",
+    "size": [
+      25,
+      33
+    ],
+    "anchorPx": [
+      7,
+      31
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 2.6,
+    "zone": "grass",
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 14
+  },
+  {
+    "key": "flagpole",
+    "label": "Iraq",
+    "level": 1,
+    "stages": 1,
+    "file": "flagpole_1_iq.png",
+    "variant": "iq",
+    "size": [
+      25,
+      33
+    ],
+    "anchorPx": [
+      7,
+      31
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 2.6,
+    "zone": "grass",
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 14
+  },
+  {
+    "key": "flagpole",
+    "label": "Russia",
+    "level": 1,
+    "stages": 1,
+    "file": "flagpole_1_ru.png",
+    "variant": "ru",
+    "size": [
+      25,
+      33
+    ],
+    "anchorPx": [
+      7,
+      31
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 2.6,
+    "zone": "grass",
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 13
+  },
+  {
+    "key": "flagpole",
+    "label": "Bosnia",
+    "level": 1,
+    "stages": 1,
+    "file": "flagpole_1_ba.png",
+    "variant": "ba",
+    "size": [
+      25,
+      33
+    ],
+    "anchorPx": [
+      7,
+      31
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 2.6,
+    "zone": "grass",
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 13
+  },
+  {
+    "key": "flagpole",
+    "label": "Spain",
+    "level": 1,
+    "stages": 1,
+    "file": "flagpole_1_es.png",
+    "variant": "es",
+    "size": [
+      25,
+      33
+    ],
+    "anchorPx": [
+      7,
+      31
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 2.6,
+    "zone": "grass",
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 12
+  },
+  {
+    "key": "flagpole",
+    "label": "Hungary",
+    "level": 1,
+    "stages": 1,
+    "file": "flagpole_1_hu.png",
+    "variant": "hu",
+    "size": [
+      25,
+      33
+    ],
+    "anchorPx": [
+      7,
+      31
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 2.6,
+    "zone": "grass",
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 13
+  },
+  {
+    "key": "flagpole",
+    "label": "North Macedonia",
+    "level": 1,
+    "stages": 1,
+    "file": "flagpole_1_mk.png",
+    "variant": "mk",
+    "size": [
+      25,
+      33
+    ],
+    "anchorPx": [
+      7,
+      31
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 2.6,
+    "zone": "grass",
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 12
+  },
+  {
+    "key": "flagpole",
+    "label": "Vietnam",
+    "level": 1,
+    "stages": 1,
+    "file": "flagpole_1_vn.png",
+    "variant": "vn",
+    "size": [
+      25,
+      33
+    ],
+    "anchorPx": [
+      7,
+      31
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 2.6,
+    "zone": "grass",
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 12
+  },
+  {
+    "key": "flagpole",
+    "label": "Iran",
+    "level": 1,
+    "stages": 1,
+    "file": "flagpole_1_ir.png",
+    "variant": "ir",
+    "size": [
+      25,
+      33
+    ],
+    "anchorPx": [
+      7,
+      31
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 2.6,
+    "zone": "grass",
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 13
+  },
+  {
+    "key": "flagpole",
+    "label": "China",
+    "level": 1,
+    "stages": 1,
+    "file": "flagpole_1_cn.png",
+    "variant": "cn",
+    "size": [
+      25,
+      33
+    ],
+    "anchorPx": [
+      7,
+      31
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 2.6,
+    "zone": "grass",
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 12
+  },
+  {
+    "key": "flagpole",
+    "label": "Morocco",
+    "level": 1,
+    "stages": 1,
+    "file": "flagpole_1_ma.png",
+    "variant": "ma",
+    "size": [
+      25,
+      33
+    ],
+    "anchorPx": [
+      7,
+      31
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 2.6,
+    "zone": "grass",
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 12
+  },
+  {
+    "key": "flagpole",
+    "label": "Albania",
+    "level": 1,
+    "stages": 1,
+    "file": "flagpole_1_al.png",
+    "variant": "al",
+    "size": [
+      25,
+      33
+    ],
+    "anchorPx": [
+      7,
+      31
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 2.6,
+    "zone": "grass",
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 12
+  },
+  {
+    "key": "flagpole",
+    "label": "Austria",
+    "level": 1,
+    "stages": 1,
+    "file": "flagpole_1_at.png",
+    "variant": "at",
+    "size": [
+      25,
+      33
+    ],
+    "anchorPx": [
+      7,
+      31
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 2.6,
+    "zone": "grass",
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 12
+  },
+  {
+    "key": "flagpole",
+    "label": "Portugal",
+    "level": 1,
+    "stages": 1,
+    "file": "flagpole_1_pt.png",
+    "variant": "pt",
+    "size": [
+      25,
+      33
+    ],
+    "anchorPx": [
+      7,
+      31
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 2.6,
+    "zone": "grass",
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 14
+  },
+  {
+    "key": "flagpole",
+    "label": "Lebanon",
+    "level": 1,
+    "stages": 1,
+    "file": "flagpole_1_lb.png",
+    "variant": "lb",
+    "size": [
+      25,
+      33
+    ],
+    "anchorPx": [
+      7,
+      31
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 2.6,
+    "zone": "grass",
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 13
+  },
+  {
+    "key": "flagpole",
+    "label": "Eritrea",
+    "level": 1,
+    "stages": 1,
+    "file": "flagpole_1_er.png",
+    "variant": "er",
+    "size": [
+      25,
+      33
+    ],
+    "anchorPx": [
+      7,
+      31
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 2.6,
+    "zone": "grass",
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 14
+  },
+  {
+    "key": "flagpole",
+    "label": "Pakistan",
+    "level": 1,
+    "stages": 1,
+    "file": "flagpole_1_pk.png",
+    "variant": "pk",
+    "size": [
+      25,
+      33
+    ],
+    "anchorPx": [
+      7,
+      31
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 2.6,
+    "zone": "grass",
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 12
+  },
+  {
+    "key": "treasure_chest",
+    "label": "Treasure chest",
+    "level": 1,
+    "stages": 2,
+    "file": "treasure_chest_1.png",
+    "size": [
+      16,
+      15
+    ],
+    "anchorPx": [
+      8,
+      13
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 0.7,
+    "zone": "beach",
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 9
+  },
+  {
+    "key": "treasure_chest",
+    "label": "Treasure chest",
+    "level": 2,
+    "stages": 2,
+    "file": "treasure_chest_2.png",
+    "size": [
+      20,
+      19
+    ],
+    "anchorPx": [
+      11,
+      16
+    ],
+    "footprint": [
+      1,
+      1
+    ],
+    "heightM": 0.87,
+    "zone": "beach",
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 8
+  },
+  {
+    "key": "fountain",
+    "label": "Fountain",
+    "level": 1,
+    "stages": 2,
+    "file": "fountain_1.png",
+    "size": [
+      38,
+      26
+    ],
+    "anchorPx": [
+      19,
+      20
+    ],
+    "footprint": [
+      2,
+      2
+    ],
+    "heightM": 1.4,
+    "zone": "grass",
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 6
+  },
+  {
+    "key": "fountain",
+    "label": "Fountain",
+    "level": 2,
+    "stages": 2,
+    "file": "fountain_2.png",
+    "size": [
+      44,
+      35
+    ],
+    "anchorPx": [
+      22,
+      28
+    ],
+    "footprint": [
+      2,
+      2
+    ],
+    "heightM": 1.74,
+    "zone": "grass",
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 8
+  },
+  {
+    "key": "clock_tower",
+    "label": "Clock tower",
+    "level": 1,
+    "stages": 2,
+    "file": "clock_tower_1.png",
+    "size": [
+      32,
+      41
+    ],
+    "anchorPx": [
+      16,
+      37
+    ],
+    "footprint": [
+      2,
+      2
+    ],
+    "heightM": 3.2,
+    "zone": "grass",
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 9
+  },
+  {
+    "key": "clock_tower",
+    "label": "Clock tower",
+    "level": 2,
+    "stages": 2,
+    "file": "clock_tower_2.png",
+    "size": [
+      38,
+      56
+    ],
+    "anchorPx": [
+      19,
+      50
+    ],
+    "footprint": [
+      2,
+      2
+    ],
+    "heightM": 3.97,
+    "zone": "grass",
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 12
+  },
+  {
+    "key": "lighthouse",
+    "label": "Lighthouse",
+    "level": 1,
+    "stages": 2,
+    "file": "lighthouse_1.png",
+    "size": [
+      36,
+      50
+    ],
+    "anchorPx": [
+      18,
+      45
+    ],
+    "footprint": [
+      2,
+      2
+    ],
+    "heightM": 3.6,
+    "zone": "grass",
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 13
+  },
+  {
+    "key": "lighthouse",
+    "label": "Lighthouse",
+    "level": 2,
+    "stages": 2,
+    "file": "lighthouse_2.png",
+    "size": [
+      47,
+      62
+    ],
+    "anchorPx": [
+      21,
+      55
+    ],
+    "footprint": [
+      2,
+      2
+    ],
+    "heightM": 4.46,
+    "zone": "grass",
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 15
+  },
+  {
+    "key": "monument",
+    "label": "Monument",
+    "level": 1,
+    "stages": 1,
+    "file": "monument_1.png",
+    "size": [
+      18,
+      36
+    ],
+    "anchorPx": [
+      9,
+      35
+    ],
+    "footprint": [
+      2,
+      2
+    ],
+    "heightM": 3.0,
+    "zone": "grass",
+    "maxCount": 1,
+    "layer": "object",
+    "colors": 7
+  }
+]

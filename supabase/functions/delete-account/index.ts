@@ -68,8 +68,11 @@ serve(async (req: Request) => {
     const { error: deleteError } = await adminClient.auth.admin.deleteUser(userData.user.id, false);
 
     if (deleteError) {
+      // Never pass the upstream message through: GoTrue surfaces Postgres
+      // detail (constraint, table and schema names) in it.
+      console.error("Account deletion failed:", deleteError.message);
       return new Response(
-        JSON.stringify({ error: deleteError.message || "Failed to delete account." }),
+        JSON.stringify({ error: "Failed to delete account." }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
@@ -79,9 +82,12 @@ serve(async (req: Request) => {
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown error";
+    console.error(
+      "Account deletion failed:",
+      error instanceof Error ? error.message : "Unknown error",
+    );
     return new Response(
-      JSON.stringify({ error: message }),
+      JSON.stringify({ error: "Failed to delete account." }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   }

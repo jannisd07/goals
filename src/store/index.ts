@@ -5,9 +5,10 @@ import { createWalletSlice, type WalletSlice } from "./walletSlice";
 import { createGoalsSlice, type GoalsSlice } from "./goalsSlice";
 import { createSessionSlice, type SessionSlice } from "./sessionSlice";
 import { createConfigSlice, type ConfigSlice } from "./configSlice";
+import { createIslandSlice, type IslandSlice } from "./islandSlice";
 import { APP_STORE_STORAGE_KEY } from "../lib/storageKeys";
 
-export type AppStore = WalletSlice & GoalsSlice & SessionSlice & ConfigSlice;
+export type AppStore = WalletSlice & GoalsSlice & SessionSlice & ConfigSlice & IslandSlice;
 
 export const useAppStore = create<AppStore>()(
   persist(
@@ -16,6 +17,7 @@ export const useAppStore = create<AppStore>()(
       ...createGoalsSlice(...a),
       ...createSessionSlice(...a),
       ...createConfigSlice(...a),
+      ...createIslandSlice(...a),
     }),
     {
       name: APP_STORE_STORAGE_KEY,
@@ -34,6 +36,12 @@ export const useAppStore = create<AppStore>()(
         permissionGateDismissed: state.permissionGateDismissed,
         notificationPrefs: state.notificationPrefs,
         userConfig: state.userConfig,
+        islandObjectsByUser: state.islandObjectsByUser,
+        islandSpotsByUser: state.islandSpotsByUser,
+        islandStageSeenByUser: state.islandStageSeenByUser,
+        appliedGrowSessionsByUser: state.appliedGrowSessionsByUser,
+        focusGrowCategory: state.focusGrowCategory,
+        focusGrowObjectKey: state.focusGrowObjectKey,
       }),
     }
   )

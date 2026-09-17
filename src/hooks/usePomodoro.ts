@@ -1,14 +1,19 @@
 import { useEffect, useRef, useCallback } from "react";
 import { AppState } from "react-native";
+import { snapFlowTarget } from "../lib/flowTarget";
 import { useAppStore } from "../store";
 import { useCreateSession, useEndSession } from "./useSessions";
 import { hapticMedium, hapticSuccess } from "../lib/haptics";
 import {
   advancePomodoro,
+  catchUpAfterGap,
   computeAdaptiveBreakMinutes,
 } from "../lib/pomodoro";
 import { syncFocusPhaseBoundary } from "../lib/notifications";
-import type { Goal } from "../types";
+import { rememberSessionReward } from "../lib/pendingGrows";
+import { localSessionId } from "../lib/sessionOutbox";
+import type { Goal, GrowCategory } from "../types";
+import { asGrowCategory } from "../lib/growRewards";
 
 interface PendingSessionStart {
   goalId: string;
@@ -31,7 +36,12 @@ export function usePomodoro() {
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const pendingSessionStopRef = useRef<Promise<number | null> | null>(null);
 
-  const startFocusSession = useCallback((goal: Goal, sessionLengthMinutes?: number): Promise<boolean> => {
+  const startFocusSession = useCallback((
+    goal: Goal,
+    sessionLengthMinutes?: number,
+    growCategory?: GrowCategory,
+    growObjectKey?: string | null,
+  ): Promise<boolean> => {
     const existingSession = useAppStore.getState().activeSession;
     if (existingSession) {
       return Promise.resolve(existingSession.goal_id === goal.id);
@@ -49,27 +59,49 @@ export function usePomodoro() {
 
     const operation = (async () => {
       const mode = useAppStore.getState().focusStyle;
+      const category =
+        asGrowCategory(growCategory) ??
+        asGrowCategory(useAppStore.getState().focusGrowCategory) ??
+        "plant";
       const durationMinutes = sessionLengthMinutes ?? goal.pomodoro_duration_minutes ?? 25;
       // Flowtime remains open-ended, but duration_seconds stores its adjustable
       // visual target. advancePomodoro deliberately ignores it in flowtime mode.
       const durationSeconds = durationMinutes * 60;
       const { shortBreakMinutes } = computeAdaptiveBreakMinutes(durationMinutes, breakDuration);
 
+      // Starting must not depend on a connection. If the row cannot be created
+      // now, the session runs under a local id and the finished session is sent
+      // from the outbox as soon as the phone is back.
+      let sessionId: string;
+      let startTime: string;
       try {
         const session = await createSessionMutation.mutateAsync({
           goal_id: goal.id,
           trigger: "manual_pomodoro",
           ambient_sound: preferredAmbientSound,
         });
+        sessionId = session.id;
+        startTime = session.start_time;
+      } catch (error) {
+        console.warn("Starting offline; this session is sent later:", error);
+        sessionId = localSessionId();
+        startTime = new Date().toISOString();
+      }
 
+      try {
         startSessionStore({
-          session_id: session.id,
+          session_id: sessionId,
           goal_id: goal.id,
           goal_name: goal.name,
           goal_color: goal.color,
           trigger: "manual_pomodoro",
-          start_time: session.start_time,
+          start_time: startTime,
           ambient_sound: preferredAmbientSound,
+          grow_category: category,
+          // Held on the session, so the reward at the end is the object the
+          // session was started with, whatever the start sheet says later.
+          grow_object_key:
+            growObjectKey ?? useAppStore.getState().focusGrowObjectKey ?? null,
           pomodoro: {
             is_running: true,
             is_break: false,
@@ -89,6 +121,7 @@ export function usePomodoro() {
         if (mode === "interval") {
           useAppStore.getState().setLastSessionMinutes(durationMinutes);
         }
+        useAppStore.getState().setFocusGrowCategory(category);
         hapticMedium();
         return true;
       } catch (error) {
@@ -111,13 +144,26 @@ export function usePomodoro() {
 
     const now = Date.now();
     const lastTick = pomodoro.last_tick_at_ms || now;
-    const seconds = Math.max(0, Math.floor((now - lastTick) / 1000));
+    const gap = Math.max(0, Math.floor((now - lastTick) / 1000));
+    const catchUp = catchUpAfterGap(gap);
+    if (catchUp.abandoned) {
+      // The app was closed for hours: drop the session instead of counting the
+      // whole gap as focus time. The row in Supabase stays open and unfinished.
+      // The focus before the gap was real, so its reward is kept and lands on
+      // the island — losing an hour of work to a flat battery would be unfair.
+      console.warn(`Dropping a focus session that sat idle for ${Math.round(gap / 3600)} h`);
+      void rememberSessionReward(useAppStore.getState().activeSession);
+      endSessionStore(false);
+      return;
+    }
+    const seconds = catchUp.seconds;
     if (seconds === 0) return;
 
     const result = advancePomodoro(pomodoro, seconds, state.breakDuration);
     updatePomodoro({
       ...result.pomodoro,
-      last_tick_at_ms: lastTick + seconds * 1000,
+      // When the gap was capped the rest must not come back on the next tick.
+      last_tick_at_ms: seconds === gap ? lastTick + seconds * 1000 : now,
     });
     if (result.focusedSecondsAdded > 0) {
       incrementUsedTime(result.focusedSecondsAdded);
@@ -130,9 +176,11 @@ export function usePomodoro() {
         hapticMedium();
       }
     }
-  }, [incrementUsedTime, updatePomodoro]);
+  }, [endSessionStore, incrementUsedTime, updatePomodoro]);
 
-  const stopFocusSession = useCallback(async (): Promise<number | null> => {
+  const stopFocusSession = useCallback(async (
+    options?: { requestRating?: boolean },
+  ): Promise<number | null> => {
     if (pendingSessionStopRef.current) return pendingSessionStopRef.current;
 
     const operation = (async () => {
@@ -152,9 +200,12 @@ export function usePomodoro() {
           pomodoro_cycles: pomodoro.total_cycles,
           growth_stage: Math.min(4, Math.floor(pomodoro.focused_seconds / 1800)),
           ambient_sound: latestSession.ambient_sound,
+          goal_id: latestSession.goal_id,
+          start_time: latestSession.start_time,
         });
 
-        endSessionStore(pomodoro.focused_seconds > 0);
+        // The grow reveal asks for the rating itself, after the island moment.
+        endSessionStore(options?.requestRating !== false && pomodoro.focused_seconds > 0);
         hapticSuccess();
         return pomodoro.focused_seconds;
       } catch (error) {
@@ -274,13 +325,20 @@ export function usePomodoro() {
     hapticSuccess();
   }, [advanceToNow, updatePomodoro]);
 
-  /** Interval: add extra minutes to the running focus block. */
+  /**
+   * Interval: add extra minutes to the running focus block — and only to that
+   * one. `duration_seconds` is the template for every later block and the basis
+   * of the adaptive break (lib/pomodoro.ts), so raising it would quietly turn a
+   * 25-minute session into a 30-minute one with longer breaks for the rest of
+   * the day. Winding back the elapsed time of this block leaves the recorded
+   * focus untouched and gives back exactly the minutes that were asked for.
+   */
   const extendFocus = useCallback((minutes: number) => {
     advanceToNow(false);
     const pom = useAppStore.getState().activeSession?.pomodoro;
-    if (!pom || pom.is_break || pom.is_long_break) return;
+    if (!pom || pom.mode === "flowtime" || pom.is_break || pom.is_long_break) return;
     updatePomodoro({
-      duration_seconds: pom.duration_seconds + minutes * 60,
+      elapsed_seconds: Math.max(0, pom.elapsed_seconds - minutes * 60),
       last_tick_at_ms: Date.now(),
     });
     hapticMedium();
@@ -299,8 +357,9 @@ export function usePomodoro() {
       return;
     }
 
-    const targetMinutes = Math.max(5, Math.round(minutes / 5) * 5);
-    updatePomodoro({ duration_seconds: targetMinutes * 60 });
+    // Snapped to the dial's own scale, so a value can never land between two
+    // steps and make the ring jump on the next turn (src/lib/flowTarget.ts).
+    updatePomodoro({ duration_seconds: snapFlowTarget(minutes) * 60 });
   }, [updatePomodoro]);
 
   return {

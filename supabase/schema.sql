@@ -107,10 +107,39 @@ create index if not exists idx_sessions_start_time on public.sessions(start_time
 create index if not exists idx_sessions_user_time on public.sessions(user_id, start_time);
 create index if not exists idx_friend_links_user_id on public.friend_links(user_id);
 
+create table if not exists public.island_state (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  objects jsonb not null default '{}'::jsonb,
+  spots jsonb not null default '{}'::jsonb,
+  applied_sessions text[] not null default '{}'::text[],
+  -- The only two things a friend is allowed to see: how big the island is and
+  -- how much of the catalog is grown. Never what stands on it or where.
+  stage smallint not null default 1,
+  levels integer not null default 0,
+  updated_at timestamptz not null default now(),
+  constraint island_objects_is_object check (jsonb_typeof(objects) = 'object'),
+  constraint island_spots_is_object check (jsonb_typeof(spots) = 'object'),
+  constraint island_applied_sessions_bounded check (cardinality(applied_sessions) <= 2000),
+  constraint island_stage_range check (stage between 1 and 5),
+  constraint island_levels_positive check (levels >= 0)
+);
+
 alter table public.users enable row level security;
 alter table public.goals enable row level security;
 alter table public.sessions enable row level security;
 alter table public.friend_links enable row level security;
+alter table public.island_state enable row level security;
+
+create policy "Users can view their own island"
+  on public.island_state for select using (auth.uid() = user_id);
+create policy "Users can create their own island"
+  on public.island_state for insert with check (auth.uid() = user_id);
+create policy "Users can update their own island"
+  on public.island_state for update using (auth.uid() = user_id) with check (auth.uid() = user_id);
+create policy "Users can delete their own island"
+  on public.island_state for delete using (auth.uid() = user_id);
+
+revoke all on public.island_state from anon;
 
 create policy "Users can view their own profile"
   on public.users for select using (auth.uid() = id);
@@ -202,7 +231,10 @@ returns table (
   focus_hours real,
   focus_target_hours real,
   checkins integer,
-  checkin_target integer
+  checkin_target integer,
+  island_stage smallint,
+  island_levels integer,
+  total_hours real
 )
 language plpgsql
 security definer
@@ -247,10 +279,49 @@ begin
       select max(g.target_sessions_per_week)
       from public.goals g
       where g.user_id = u.id and g.type = 'physical' and g.is_active
-    ), 0)::integer
+    ), 0)::integer,
+    coalesce((select i.stage from public.island_state i where i.user_id = u.id), 1)::smallint,
+    coalesce((select i.levels from public.island_state i where i.user_id = u.id), 0)::integer,
+    coalesce((
+      select sum(s.duration_seconds) / 3600.0
+      from public.sessions s
+      where s.user_id = u.id and s.end_time is not null
+    ), 0)::real
   from public.friend_links fl
   join public.users u on u.id = fl.friend_id
   where fl.user_id = auth.uid();
+end;
+$$;
+
+-- What stands on a friend's island, so it can be visited and drawn. Guarded by
+-- the friend link and carrying nothing but the objects and their places: no
+-- sessions, no goals, no times.
+create or replace function public.get_friend_island(friend uuid)
+returns table (
+  stage smallint,
+  levels integer,
+  objects jsonb,
+  spots jsonb
+)
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if auth.uid() is null then
+    raise exception 'NOT_AUTHENTICATED';
+  end if;
+  if not exists (
+    select 1 from public.friend_links fl
+    where fl.user_id = auth.uid() and fl.friend_id = friend
+  ) then
+    raise exception 'NOT_A_FRIEND';
+  end if;
+
+  return query
+  select i.stage, i.levels, i.objects, i.spots
+  from public.island_state i
+  where i.user_id = friend;
 end;
 $$;
 
@@ -295,5 +366,8 @@ revoke all on function public.set_my_friend_code(text) from public;
 revoke all on function public.remove_friend(uuid) from public;
 grant execute on function public.add_friend_by_code(text) to authenticated;
 grant execute on function public.get_friends_weekly(timestamptz, timestamptz) to authenticated;
+revoke all on function public.get_friend_island(uuid) from public;
+revoke all on function public.get_friend_island(uuid) from anon;
+grant execute on function public.get_friend_island(uuid) to authenticated;
 grant execute on function public.set_my_friend_code(text) to authenticated;
 grant execute on function public.remove_friend(uuid) to authenticated;

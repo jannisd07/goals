@@ -6,16 +6,21 @@ import {
   StyleSheet,
   Alert,
   Pressable,
+  ActivityIndicator,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
+import Animated, { FadeIn } from "react-native-reanimated";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { NeumorphicSurface } from "../components/NeumorphicSurface";
 import { MinimalTextInput } from "../components/ui/MinimalTextInput";
 import { PrimaryButton } from "../components/ui/PrimaryButton";
-import { TextAction } from "../components/ui/TextAction";
-import { ProgressBar } from "../components/ProgressBar";
+import { IslandBadge } from "../components/island/IslandBadge";
+import {
+  PaperCard,
+  PaperHeader,
+  PaperLabel,
+  PaperRow,
+  PaperScreen,
+} from "../components/paper/PaperUI";
 import {
   useAddFriend,
   useFriendsWeekly,
@@ -23,62 +28,95 @@ import {
   useRemoveFriend,
   useShareFriendCode,
 } from "../hooks/useFriends";
-import { hapticMedium } from "../lib/haptics";
+import { hapticLight, hapticMedium } from "../lib/haptics";
+import { islandRoman } from "../lib/islandScene";
 import type { FriendWeekly } from "../types";
 import type { RootStackParamList } from "../navigation/types";
-import { NEU, NEU_FONTS } from "../theme/neumorphism";
+import { PAPER } from "../theme/paper";
+import { NEU_FONTS } from "../theme/neumorphism";
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
+function Stat({ value, label }: { value: string; label: string }) {
+  return (
+    <View style={styles.stat}>
+      <Text style={styles.statValue} numberOfLines={1}>
+        {value}
+      </Text>
+      <Text style={styles.statLabel} numberOfLines={1}>
+        {label}
+      </Text>
+    </View>
+  );
+}
+
 function FriendRow({
   friend,
+  first,
   onRemove,
+  onVisit,
 }: {
   friend: FriendWeekly;
+  first: boolean;
   onRemove: (friend: FriendWeekly) => void;
+  onVisit: (friend: FriendWeekly) => void;
 }) {
-  const focusProgress =
-    friend.focus_target_hours > 0 ? friend.focus_hours / friend.focus_target_hours : 0;
-
-  const summaryParts: string[] = [];
-  summaryParts.push(
+  // Three numbers, always in the same places: how often they showed up, how long
+  // they worked, and how much of both there has ever been. A row of values that
+  // never moves is read at a glance; a sentence of mixed units is not.
+  const stage = Math.max(1, Math.min(5, Math.round(friend.island_stage ?? 1)));
+  const checkins =
+    friend.checkin_target > 0
+      ? `${friend.checkins} / ${friend.checkin_target}`
+      : friend.checkins > 0
+        ? `${friend.checkins}`
+        : "—";
+  const focus =
     friend.focus_target_hours > 0
-      ? `${friend.focus_hours.toFixed(1)} / ${friend.focus_target_hours}h focus`
-      : `${friend.focus_hours.toFixed(1)}h focus`,
-  );
-  if (friend.checkin_target > 0) {
-    summaryParts.push(`${friend.checkins} / ${friend.checkin_target} visits`);
-  }
+      ? `${friend.focus_hours.toFixed(1)} / ${friend.focus_target_hours}h`
+      : `${friend.focus_hours.toFixed(1)}h`;
+  const total = `${Math.round(friend.total_hours ?? 0)}h`;
 
   return (
-    <NeumorphicSurface style={styles.friendCard} contentPadding={16}>
-      <View style={styles.friendHeader}>
-        <Text style={styles.friendName} numberOfLines={1}>
-          {friend.display_name || "Friend"}
-        </Text>
+    <PaperRow first={first} style={styles.friendRow}>
+      <View style={styles.friendLine}>
+        {/* The island is the way in: tapping it goes and looks at it. */}
         <Pressable
-          onPress={() => onRemove(friend)}
+          onPress={() => onVisit(friend)}
           accessibilityRole="button"
-          accessibilityLabel={`Remove ${friend.display_name}`}
-          style={({ pressed }) => ({
-            minHeight: NEU.hitTarget,
-            justifyContent: "center",
-            paddingLeft: 12,
-            opacity: pressed ? 0.5 : 1,
-          })}
+          accessibilityLabel={`Visit ${friend.display_name || "your friend"}'s island, size ${stage}`}
+          style={({ pressed }) => [styles.friendBadge, { opacity: pressed ? 0.7 : 1 }]}
         >
-          <Text style={styles.removeLabel}>Remove</Text>
+          <IslandBadge stage={stage} />
+          <Text style={styles.badgeCaption} numberOfLines={1}>
+            {`Island ${islandRoman(stage)}`}
+          </Text>
         </Pressable>
-      </View>
 
-      <ProgressBar
-        progress={Math.min(1, focusProgress)}
-        color={NEU.accent}
-        height={5}
-        trackColor={NEU.track}
-      />
-      <Text style={styles.friendSummary}>{summaryParts.join(" · ")}</Text>
-    </NeumorphicSurface>
+        <View style={styles.friendBody}>
+          <View style={styles.friendTop}>
+            <Text style={styles.friendName} numberOfLines={1}>
+              {friend.display_name || "Friend"}
+            </Text>
+            <Pressable
+              onPress={() => onRemove(friend)}
+              accessibilityRole="button"
+              accessibilityLabel={`Remove ${friend.display_name}`}
+              hitSlop={10}
+              style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1 })}
+            >
+              <Text style={styles.removeLabel}>Remove</Text>
+            </Pressable>
+          </View>
+
+          <View style={styles.statRow}>
+            <Stat value={checkins} label="Check-ins" />
+            <Stat value={focus} label="Focus" />
+            <Stat value={total} label="All time" />
+          </View>
+        </View>
+      </View>
+    </PaperRow>
   );
 }
 
@@ -101,6 +139,17 @@ export function FriendsScreen() {
   const shareCode = useShareFriendCode(myCode);
 
   const [codeInput, setCodeInput] = useState("");
+
+  const handleVisit = useCallback(
+    (friend: FriendWeekly) => {
+      hapticLight();
+      navigation.navigate("FriendIsland", {
+        friendId: friend.friend_id,
+        name: friend.display_name || "Friend",
+      });
+    },
+    [navigation],
+  );
 
   const handleAdd = useCallback(async () => {
     const code = codeInput.trim();
@@ -139,197 +188,278 @@ export function FriendsScreen() {
     [removeFriendMutation],
   );
 
+  const friendList = friends ?? [];
+
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: NEU.bg }} edges={["top"]}>
-      <Animated.View entering={FadeIn.duration(400)} style={{ flex: 1 }}>
+    <PaperScreen edges={["top"]}>
+      <PaperHeader
+        title="Friends"
+        onClose={() => {
+          hapticLight();
+          navigation.goBack();
+        }}
+      />
+
+      <Animated.View entering={FadeIn.duration(220)} style={styles.flex}>
         <ScrollView
-          style={{ flex: 1 }}
+          bounces={false}
+          alwaysBounceVertical={false}
+          style={styles.flex}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          <View style={styles.header}>
-            <View style={{ width: 72 }} />
-            <Text style={styles.headerTitle}>Friends</Text>
-            <TextAction label="Close" align="right" onPress={() => navigation.goBack()} />
-          </View>
-
-          {/* My code */}
-          <Animated.View entering={FadeInDown.delay(50).duration(400)}>
-            <NeumorphicSurface
-              style={styles.card}
-              contentPadding={20}
-              lightShadowOpacity={0}
-            >
-              <Text style={styles.sectionHeader}>Your code</Text>
+          <PaperLabel style={styles.firstLabel}>Your code</PaperLabel>
+          <PaperCard padding={18}>
+            <View style={styles.codeRow}>
               <Text style={styles.codeValue}>
                 {codeLoading ? "······" : codeError ? "Unavailable" : myCode ?? "Unavailable"}
               </Text>
-              <Text style={styles.codeHint}>
-                Friends who enter this code see your name and how your week is going — nothing
-                else.
-              </Text>
               {codeError ? (
-                <TextAction label="Try Again" onPress={() => void refetchCode()} />
+                <Pressable
+                  onPress={() => void refetchCode()}
+                  accessibilityRole="button"
+                  accessibilityLabel="Try again"
+                  hitSlop={10}
+                  style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1 })}
+                >
+                  <Text style={styles.inlineAction}>Try again</Text>
+                </Pressable>
               ) : (
-                <TextAction
-                  label="Share code"
+                <Pressable
                   onPress={() => void shareCode()}
                   disabled={!myCode}
-                />
+                  accessibilityRole="button"
+                  accessibilityLabel="Share code"
+                  accessibilityState={{ disabled: !myCode }}
+                  hitSlop={10}
+                  style={({ pressed }) => ({ opacity: !myCode ? 0.35 : pressed ? 0.5 : 1 })}
+                >
+                  <Text style={styles.inlineAction}>Share</Text>
+                </Pressable>
               )}
-            </NeumorphicSurface>
-          </Animated.View>
+            </View>
+            <Text style={styles.codeHint}>
+              Friends who enter this code see your name, how your week is going and your
+              island — nothing else.
+            </Text>
+          </PaperCard>
 
-          {/* Add friend */}
-          <Animated.View entering={FadeInDown.delay(100).duration(400)}>
-            <NeumorphicSurface style={styles.card} contentPadding={20}>
-              <Text style={styles.sectionHeader}>Add a friend</Text>
-              <MinimalTextInput
-                value={codeInput}
-                onChangeText={(text) =>
-                  setCodeInput(
-                    text
-                      .toUpperCase()
-                      .replace(/[^ABCDEFGHJKLMNPQRSTUVWXYZ23456789]/g, ""),
-                  )
-                }
-                placeholder="Friend code"
-                autoCapitalize="characters"
-                autoCorrect={false}
-                maxLength={6}
-                returnKeyType="done"
-                onSubmitEditing={() => void handleAdd()}
-              />
-              <PrimaryButton
-                label={addFriendMutation.isPending ? "Adding..." : "Add Friend"}
-                onPress={() => void handleAdd()}
-                disabled={addFriendMutation.isPending}
-                containerStyle={{ marginTop: 14 }}
-              />
-            </NeumorphicSurface>
-          </Animated.View>
+          <PaperLabel>Add a friend</PaperLabel>
+          <View style={styles.addBlock}>
+            <MinimalTextInput
+              value={codeInput}
+              onChangeText={(text) =>
+                setCodeInput(
+                  text.toUpperCase().replace(/[^ABCDEFGHJKLMNPQRSTUVWXYZ23456789]/g, ""),
+                )
+              }
+              placeholder="Friend code"
+              placeholderTextColor={PAPER.inkFaint}
+              autoCapitalize="characters"
+              autoCorrect={false}
+              maxLength={6}
+              returnKeyType="done"
+              onSubmitEditing={() => void handleAdd()}
+              containerStyle={styles.input}
+              style={styles.inputText}
+            />
+            <PrimaryButton
+              label={addFriendMutation.isPending ? "Adding..." : "Add Friend"}
+              onPress={() => void handleAdd()}
+              disabled={addFriendMutation.isPending}
+              containerStyle={{ marginTop: 12 }}
+            />
+          </View>
 
-          {/* Friends list */}
-          <Animated.View entering={FadeInDown.delay(150).duration(400)}>
-            <Text style={styles.listLabel}>This Week</Text>
-            {friendsLoading ? (
-              <Text style={styles.emptyText}>Loading...</Text>
-            ) : friendsError ? (
-              <NeumorphicSurface style={styles.card} contentPadding={20}>
-                <Text style={styles.emptyTitle}>Friends could not be loaded</Text>
-                <Text style={styles.emptyText}>Check your connection and try again.</Text>
-                <TextAction label="Try Again" onPress={() => void refetchFriends()} />
-              </NeumorphicSurface>
-            ) : (friends ?? []).length === 0 ? (
-              <NeumorphicSurface style={styles.card} contentPadding={20}>
-                <Text style={styles.emptyTitle}>No friends yet</Text>
-                <Text style={styles.emptyText}>
-                  Share your code or enter a friend's code to see each other's weekly progress.
-                </Text>
-              </NeumorphicSurface>
-            ) : (
-              (friends ?? []).map((friend) => (
-                <FriendRow key={friend.friend_id} friend={friend} onRemove={handleRemove} />
-              ))
-            )}
-          </Animated.View>
+          <PaperLabel>This week</PaperLabel>
+          {friendsLoading ? (
+            <PaperCard padding={22} style={styles.centered}>
+              <ActivityIndicator size="small" color={PAPER.accent} />
+            </PaperCard>
+          ) : friendsError ? (
+            <PaperCard padding={18}>
+              <Text style={styles.stateTitle}>Friends could not be loaded</Text>
+              <Text style={styles.stateText}>Check your connection and try again.</Text>
+              <Pressable
+                onPress={() => void refetchFriends()}
+                accessibilityRole="button"
+                accessibilityLabel="Try again"
+                style={({ pressed }) => [styles.stateAction, { opacity: pressed ? 0.5 : 1 }]}
+              >
+                <Text style={styles.inlineAction}>Try again</Text>
+              </Pressable>
+            </PaperCard>
+          ) : friendList.length === 0 ? (
+            <PaperCard padding={18}>
+              <Text style={styles.stateTitle}>No friends yet</Text>
+              <Text style={styles.stateText}>
+                Share your code or enter a friend's code to see each other's weekly progress.
+              </Text>
+            </PaperCard>
+          ) : (
+            <PaperCard padding={0}>
+              {friendList.map((friend, index) => (
+                <FriendRow
+                  key={friend.friend_id}
+                  friend={friend}
+                  first={index === 0}
+                  onRemove={handleRemove}
+                  onVisit={handleVisit}
+                />
+              ))}
+            </PaperCard>
+          )}
         </ScrollView>
       </Animated.View>
-    </SafeAreaView>
+    </PaperScreen>
   );
 }
 
 const styles = StyleSheet.create({
+  flex: { flex: 1 },
   scrollContent: {
-    paddingBottom: 40,
+    paddingBottom: 48,
   },
-  header: {
+  firstLabel: {
+    marginTop: 12,
+  },
+
+  codeRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 22,
-    paddingTop: 12,
-    paddingBottom: 24,
-  },
-  headerTitle: {
-    color: NEU.textPrimary,
-    fontSize: 18,
-    fontFamily: NEU_FONTS.heading,
-  },
-  card: {
-    marginHorizontal: 24,
-    marginBottom: 16,
-  },
-  sectionHeader: {
-    color: NEU.textPrimary,
-    fontSize: 16,
-    fontFamily: NEU_FONTS.label,
-    marginBottom: 12,
   },
   codeValue: {
-    color: NEU.textPrimary,
-    fontSize: 34,
-    lineHeight: 38,
+    color: PAPER.ink,
+    fontSize: 30,
+    lineHeight: 36,
     fontFamily: NEU_FONTS.heading,
-    letterSpacing: 6,
+    letterSpacing: 5,
   },
   codeHint: {
-    color: NEU.textSecondary,
+    color: PAPER.inkMuted,
     fontSize: 13,
+    lineHeight: 19,
     fontFamily: NEU_FONTS.body,
-    lineHeight: 18,
-    marginTop: 8,
-    marginBottom: 4,
+    marginTop: 10,
   },
-  listLabel: {
-    color: NEU.textSecondary,
-    fontSize: 13,
+  inlineAction: {
+    color: PAPER.accentInk,
+    fontSize: 15,
     fontFamily: NEU_FONTS.label,
-    letterSpacing: 1.2,
-    textTransform: "uppercase",
-    marginHorizontal: 22,
-    marginTop: 4,
-    marginBottom: 14,
   },
-  friendCard: {
-    marginHorizontal: 24,
-    marginBottom: 16,
+
+  addBlock: {
+    paddingHorizontal: PAPER.gutter,
   },
-  friendHeader: {
+  input: {
+    backgroundColor: PAPER.surface,
+    borderColor: PAPER.line,
+  },
+  inputText: {
+    color: PAPER.ink,
+    letterSpacing: 2,
+  },
+
+  friendRow: {
+    paddingVertical: 14,
+  },
+  friendLine: {
     flexDirection: "row",
     alignItems: "center",
+  },
+  friendBadge: {
+    width: 62,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  badgeCaption: {
+    marginTop: 5,
+    color: PAPER.inkMuted,
+    fontSize: 10,
+    fontFamily: NEU_FONTS.label,
+  },
+  friendBody: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  statRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+  },
+  stat: {
+    flex: 1,
+  },
+  statValue: {
+    color: PAPER.ink,
+    fontSize: 15,
+    fontFamily: NEU_FONTS.label,
+    fontVariant: ["tabular-nums"],
+  },
+  statLabel: {
+    marginTop: 2,
+    color: PAPER.inkMuted,
+    fontSize: 11,
+    fontFamily: NEU_FONTS.body,
+  },
+  friendTop: {
+    flexDirection: "row",
+    alignItems: "baseline",
     justifyContent: "space-between",
     marginBottom: 12,
   },
   friendName: {
-    color: NEU.textPrimary,
+    color: PAPER.ink,
     fontSize: 16,
     fontFamily: NEU_FONTS.label,
     flex: 1,
+    marginRight: 12,
+  },
+  friendValue: {
+    color: PAPER.ink,
+    fontSize: 15,
+    fontFamily: NEU_FONTS.label,
+    fontVariant: ["tabular-nums"],
+  },
+  friendBottom: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: 9,
+  },
+  friendMeta: {
+    color: PAPER.inkMuted,
+    fontSize: 13,
+    fontFamily: NEU_FONTS.body,
+    fontVariant: ["tabular-nums"],
+    flex: 1,
+    marginRight: 12,
   },
   removeLabel: {
-    color: NEU.textSecondary,
+    color: PAPER.inkFaint,
     fontSize: 13,
     fontFamily: NEU_FONTS.label,
   },
-  friendSummary: {
-    color: NEU.textSecondary,
-    fontSize: 13,
-    fontFamily: NEU_FONTS.body,
-    marginTop: 10,
+
+  centered: {
+    alignItems: "center",
   },
-  emptyTitle: {
-    color: NEU.textPrimary,
-    fontSize: 18,
-    fontFamily: NEU_FONTS.label,
-    marginBottom: 8,
-  },
-  emptyText: {
-    color: NEU.textSecondary,
+  stateTitle: {
+    color: PAPER.ink,
     fontSize: 16,
+    fontFamily: NEU_FONTS.label,
+    marginBottom: 6,
+  },
+  stateText: {
+    color: PAPER.inkMuted,
+    fontSize: 15,
+    lineHeight: 21,
     fontFamily: NEU_FONTS.body,
-    lineHeight: 23,
-    marginHorizontal: 0,
+  },
+  stateAction: {
+    minHeight: PAPER.hitTarget,
+    justifyContent: "center",
+    marginTop: 2,
   },
 });

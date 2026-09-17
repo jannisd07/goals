@@ -9,6 +9,7 @@ import {
 import {
   planOnboardingGoals,
   type ExistingOnboardingGoal,
+  type OnboardingGoalPlanOptions,
 } from "./onboardingPlan";
 
 /**
@@ -18,6 +19,7 @@ import {
 export async function completePendingOnboarding(
   userId: string,
   pending: PendingOnboarding,
+  options: OnboardingGoalPlanOptions = {},
 ): Promise<void> {
   const focusLabel =
     FOCUS_CATEGORIES.find((c) => c.key === pending.focus_category)?.label ?? "Focus Time";
@@ -81,7 +83,7 @@ export async function completePendingOnboarding(
           updated_at: now,
         }
       : null;
-  const plan = planOnboardingGoals(existing, Boolean(checkinValues));
+  const plan = planOnboardingGoals(existing, Boolean(checkinValues), options);
 
   if (plan.focusGoalId) {
     const { error } = await supabase

@@ -5,6 +5,10 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { APP_STORE_STORAGE_KEY } from "../lib/storageKeys";
 import { supabase } from "../lib/supabase";
 import { sendStudySpotNudge } from "../lib/notifications";
+import { MIN_GROW_SESSION_SECONDS } from "../lib/growRewards";
+import { addPendingGrow } from "../lib/pendingGrows";
+import { queueSession } from "../lib/sessionOutbox";
+import { useAppStore } from "../store";
 import {
   STUDY_SPOT_RADIUS_METERS,
   clearStudySpotState,
@@ -43,7 +47,12 @@ export interface PermissionResult {
 }
 
 interface PersistedSession {
-  sessionId: string;
+  /**
+   * The row on the server, or null when the visit could only be recorded on the
+   * phone — no connection at the moment of arrival. The visit is still real; it
+   * is written in full when it ends, through the session outbox.
+   */
+  sessionId: string | null;
   goalId: string;
   enteredAt: number;
   lastEventAt: number;
@@ -56,7 +65,56 @@ interface PersistedSession {
   minVisitMinutes?: number;
 }
 
-/** Reads the goal's minimum stay, falling back to the default on any error. */
+/**
+ * What the background task needs to know about a geofenced goal, stored next to
+ * the regions themselves.
+ *
+ * The persisted Zustand store does not keep goals, so without this the task can
+ * only learn a goal's name and minimum stay from the server — and a visit that
+ * starts while the phone is offline would have neither. It is refreshed every
+ * time the regions are registered, which is exactly when the goals are known.
+ */
+const GEOFENCE_GOAL_CACHE_KEY = "goals-geofence-goal-cache";
+
+interface CachedGeofenceGoal {
+  name: string;
+  minVisitMinutes: number;
+  targetSessionsPerWeek: number;
+}
+
+async function cacheGeofenceGoals(goals: Goal[]): Promise<void> {
+  const cache: Record<string, CachedGeofenceGoal> = {};
+  for (const goal of goals) {
+    cache[goal.id] = {
+      name: goal.name,
+      minVisitMinutes: normalizeMinVisitMinutes(goal.min_visit_minutes ?? null),
+      targetSessionsPerWeek: goal.target_sessions_per_week ?? 0,
+    };
+  }
+  await AsyncStorage.setItem(GEOFENCE_GOAL_CACHE_KEY, JSON.stringify(cache)).catch(
+    () => undefined,
+  );
+}
+
+async function cachedGeofenceGoal(goalId: string): Promise<CachedGeofenceGoal | null> {
+  try {
+    const raw = await AsyncStorage.getItem(GEOFENCE_GOAL_CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Record<string, CachedGeofenceGoal>;
+    const entry = parsed[goalId];
+    if (!entry || typeof entry.name !== "string") return null;
+    return {
+      name: entry.name,
+      minVisitMinutes: normalizeMinVisitMinutes(entry.minVisitMinutes ?? null),
+      targetSessionsPerWeek:
+        typeof entry.targetSessionsPerWeek === "number" ? entry.targetSessionsPerWeek : 0,
+    };
+  } catch {
+    return null;
+  }
+}
+
+/** Reads the goal's minimum stay, falling back to the cache and the default. */
 async function fetchMinVisitMinutes(goalId: string): Promise<number> {
   try {
     const { data, error } = await supabase
@@ -64,12 +122,14 @@ async function fetchMinVisitMinutes(goalId: string): Promise<number> {
       .select("min_visit_minutes")
       .eq("id", goalId)
       .maybeSingle();
-    if (error || !data) return DEFAULT_MIN_VISIT_MINUTES;
+    if (error || !data) {
+      return (await cachedGeofenceGoal(goalId))?.minVisitMinutes ?? DEFAULT_MIN_VISIT_MINUTES;
+    }
     return normalizeMinVisitMinutes(
       (data as { min_visit_minutes: number | null }).min_visit_minutes,
     );
   } catch {
-    return DEFAULT_MIN_VISIT_MINUTES;
+    return (await cachedGeofenceGoal(goalId))?.minVisitMinutes ?? DEFAULT_MIN_VISIT_MINUTES;
   }
 }
 
@@ -183,13 +243,17 @@ async function handleGeofenceEnter(goalId: string): Promise<void> {
         // A second Enter after an implausibly long open visit means iOS most
         // likely missed the previous Exit. Discard the orphan before starting
         // a truthful new visit instead of logging multiple days as one session.
-        const { error } = await supabase
-          .from("sessions")
-          .delete()
-          .eq("id", existing.sessionId);
-        if (error) {
-          console.error("Failed to discard stale geofence session:", error);
-          return;
+        if (existing.sessionId) {
+          const { error } = await supabase
+            .from("sessions")
+            .delete()
+            .eq("id", existing.sessionId)
+            // Never delete a visit that was already finished properly.
+            .is("end_time", null);
+          if (error) {
+            console.error("Failed to discard stale geofence session:", error);
+            return;
+          }
         }
         await removePersistedSession(goalId);
       } else {
@@ -202,8 +266,47 @@ async function handleGeofenceEnter(goalId: string): Promise<void> {
       }
     }
 
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    // Arriving somewhere is a fact about the world, not about the network. If
+    // anything below cannot reach the server, the visit is still recorded — on
+    // the phone only — and written in full when it ends.
+    const startVisitLocally = async (reason: string): Promise<void> => {
+      const cached = await cachedGeofenceGoal(goalId);
+      if (!cached) {
+        // Nothing is known about this goal, so there is no way to tell a real
+        // visit from a region that belongs to a goal that no longer exists.
+        console.warn(`Ignoring an arrival for an unknown goal (${reason}).`);
+        return;
+      }
+      const now = Date.now();
+      await setPersistedSession(goalId, {
+        sessionId: null,
+        goalId,
+        enteredAt: now,
+        lastEventAt: now,
+        minVisitMinutes: cached.minVisitMinutes,
+      });
+      console.warn(`Recording this visit on the phone only (${reason}).`);
+
+      if (await notificationPrefEnabled("checkinAlerts")) {
+        await Notifications.scheduleNotificationAsync({
+          content: {
+            title: `Arrived at ${cached.name}`,
+            body: "Logging your session automatically. Focus up!",
+            data: { goalId },
+          },
+          trigger: null,
+        });
+      }
+    };
+
+    const { data: userData, error: userError } = await supabase.auth.getUser();
+    const user = userData?.user ?? null;
+    if (userError || !user) {
+      // No connection, or the session could not be refreshed. Either way the
+      // account is known from the last sign-in; only the write has to wait.
+      await startVisitLocally("not signed in or offline");
+      return;
+    }
 
     // Foreground manual fallback and background geofencing share the same
     // physical goal. Never create a second open visit when either path already
@@ -219,6 +322,7 @@ async function handleGeofenceEnter(goalId: string): Promise<void> {
       .maybeSingle();
     if (openSessionError) {
       console.error("Failed to check for an open check-in:", openSessionError);
+      await startVisitLocally("could not check for an open visit");
       return;
     }
     if (openSession) {
@@ -245,12 +349,14 @@ async function handleGeofenceEnter(goalId: string): Promise<void> {
       .eq("type", "physical")
       .eq("is_active", true)
       .maybeSingle();
-    if (goalError || !goal) {
-      if (goalError) {
-        console.error("Failed to validate geofence goal:", goalError);
-      }
+    if (goalError) {
+      console.error("Failed to validate geofence goal:", goalError);
+      await startVisitLocally("could not read the goal");
       return;
     }
+    // An empty answer is a real one: this goal is gone or no longer active, so
+    // there is nothing to log. Only an *error* means "ask again later".
+    if (!goal) return;
 
     const goalName = (goal as { name: string }).name || "your goal";
     const minVisitMinutes = normalizeMinVisitMinutes(
@@ -273,6 +379,7 @@ async function handleGeofenceEnter(goalId: string): Promise<void> {
 
     if (error || !session) {
       console.error("Failed to create geofence session:", error);
+      await startVisitLocally("could not create the visit");
       return;
     }
 
@@ -316,47 +423,82 @@ async function handleGeofenceExit(goalId: string): Promise<void> {
       activeSession.minVisitMinutes ?? (await fetchMinVisitMinutes(goalId));
     const disposition = classifyGeofenceSession(durationMs, minVisitMinutes);
 
-    if (disposition === "discard_stale") {
-      const { error } = await supabase
-        .from("sessions")
-        .delete()
-        .eq("id", activeSession.sessionId);
-      if (error) {
-        console.error("Failed to discard stale geofence session:", error);
-        return;
+    // A visit that never reached the server has no row to remove.
+    const discard = async (label: string): Promise<void> => {
+      if (activeSession.sessionId) {
+        const { error } = await supabase
+          .from("sessions")
+          .delete()
+          .eq("id", activeSession.sessionId);
+        if (error) {
+          console.error(`Failed to discard ${label} geofence session:`, error);
+          return;
+        }
       }
       await removePersistedSession(goalId);
+    };
+
+    if (disposition === "discard_stale") {
+      await discard("stale");
       return;
     }
 
     // Too short — delete immediately. Waiting for another Exit event leaves an
     // orphaned session because iOS is not required to deliver a duplicate event.
     if (disposition === "discard_short") {
-      const { error } = await supabase
-        .from("sessions")
-        .delete()
-        .eq("id", activeSession.sessionId);
-      if (error) {
-        console.error("Failed to discard short geofence session:", error);
-        return;
-      }
-      await removePersistedSession(goalId);
+      await discard("short");
       return;
     }
 
-    // Close the session
-    const { error } = await supabase
-      .from("sessions")
-      .update({
-        end_time: new Date().toISOString(),
-        duration_seconds: durationSeconds,
-        growth_stage: Math.min(4, Math.floor(durationSeconds / 1800)),
-      })
-      .eq("id", activeSession.sessionId);
+    const endedAt = new Date().toISOString();
+    const growthStage = Math.min(4, Math.floor(durationSeconds / 1800));
+    // A visit recorded on the phone alone still needs one stable id, so the
+    // outbox entry, the kept reward and the notification all mean the same visit.
+    const visitId =
+      activeSession.sessionId ?? `visit-${activeSession.enteredAt}-${goalId}`;
 
-    if (error) {
-      console.error("Failed to close geofence session:", error);
-      return;
+    // Leaving is also a fact about the world. Whatever happens to the write, the
+    // local record of this visit is cleared exactly once, and the visit itself
+    // is kept in the outbox until it arrives.
+    const keepVisitForLater = async (): Promise<void> => {
+      await queueSession({
+        id: visitId,
+        serverId: activeSession.sessionId,
+        goalId,
+        trigger: "geofence",
+        startTime: new Date(activeSession.enteredAt).toISOString(),
+        endTime: endedAt,
+        durationSeconds,
+        pomodoroCycles: 0,
+        growthStage,
+        ambientSound: null,
+        startLatitude: null,
+        startLongitude: null,
+        rating: null,
+        notes: null,
+        queuedAt: new Date().toISOString(),
+      });
+    };
+
+    if (activeSession.sessionId) {
+      const { error } = await supabase
+        .from("sessions")
+        .update({
+          end_time: endedAt,
+          duration_seconds: durationSeconds,
+          growth_stage: growthStage,
+        })
+        .eq("id", activeSession.sessionId)
+        // Only ever close a visit that is still open: a leftover local entry
+        // pointing at an already finished visit must not rewrite its duration.
+        .is("end_time", null);
+
+      if (error) {
+        console.error("Failed to close geofence session:", error);
+        await keepVisitForLater();
+      }
+    } else {
+      await keepVisitForLater();
     }
 
     await removePersistedSession(goalId);
@@ -373,29 +515,65 @@ async function handleGeofenceExit(goalId: string): Promise<void> {
       .eq("id", goalId)
       .single();
 
-    const goalName = (goal as { name: string; target_sessions_per_week: number } | null)?.name ?? "Goal";
-    const weeklyTarget = (goal as { target_sessions_per_week: number } | null)?.target_sessions_per_week ?? 0;
+    const cached = goal ? null : await cachedGeofenceGoal(goalId);
+    const goalName =
+      (goal as { name: string } | null)?.name ?? cached?.name ?? "Goal";
+    const weeklyTarget =
+      (goal as { target_sessions_per_week: number } | null)?.target_sessions_per_week ??
+      cached?.targetSessionsPerWeek ??
+      0;
 
     // Count sessions this week for this goal
     const weekStart = getWeekStart();
-    const { count } = await supabase
+    const { count, error: countError } = await supabase
       .from("sessions")
       .select("id", { count: "exact", head: true })
       .eq("goal_id", goalId)
       .not("end_time", "is", null)
       .gte("start_time", weekStart.toISOString());
 
+    // Offline the count is unknown. Saying "0 sessions this week" would be a
+    // lie in the one moment the player just earned one, so it is left out.
     const sessionsThisWeek = count ?? 0;
-    const progressStr = weeklyTarget > 0
-      ? ` ${sessionsThisWeek}/${weeklyTarget} this week.`
-      : ` ${sessionsThisWeek} sessions this week.`;
+    const progressStr = countError
+      ? ""
+      : weeklyTarget > 0
+        ? ` ${sessionsThisWeek}/${weeklyTarget} this week.`
+        : ` ${sessionsThisWeek} sessions this week.`;
+
+    // Keep the grown object until it is added; the notification opens the reveal.
+    const grew = durationSeconds >= MIN_GROW_SESSION_SECONDS;
+    if (grew) {
+      await addPendingGrow({
+        sessionId: visitId,
+        goalId,
+        goalName,
+        durationSeconds,
+        endedAt: new Date().toISOString(),
+        category: null,
+        // Picked on the reveal screen after an Auto Check-In.
+        objectKey: null,
+      }).catch((growError) => {
+        console.warn("Could not keep the grown object for later:", growError);
+      });
+    }
 
     if (await notificationPrefEnabled("checkinAlerts")) {
       await Notifications.scheduleNotificationAsync({
         content: {
           title: `${goalName} — ${durationStr}`,
-          body: `Session logged.${progressStr} How was it?`,
-          data: { goalId, sessionId: activeSession.sessionId, type: "rate_session" },
+          body: grew
+            ? `Session logged.${progressStr} Something grew. Tap to add it to your island.`
+            : `Session logged.${progressStr} How was it?`,
+          data: grew
+            ? {
+                goalId,
+                goalName,
+                durationSeconds,
+                sessionId: visitId,
+                type: "grow_reveal",
+              }
+            : { goalId, sessionId: visitId, type: "rate_session" },
         },
         trigger: null,
       });
@@ -450,15 +628,37 @@ export async function getNotificationPermissionWarning(): Promise<string | null>
   return null;
 }
 
+/** The regions handed to iOS last time, so an unchanged list is not re-sent. */
+let lastRegisteredRegions: string | null = null;
+
+function regionFingerprint(regions: Location.LocationRegion[]): string {
+  return regions
+    .map((r) => `${r.identifier}:${r.latitude}:${r.longitude}:${r.radius}`)
+    .sort()
+    .join("|");
+}
+
 export async function registerGeofences(goals: Goal[]): Promise<PermissionResult> {
   const physicalGoals = goals.filter((g) => g.type === "physical" && g.location);
   const studySpot = await getPersistedStudySpot();
 
+  // Registering the regions is the one moment the background task's world can
+  // be refreshed: from here on it may have to work without a connection.
+  await cacheGeofenceGoals(physicalGoals);
+
   if (physicalGoals.length === 0 && !studySpot) {
+    // An empty list is only a reason to switch off once the goals have actually
+    // been loaded. On a cold start they are empty for a moment, and stopping
+    // here used to unregister the task — on a launch without a connection it
+    // stayed off, and iOS no longer woke the app for any region at all.
+    if (!useAppStore.getState().goalsLoaded) {
+      return { ok: true, warningMessage: null };
+    }
     const isRegistered = await TaskManager.isTaskRegisteredAsync(GEOFENCE_TASK_NAME);
     if (isRegistered) {
       await Location.stopGeofencingAsync(GEOFENCE_TASK_NAME);
     }
+    lastRegisteredRegions = null;
     return { ok: true, warningMessage: null };
   }
 
@@ -498,10 +698,24 @@ export async function registerGeofences(goals: Goal[]): Promise<PermissionResult
     });
   }
 
+  // Registering again is not free: it makes iOS re-evaluate every region from
+  // scratch, which arrives as a fresh Enter for wherever the phone happens to
+  // be. That looked like a second visit and logged it twice. Re-register only
+  // when the regions really changed.
+  const fingerprint = regionFingerprint(regions);
+  if (
+    fingerprint === lastRegisteredRegions &&
+    (await TaskManager.isTaskRegisteredAsync(GEOFENCE_TASK_NAME))
+  ) {
+    return { ok: true, warningMessage: null };
+  }
+
   try {
     await Location.startGeofencingAsync(GEOFENCE_TASK_NAME, regions);
+    lastRegisteredRegions = fingerprint;
     return { ok: true, warningMessage: null };
   } catch (error) {
+    lastRegisteredRegions = null;
     console.error("Failed to start geofencing:", error);
     return {
       ok: false,
