@@ -516,7 +516,7 @@ export function SettingsScreen() {
                 <Text style={styles.focusModeText}>
                   {focusStyle === "interval"
                     ? "Each block runs for the length below, then a short break begins."
-                    : "The clock runs until you take a break. The longer you focused, the longer the break. The ring below is only a visual goal."}
+                    : "The clock runs until you take a break, and the break runs until you resume — the app only suggests a length. The ring below is a visual goal and never ends the session."}
                 </Text>
               </View>
 

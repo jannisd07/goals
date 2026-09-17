@@ -551,7 +551,11 @@ export function HomeScreen() {
                 ? "Tap to set up"
                 : activeCheckIn.data
                   ? `Checked in · ${checkInElapsedLabel} · tap to end`
-                  : `${visits} / ${visitTarget} sessions`}
+                  : visitTarget > 0
+                    ? `${visits} / ${visitTarget} visits`
+                    : // No weekly target set: "3 / 0 sessions" is not a number
+                      // anybody can read.
+                      `${visits} ${visits === 1 ? "visit" : "visits"} this week`}
             </Text>
             <View style={styles.dots}>
               {Array.from({ length: Math.max(1, Math.min(6, visitTarget)) }).map((_, i) => (

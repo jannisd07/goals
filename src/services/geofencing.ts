@@ -564,7 +564,7 @@ async function handleGeofenceExit(goalId: string): Promise<void> {
         ? ""
         : weeklyTarget > 0
           ? ` ${sessionsThisWeek}/${weeklyTarget} this week.`
-          : ` ${sessionsThisWeek} sessions this week.`;
+          : ` ${sessionsThisWeek} ${sessionsThisWeek === 1 ? "visit" : "visits"} this week.`;
 
     // Keep the grown object until it is added; the notification opens the reveal.
     const grew = durationSeconds >= MIN_GROW_SESSION_SECONDS;
