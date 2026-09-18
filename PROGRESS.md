@@ -967,7 +967,14 @@ Testgrenzen:
   nicht mehr (die über 1000 SVG-Pfade einer vollen Insel wurden bei jedem
   Ziehschritt neu erzeugt; Szene und gezogenes Stück liegen jetzt getrennt),
   und die Insel lässt sich per „Clear" in eine Leiste am unteren Rand räumen.
-- [ ] Build 52 in TestFlight für interne Tester freigeben und den Tester
+- [x] Build `1.0.0 (54)` am 2026-09-18 hochgeladen, Delivery UUID
+  `d78e257e-af59-496c-bf13-4e1ce2619502`. **Das ist der aktuelle Build**; 53
+  überspringen. Gegenüber 52: Der Szenenaufbau der Insel ging von gemessenen
+  11.156 ms auf 10 ms (drei Platzierungssuchen für ein Bild, und bei jedem
+  Aufnehmen erneut), `resolveSpots` merkt sich seine Antworten (3.479 ms → 0),
+  Arrange zeigt sofort eine Ladeanzeige, und die Leiste gruppiert Gleiches mit
+  Anzahl und lässt sich auf die Insel ziehen.
+- [ ] Build 54 in TestFlight für interne Tester freigeben und den Tester
   eintragen, der bisher auf Build 36 festhing (Apple-Konto
   `3bff58e6-…`, Profil vorhanden, 0 Ziele, Onboarding offen). Ursache war der
   Profil-Upsert beim Anmelden in Build 36: `authenticated` hat UPDATE auf jede
