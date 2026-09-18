@@ -24,15 +24,15 @@
  */
 
 import React, { useMemo, useRef, useState } from "react";
-import { Image, Pressable, StyleSheet, Text, View } from "react-native";
+import { Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { runOnJS } from "react-native-reanimated";
 import Svg, { Path, Polygon } from "react-native-svg";
 import { useNavigation, useRoute, type RouteProp } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { scenePaths } from "../components/island/spritePaths";
-import { spriteReach } from "../components/island/islandSprites";
+import { piecePaths, scenePaths } from "../components/island/spritePaths";
+import { islandSprite, spriteReach } from "../components/island/islandSprites";
 import { CheckIcon } from "../components/TabIcons";
 import { HOME_ISLAND_STAGES } from "../lib/homeIslandStages";
 import { hapticLight, hapticSuccess } from "../lib/haptics";
@@ -41,6 +41,7 @@ import {
   islandStageFor,
   spriteNameFor,
   standingObjects,
+  type StandingObject,
   type IslandStage,
 } from "../lib/islandScene";
 import {
@@ -64,6 +65,38 @@ import { PAPER } from "../theme/paper";
  * green — without this a thin object would be almost impossible to pick up.
  */
 const GRAB_SLOP = 6;
+
+/** How tall the strip along the bottom is, and how far up a release counts as "into it". */
+const TRAY_HEIGHT = 92;
+const TRAY_REACH = 120;
+const TRAY_TILE = 64;
+
+/** One object in the strip, drawn from the same pixels it has on the island. */
+function TrayTile({ object, onPress }: { object: StandingObject; onPress: () => void }) {
+  const name = spriteNameFor(object.key, object.level, object.variant);
+  const sprite = islandSprite(name);
+  const paths = useMemo(
+    () => (sprite ? piecePaths(name, sprite, 0, 0, 0) : []),
+    [name, sprite],
+  );
+  if (!sprite) return null;
+  // Contained, so a tall tree and a flat patch of shells both read at a glance.
+  const scale = Math.min(TRAY_TILE / sprite.w, TRAY_TILE / sprite.h, 4);
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={`Put ${object.key.replace(/_/g, " ")} back on the island`}
+      style={({ pressed }) => [styles.tile, { opacity: pressed ? 0.6 : 1 }]}
+    >
+      <Svg width={sprite.w * scale} height={sprite.h * scale} viewBox={`0 0 ${sprite.w} ${sprite.h}`}>
+        {paths.map((path) => (
+          <Path key={path.key} d={path.d} fill={path.fill} opacity={path.opacity} />
+        ))}
+      </Svg>
+    </Pressable>
+  );
+}
 
 type PlaceRoute = RouteProp<RootStackParamList, "IslandPlace">;
 type PlaceNav = NativeStackNavigationProp<RootStackParamList>;
@@ -114,6 +147,18 @@ export function IslandPlaceScreen() {
   const [moves, setMoves] = useState<Record<string, Spot>>({});
   const [held, setHeld] = useState<Held | null>(null);
   const [hover, setHover] = useState<Spot | null>(null);
+  /**
+   * Objects taken off the island for now.
+   *
+   * Rearranging a full island by dragging things past each other is hopeless —
+   * there is nowhere to put anything down. So the island can be cleared into a
+   * strip along the bottom and filled again one object at a time. It lasts as
+   * long as this screen: whatever is still in the strip when you confirm keeps
+   * the place it had, so nothing can be lost by walking away.
+   */
+  const [parked, setParked] = useState<string[]>([]);
+  /** True while the finger is over the strip, so the hint can say what a release does. */
+  const [overTray, setOverTray] = useState(false);
 
   /**
    * The gesture runs ahead of React: taking hold of something and dragging it
@@ -123,6 +168,7 @@ export function IslandPlaceScreen() {
   const heldRef = useRef<Held | null>(null);
   const hoverRef = useRef<Spot | null>(null);
   const lastCell = useRef<string>("");
+  const overTrayRef = useRef(false);
 
   const stage = islandStageFor(island) as IslandStage;
   const zones = useMemo(() => stageZones(stage), [stage]);
@@ -132,19 +178,29 @@ export function IslandPlaceScreen() {
   const spots = useMemo(() => ({ ...storedSpots, ...moves }), [storedSpots, moves]);
 
   const standing = useMemo(() => {
-    const all = standingObjects(island);
+    const all = standingObjects(island).filter((object) => !parked.includes(object.id));
     const resolved = resolveSpots(stage, all, spots, seed);
     return all
       .filter((object) => resolved[object.id])
       .map((object) => ({ ...object, spot: resolved[object.id] }));
-  }, [island, stage, spots, seed]);
+  }, [island, stage, spots, seed, parked]);
+
+  /** What is waiting in the strip, in the order it was put there. */
+  const inTray = useMemo(
+    () =>
+      standingObjects(island)
+        .filter((object) => parked.includes(object.id))
+        .sort((a, b) => parked.indexOf(a.id) - parked.indexOf(b.id)),
+    [island, parked],
+  );
 
   /** Everything except what is in hand — that one is drawn as the ghost. */
   const scene = useMemo(() => {
     const rest = { ...island };
     if (held) delete (rest as Record<string, unknown>)[held.id];
+    for (const id of parked) delete (rest as Record<string, unknown>)[id];
     return scenePaths(islandPieces(stage, rest, spots, seed));
-  }, [island, held, stage, spots, seed]);
+  }, [island, held, stage, spots, seed, parked]);
 
   /** What the object in hand must not overlap. */
   const others = useMemo<PlacedObject[]>(
@@ -273,15 +329,46 @@ export function IslandPlaceScreen() {
     setHover(hit.spot);
   };
 
+  /** True for a point below the island, where the strip sits. */
+  const inTrayBand = (y: number) => frame.height > 0 && y > frame.height - TRAY_REACH;
+
   const dragTo = (x: number, y: number) => {
     if (!heldRef.current) return;
+    if (inTrayBand(y)) {
+      if (!overTrayRef.current) {
+        overTrayRef.current = true;
+        setOverTray(true);
+      }
+      return;
+    }
+    if (overTrayRef.current) {
+      overTrayRef.current = false;
+      setOverTray(false);
+    }
     const cell = cellFrom(x, y);
     if (cell) hoverAt(cell);
+  };
+
+  /** Take something off the island and put it in the strip. */
+  const park = (id: string) => {
+    heldRef.current = null;
+    hoverRef.current = null;
+    lastCell.current = "";
+    overTrayRef.current = false;
+    hapticSuccess();
+    setParked((current) => (current.includes(id) ? current : [...current, id]));
+    setHeld(null);
+    setHover(null);
+    setOverTray(false);
   };
 
   /** Letting go puts it down — or keeps it in hand when it may not stand there. */
   const release = () => {
     const object = heldRef.current;
+    if (object && overTrayRef.current) {
+      park(object.id);
+      return;
+    }
     const cell = hoverRef.current;
     if (!object || !cell) return;
     if (!spotFits(zones, others, object.key, object.level, cell)) return;
@@ -299,6 +386,25 @@ export function IslandPlaceScreen() {
     .onBegin((event) => runOnJS(grab)(event.x, event.y))
     .onUpdate((event) => runOnJS(dragTo)(event.x, event.y))
     .onFinalize(() => runOnJS(release)());
+
+  /** Picking something out of the strip puts it straight into your hand. */
+  const takeFromTray = (object: StandingObject) => {
+    if (heldRef.current) return;
+    const next = { id: object.id, key: object.key, level: object.level };
+    heldRef.current = next;
+    hoverRef.current = null;
+    lastCell.current = "";
+    hapticLight();
+    setParked((current) => current.filter((id) => id !== object.id));
+    setHeld(next);
+    setHover(null);
+  };
+
+  const clearIsland = () => {
+    if (heldRef.current) return;
+    hapticSuccess();
+    setParked(standingObjects(island).map((object) => object.id));
+  };
 
   const keep = () => {
     if (!userId) return;
@@ -318,14 +424,36 @@ export function IslandPlaceScreen() {
 
   const moved = Object.keys(moves).length;
   const hint = held
-    ? ghost?.valid
-      ? "Let go to put it down."
-      : "It cannot stand here — put it down before you confirm."
-    : only
-      ? "Drag it where you want it."
-      : "Drag anything on your island.";
+    ? overTray
+      ? "Let go to put it in the strip."
+      : ghost?.valid
+        ? "Let go to put it down."
+        : "It cannot stand here — put it down before you confirm."
+    : inTray.length > 0
+      ? "Tap something in the strip to put it back on the island."
+      : only
+        ? "Drag it where you want it."
+        : "Drag anything on your island, or drag it down into the strip.";
 
   const viewBox = view ? `${view.x} ${view.y} ${view.w} ${view.h}` : "0 0 1 1";
+
+  /**
+   * The island, as finished elements.
+   *
+   * A full island is over a thousand paths. They used to be built inside the
+   * render body, so every step of a drag — and `hover` changes several times a
+   * second — recreated all of them and made react-native-svg reconcile the lot.
+   * That is what made dragging on a big island crawl. Held here, the scene is
+   * the same array of elements until something actually changes it, and a drag
+   * never touches it.
+   */
+  const sceneNodes = useMemo(
+    () =>
+      scene.map((path) => (
+        <Path key={path.key} d={path.d} fill={path.fill} opacity={path.opacity} />
+      )),
+    [scene],
+  );
 
   return (
     <View style={styles.root}>
@@ -356,9 +484,16 @@ export function IslandPlaceScreen() {
                 viewBox={viewBox}
                 style={StyleSheet.absoluteFill}
               >
-                {scene.map((path) => (
-                  <Path key={path.key} d={path.d} fill={path.fill} opacity={path.opacity} />
-                ))}
+                {sceneNodes}
+              </Svg>
+              {/* The moving part, on its own layer: it redraws, the island does not. */}
+              <Svg
+                width={frame.width}
+                height={frame.height}
+                viewBox={viewBox}
+                style={StyleSheet.absoluteFill}
+                pointerEvents="none"
+              >
                 {ghost
                   ? ghost.cells.map((cell) => (
                       <Polygon
@@ -391,6 +526,24 @@ export function IslandPlaceScreen() {
         <Text style={styles.hintText}>{hint}</Text>
       </View>
 
+      {inTray.length > 0 ? (
+        <View style={styles.tray}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.trayRow}
+          >
+            {inTray.map((object) => (
+              <TrayTile
+                key={object.id}
+                object={object}
+                onPress={() => takeFromTray(object)}
+              />
+            ))}
+          </ScrollView>
+        </View>
+      ) : null}
+
       <View style={[styles.footer, { paddingBottom: insets.bottom + 16 }]}>
         <Pressable
           onPress={() => navigation.goBack()}
@@ -400,8 +553,29 @@ export function IslandPlaceScreen() {
         >
           <Text style={styles.cancelText}>Cancel</Text>
         </Pressable>
+        {!only && inTray.length === 0 ? (
+          <Pressable
+            onPress={clearIsland}
+            accessibilityRole="button"
+            accessibilityLabel="Take everything off the island"
+            style={({ pressed }) => [styles.clearTouch, { opacity: pressed ? 0.5 : 1 }]}
+          >
+            <Text style={styles.clearText}>Clear</Text>
+          </Pressable>
+        ) : null}
         <Text style={styles.count}>
-          {moved === 0 ? "Nothing moved yet" : moved === 1 ? "1 moved" : `${moved} moved`}
+          {/*
+            What is still in the strip matters more than the count: it is the one
+            thing that does not do what it looks like. Nothing is lost — it keeps
+            the place it had — but nobody should have to guess that.
+          */}
+          {inTray.length > 0
+            ? `${inTray.length} waiting · they stay where they were`
+            : moved === 0
+              ? "Nothing moved yet"
+              : moved === 1
+                ? "1 moved"
+                : `${moved} moved`}
         </Text>
         <Pressable
           onPress={keep}
@@ -432,6 +606,28 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 10,
     overflow: "hidden",
+  },
+  tray: {
+    height: TRAY_HEIGHT,
+    borderTopWidth: 1,
+    borderTopColor: PAPER.line,
+    backgroundColor: PAPER.surface,
+    justifyContent: "center",
+  },
+  trayRow: { paddingHorizontal: 16, alignItems: "center", gap: 10 },
+  tile: {
+    width: TRAY_TILE + 12,
+    height: TRAY_TILE + 12,
+    borderRadius: 12,
+    backgroundColor: PAPER.sunken,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  clearTouch: { minHeight: 44, justifyContent: "center", paddingHorizontal: 4 },
+  clearText: {
+    fontFamily: NEU_FONTS.label,
+    fontSize: 14,
+    color: PAPER.accent,
   },
   footer: {
     flexDirection: "row",
