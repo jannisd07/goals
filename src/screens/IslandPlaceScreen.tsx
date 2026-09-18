@@ -46,7 +46,7 @@ import { CheckIcon } from "../components/TabIcons";
 import { HOME_ISLAND_STAGES } from "../lib/homeIslandStages";
 import { hapticLight, hapticSuccess } from "../lib/haptics";
 import {
-  islandPieces,
+  waterPieces,
   islandStageFor,
   spriteNameFor,
   standingObjects,
@@ -63,6 +63,7 @@ import {
   type Spot,
 } from "../lib/islandPlacement";
 import { cellAt, cellCentre, type StageZones } from "../lib/islandZones";
+import { pathStones } from "../lib/islandPaths";
 import { useAppStore } from "../store";
 import type { RootStackParamList } from "../navigation/types";
 import { NEU_FONTS } from "../theme/neumorphism";
@@ -80,30 +81,69 @@ const TRAY_HEIGHT = 92;
 const TRAY_REACH = 120;
 const TRAY_TILE = 64;
 
-/** One object in the strip, drawn from the same pixels it has on the island. */
-function TrayTile({ object, onPress }: { object: StandingObject; onPress: () => void }) {
+/**
+ * One kind of object in the strip, with how many are waiting.
+ *
+ * It can be dragged straight onto the island. The strip scrolls sideways, so
+ * the drag only takes over once the finger moves *up* out of it — sideways
+ * still scrolls, which is what a strip of tiles is for.
+ */
+function TrayTile({
+  object,
+  count,
+  onTake,
+  onMove,
+  onDrop,
+}: {
+  object: StandingObject;
+  count: number;
+  onTake: (object: StandingObject) => void;
+  onMove: (x: number, y: number) => void;
+  onDrop: () => void;
+}) {
   const name = spriteNameFor(object.key, object.level, object.variant);
   const sprite = islandSprite(name);
   const paths = useMemo(
     () => (sprite ? piecePaths(name, sprite, 0, 0, 0) : []),
     [name, sprite],
   );
+  const drag = useMemo(
+    () =>
+      Gesture.Pan()
+        .activeOffsetY([-14, 14])
+        .failOffsetX([-18, 18])
+        .onBegin(() => runOnJS(onTake)(object))
+        .onUpdate((event) => runOnJS(onMove)(event.absoluteX, event.absoluteY))
+        .onFinalize(() => runOnJS(onDrop)()),
+    [object, onTake, onMove, onDrop],
+  );
   if (!sprite) return null;
   // Contained, so a tall tree and a flat patch of shells both read at a glance.
   const scale = Math.min(TRAY_TILE / sprite.w, TRAY_TILE / sprite.h, 4);
   return (
-    <Pressable
-      onPress={onPress}
-      accessibilityRole="button"
-      accessibilityLabel={`Put ${object.key.replace(/_/g, " ")} back on the island`}
-      style={({ pressed }) => [styles.tile, { opacity: pressed ? 0.6 : 1 }]}
-    >
-      <Svg width={sprite.w * scale} height={sprite.h * scale} viewBox={`0 0 ${sprite.w} ${sprite.h}`}>
-        {paths.map((path) => (
-          <Path key={path.key} d={path.d} fill={path.fill} opacity={path.opacity} />
-        ))}
-      </Svg>
-    </Pressable>
+    <GestureDetector gesture={drag}>
+      <View
+        accessible
+        accessibilityRole="button"
+        accessibilityLabel={
+          count > 1
+            ? `${count} ${object.key.replace(/_/g, " ")}, drag one onto the island`
+            : `Drag ${object.key.replace(/_/g, " ")} onto the island`
+        }
+        style={styles.tile}
+      >
+        <Svg width={sprite.w * scale} height={sprite.h * scale} viewBox={`0 0 ${sprite.w} ${sprite.h}`}>
+          {paths.map((path) => (
+            <Path key={path.key} d={path.d} fill={path.fill} opacity={path.opacity} />
+          ))}
+        </Svg>
+        {count > 1 ? (
+          <View style={styles.tileCount} pointerEvents="none">
+            <Text style={styles.tileCountText}>{`×${count}`}</Text>
+          </View>
+        ) : null}
+      </View>
+    </GestureDetector>
   );
 }
 
@@ -209,23 +249,77 @@ export function IslandPlaceScreen() {
       .map((object) => ({ ...object, spot: resolved[object.id] }));
   }, [island, stage, spots, seed, parked, ready]);
 
-  /** What is waiting in the strip, in the order it was put there. */
-  const inTray = useMemo(
-    () =>
-      standingObjects(island)
-        .filter((object) => parked.includes(object.id))
-        .sort((a, b) => parked.indexOf(a.id) - parked.indexOf(b.id)),
-    [island, parked],
-  );
+  /**
+   * What is waiting in the strip — one tile per kind, with how many there are.
+   *
+   * Six leafy trees side by side is six times the same picture and a strip you
+   * have to scroll past. One picture and "×6" says the same thing in a glance,
+   * and taking one leaves five.
+   */
+  const inTray = useMemo(() => {
+    const waiting = standingObjects(island)
+      .filter((object) => parked.includes(object.id))
+      .sort((a, b) => parked.indexOf(a.id) - parked.indexOf(b.id));
+    const groups: { object: StandingObject; count: number }[] = [];
+    for (const object of waiting) {
+      const same = groups.find(
+        (group) => group.object.key === object.key && group.object.level === object.level,
+      );
+      if (same) same.count += 1;
+      else groups.push({ object, count: 1 });
+    }
+    return groups;
+  }, [island, parked]);
+
+  /** How many single objects are waiting, whatever they look like. */
+  const waitingCount = parked.length;
 
   /** Everything except what is in hand — that one is drawn as the ghost. */
-  const scene = useMemo(() => {
+  /**
+   * The island as pieces to draw, built from the placement that was already
+   * worked out above.
+   *
+   * It used to call `islandPieces`, which works out where everything stands all
+   * over again — and so did the stone paths inside it, and so did `standing`
+   * here. Three full placement searches for one picture: **eleven seconds** on a
+   * finished island, measured on the simulator. And it ran again on every grab
+   * and every drop, because the held object was removed from the island before
+   * drawing. Now the search happens once and this is a list and a sort.
+   */
+  const scenePieces = useMemo(() => {
     if (!ready) return [];
-    const rest = { ...island };
-    if (held) delete (rest as Record<string, unknown>)[held.id];
-    for (const id of parked) delete (rest as Record<string, unknown>)[id];
-    return scenePaths(islandPieces(stage, rest, spots, seed));
-  }, [island, held, stage, spots, seed, parked, ready]);
+    const water = waterPieces(stage, island);
+    const gullsFrom = water.findIndex((piece) => piece.sprite.startsWith("gull"));
+    const swimming = gullsFrom === -1 ? water : water.slice(0, gullsFrom);
+    const flying = gullsFrom === -1 ? [] : water.slice(gullsFrom);
+    const shown = standing.filter((object) => object.id !== held?.id);
+    const ground = [
+      ...swimming,
+      ...pathStones(zones, shown).map((stone) => {
+        const centre = cellCentre(zones, stone.i, stone.j);
+        return { sprite: `path_${stone.variant}`, x: centre.x, y: centre.y };
+      }),
+      ...shown.map((object) => {
+        const centre = cellCentre(zones, object.spot.i, object.spot.j);
+        return {
+          sprite: spriteNameFor(object.key, object.level, object.variant),
+          x: centre.x,
+          y: centre.y,
+        };
+      }),
+    ];
+    // Flat stones first where two things share a row: a path never covers an object.
+    ground.sort(
+      (a, b) =>
+        a.y - b.y ||
+        Number(b.sprite.startsWith("path_")) - Number(a.sprite.startsWith("path_")),
+    );
+    return [...ground, ...flying];
+  }, [ready, stage, island, zones, standing, held?.id]);
+
+  const scene = useMemo(() => {
+    return scenePaths(scenePieces);
+  }, [scenePieces]);
 
   /** What the object in hand must not overlap. */
   const others = useMemo<PlacedObject[]>(
@@ -268,14 +362,17 @@ export function IslandPlaceScreen() {
 
   const ghost = useMemo(() => {
     if (!held || !hover) return null;
+    const tg = Date.now();
     const centre = cellCentre(zones, hover.i, hover.j);
-    return {
+    const out = {
       paths: scenePaths([
         { sprite: `${held.key}_${held.level}`, x: centre.x, y: centre.y },
       ]),
       cells: groundCells(held.key, held.level, hover),
       valid: spotFits(zones, others, held.key, held.level, hover),
     };
+    console.error("[perf] ghost in", Date.now() - tg, "ms");
+    return out;
   }, [held, hover, zones, others]);
 
   /**
@@ -454,8 +551,8 @@ export function IslandPlaceScreen() {
       : ghost?.valid
         ? "Let go to put it down."
         : "It cannot stand here — put it down before you confirm."
-    : inTray.length > 0
-      ? "Tap something in the strip to put it back on the island."
+    : waitingCount > 0
+      ? "Drag something out of the strip to put it back."
       : only
         ? "Drag it where you want it."
         : "Drag anything on your island, or drag it down into the strip.";
@@ -560,18 +657,21 @@ export function IslandPlaceScreen() {
         <Text style={styles.hintText}>{ready ? hint : "Getting your island ready…"}</Text>
       </View>
 
-      {inTray.length > 0 ? (
+      {waitingCount > 0 ? (
         <View style={styles.tray}>
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.trayRow}
           >
-            {inTray.map((object) => (
+            {inTray.map((group) => (
               <TrayTile
-                key={object.id}
-                object={object}
-                onPress={() => takeFromTray(object)}
+                key={group.object.id}
+                object={group.object}
+                count={group.count}
+                onTake={takeFromTray}
+                onMove={dragTo}
+                onDrop={release}
               />
             ))}
           </ScrollView>
@@ -587,7 +687,7 @@ export function IslandPlaceScreen() {
         >
           <Text style={styles.cancelText}>Cancel</Text>
         </Pressable>
-        {!only && inTray.length === 0 ? (
+        {!only && waitingCount === 0 ? (
           <Pressable
             onPress={clearIsland}
             accessibilityRole="button"
@@ -603,8 +703,8 @@ export function IslandPlaceScreen() {
             thing that does not do what it looks like. Nothing is lost — it keeps
             the place it had — but nobody should have to guess that.
           */}
-          {inTray.length > 0
-            ? `${inTray.length} waiting · they stay where they were`
+          {waitingCount > 0
+            ? `${waitingCount} waiting · they stay where they were`
             : moved === 0
               ? "Nothing moved yet"
               : moved === 1
@@ -661,6 +761,22 @@ const styles = StyleSheet.create({
     backgroundColor: PAPER.sunken,
     alignItems: "center",
     justifyContent: "center",
+  },
+  tileCount: {
+    position: "absolute",
+    right: 2,
+    bottom: 2,
+    minWidth: 22,
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    borderRadius: 999,
+    backgroundColor: PAPER.ink,
+    alignItems: "center",
+  },
+  tileCountText: {
+    fontFamily: NEU_FONTS.label,
+    fontSize: 11,
+    color: "#FFFFFF",
   },
   clearTouch: { minHeight: 44, justifyContent: "center", paddingHorizontal: 4 },
   clearText: {

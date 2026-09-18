@@ -358,6 +358,35 @@ export function capacityFor(
  * because of something new — except when the island grew and the beach moved out
  * from under a beach object.
  */
+/**
+ * The last few answers, because the same question gets asked over and over.
+ *
+ * Nothing stores the places the search finds, so every screen that draws the
+ * island asks for them again — and a finished island is 57 searches, measured
+ * at 3.5 seconds on a phone. The inputs are the same every time, so the answer
+ * can be. Small on purpose: a handful of entries covers Home, the placing
+ * screen and a friend's island without holding onto islands nobody is looking
+ * at any more.
+ */
+const ANSWERS = new Map<string, Record<string, Spot>>();
+const MAX_ANSWERS = 6;
+
+function askedFor(
+  stage: number,
+  objects: readonly { id?: string; key: string; level: number }[],
+  stored: Readonly<Record<string, Spot>>,
+  seed: number,
+): string {
+  let key = `${stage}|${seed}`;
+  for (const object of objects) key += `|${object.id ?? object.key}:${object.level}`;
+  key += "|";
+  for (const id of Object.keys(stored).sort()) {
+    const spot = stored[id];
+    key += `${id}@${spot.i},${spot.j};`;
+  }
+  return key;
+}
+
 export function resolveSpots(
   stage: number,
   /**
@@ -369,6 +398,9 @@ export function resolveSpots(
   stored: Readonly<Record<string, Spot>>,
   seed: number,
 ): Record<string, Spot> {
+  const question = askedFor(stage, objects, stored, seed);
+  const known = ANSWERS.get(question);
+  if (known) return known;
   const zones = stageZones(stage);
   const placed: PlacedObject[] = [];
   const spots: Record<string, Spot> = {};
@@ -394,5 +426,10 @@ export function resolveSpots(
     placed.push({ ...object, spot });
     spots[object.id] = spot;
   }
+  if (ANSWERS.size >= MAX_ANSWERS) {
+    const oldest = ANSWERS.keys().next().value;
+    if (oldest !== undefined) ANSWERS.delete(oldest);
+  }
+  ANSWERS.set(question, spots);
   return spots;
 }
