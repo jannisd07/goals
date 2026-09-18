@@ -23,8 +23,17 @@
  * with the same two numbers — so nothing can drift apart.
  */
 
-import React, { useMemo, useRef, useState } from "react";
-import { Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import {
+  ActivityIndicator,
+  Image,
+  InteractionManager,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { runOnJS } from "react-native-reanimated";
 import Svg, { Path, Polygon } from "react-native-svg";
@@ -157,6 +166,20 @@ export function IslandPlaceScreen() {
    * the place it had, so nothing can be lost by walking away.
    */
   const [parked, setParked] = useState<string[]>([]);
+  /**
+   * Whether the island has been worked out yet.
+   *
+   * Everything this screen draws — where each object stands, and the thousand
+   * paths that draw them — is computed on the way to the first frame. On a full
+   * island that is long enough that opening the screen looked like nothing had
+   * happened. The frame and a spinner go up first, and the island follows once
+   * the navigation animation is out of the way.
+   */
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    const task = InteractionManager.runAfterInteractions(() => setReady(true));
+    return () => task.cancel();
+  }, []);
   /** True while the finger is over the strip, so the hint can say what a release does. */
   const [overTray, setOverTray] = useState(false);
 
@@ -178,12 +201,13 @@ export function IslandPlaceScreen() {
   const spots = useMemo(() => ({ ...storedSpots, ...moves }), [storedSpots, moves]);
 
   const standing = useMemo(() => {
+    if (!ready) return [];
     const all = standingObjects(island).filter((object) => !parked.includes(object.id));
     const resolved = resolveSpots(stage, all, spots, seed);
     return all
       .filter((object) => resolved[object.id])
       .map((object) => ({ ...object, spot: resolved[object.id] }));
-  }, [island, stage, spots, seed, parked]);
+  }, [island, stage, spots, seed, parked, ready]);
 
   /** What is waiting in the strip, in the order it was put there. */
   const inTray = useMemo(
@@ -196,11 +220,12 @@ export function IslandPlaceScreen() {
 
   /** Everything except what is in hand — that one is drawn as the ghost. */
   const scene = useMemo(() => {
+    if (!ready) return [];
     const rest = { ...island };
     if (held) delete (rest as Record<string, unknown>)[held.id];
     for (const id of parked) delete (rest as Record<string, unknown>)[id];
     return scenePaths(islandPieces(stage, rest, spots, seed));
-  }, [island, held, stage, spots, seed, parked]);
+  }, [island, held, stage, spots, seed, parked, ready]);
 
   /** What the object in hand must not overlap. */
   const others = useMemo<PlacedObject[]>(
@@ -456,7 +481,9 @@ export function IslandPlaceScreen() {
   );
 
   return (
-    <View style={styles.root}>
+    // Until the island is there the screen is open sea, so the wait is the same
+    // picture minus the island rather than a white page that flashes.
+    <View style={[styles.root, !ready && { backgroundColor: PAPER.openSea }]}>
       <View
         style={styles.canvas}
         onLayout={(event) => {
@@ -522,8 +549,15 @@ export function IslandPlaceScreen() {
         ) : null}
       </View>
 
+      {/* Up before anything is computed, so opening the screen never looks stuck. */}
+      {!ready ? (
+        <View style={styles.waiting} pointerEvents="none">
+          <ActivityIndicator size="large" color="#FFFFFF" />
+        </View>
+      ) : null}
+
       <View style={[styles.hint, { top: insets.top + 12 }]} pointerEvents="none">
-        <Text style={styles.hintText}>{hint}</Text>
+        <Text style={styles.hintText}>{ready ? hint : "Getting your island ready…"}</Text>
       </View>
 
       {inTray.length > 0 ? (
@@ -595,6 +629,11 @@ export function IslandPlaceScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: PAPER.page },
   canvas: { flex: 1, overflow: "hidden" },
+  waiting: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   hint: { position: "absolute", left: 24, right: 24, alignItems: "center" },
   hintText: {
     fontFamily: NEU_FONTS.body,
